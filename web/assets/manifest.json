@@ -1,34 +1,76 @@
 {
   "A": {
-    "A13_corner_view": {
-      "src": "assets/img/A13_corner_view.webp",
-      "small": "assets/img/A13_corner_view_960.webp",
+    "A10_interior_evaporator": {
+      "src": "assets/img/A10_interior_evaporator.webp",
+      "small": "assets/img/A10_interior_evaporator_960.webp",
       "w": 1920,
-      "h": 1071
+      "h": 1072
+    },
+    "A11_solar_canopy_closeup": {
+      "src": "assets/img/A11_solar_canopy_closeup.webp",
+      "small": "assets/img/A11_solar_canopy_closeup_960.webp",
+      "w": 1920,
+      "h": 1072
+    },
+    "A12_sensor_mast": {
+      "src": "assets/img/A12_sensor_mast.webp",
+      "small": "assets/img/A12_sensor_mast_960.webp",
+      "w": 1920,
+      "h": 1072
+    },
+    "A1_outside": {
+      "src": "assets/img/A1_outside.webp",
+      "small": "assets/img/A1_outside_960.webp",
+      "w": 1920,
+      "h": 1072
     },
     "A2_front": {
       "src": "assets/img/A2_front.webp",
       "small": "assets/img/A2_front_960.webp",
       "w": 1920,
-      "h": 1071
+      "h": 1072
+    },
+    "A3_exterior_side_condenser": {
+      "src": "assets/img/A3_exterior_side_condenser.webp",
+      "small": "assets/img/A3_exterior_side_condenser_960.webp",
+      "w": 1920,
+      "h": 1072
     },
     "A4_night": {
       "src": "assets/img/A4_night.webp",
       "small": "assets/img/A4_night_960.webp",
       "w": 1920,
-      "h": 1071
+      "h": 1072
     },
     "A5_monsoon": {
       "src": "assets/img/A5_monsoon.webp",
       "small": "assets/img/A5_monsoon_960.webp",
       "w": 1920,
-      "h": 1071
+      "h": 1072
     },
     "A6_door_worker": {
       "src": "assets/img/A6_door_worker.webp",
       "small": "assets/img/A6_door_worker_960.webp",
       "w": 1920,
-      "h": 1071
+      "h": 1072
+    },
+    "A7_doorway_from_inside": {
+      "src": "assets/img/A7_doorway_from_inside.webp",
+      "small": "assets/img/A7_doorway_from_inside_960.webp",
+      "w": 1920,
+      "h": 1072
+    },
+    "A8_interior_wide": {
+      "src": "assets/img/A8_interior_wide.webp",
+      "small": "assets/img/A8_interior_wide_960.webp",
+      "w": 1920,
+      "h": 1072
+    },
+    "A9_interior_pcm_wall": {
+      "src": "assets/img/A9_interior_pcm_wall.webp",
+      "small": "assets/img/A9_interior_pcm_wall_960.webp",
+      "w": 1920,
+      "h": 1072
     }
   },
   "B": {},

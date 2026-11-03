@@ -30,7 +30,9 @@ export class Airflow {
     this.speed = 0.35 + 1.4 * v.v_door_if_open;        // depth units per second
     const lat = v.heat_if_open_kW * (v.heat_latent_now_kW && v.heat_now_kW ? v.heat_latent_now_kW / v.heat_now_kW : 0.58);
     this.label.innerHTML = `Heat entering now (door open): <b>${v.heat_if_open_kW.toFixed(1)} kW</b> <span class="tag C">C</span>`
-      + `<small>strip curtain ${curtain ? 'ON – cuts it by 85 %' : 'OFF'} · warm air in at the top, cold air out at the bottom</small>`;
+      + `<span class="per">this opening lasted <b>${v.last_open_s.toFixed(0)} s</b> → energy per opening <b>${v.last_open_kJ.toFixed(0)} kJ</b>`
+      + ` (= ${v.last_open_wall_minutes.toFixed(0)} min of wall heat)</span>`
+      + `<small>strip curtain ${curtain ? 'ON – cuts it by 85 %' : 'OFF'} · big kW, but only for seconds · warm air in at the top, cold air out at the bottom</small>`;
   }
 
   resize() {

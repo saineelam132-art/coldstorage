@@ -188,7 +188,7 @@ def simulate(cfg, weather, crop=None, door_secs=None, record=True, outages=None)
 
     E0 = C_room * T_r + m_p * h
     acc = dict(wall=0.0, door=0.0, door_lat=0.0, internal=0.0, resp=0.0, coil_air=0.0, coil_pcm=0.0,
-               prod_in=0.0, prod_out=0.0, pv=0.0, pv_used=0.0, grid=0.0, comp_e=0.0, aux=0.0)
+               prod_in=0.0, prod_out=0.0, pv=0.0, pv_used=0.0, grid=0.0, comp_e=0.0, aux=0.0, q_tout=0.0)
 
     if record:
         wind_s = to_steps(weather, weather["wind"], dt)
@@ -301,6 +301,7 @@ def simulate(cfg, weather, crop=None, door_secs=None, record=True, outages=None)
         acc["pv_used"] += P_solar_used * dt
         acc["grid"] += P_grid * dt
         acc["comp_e"] += P_comp * dt
+        acc["q_tout"] += (Q_air + Q_ch) * dt * T_out
 
         if record:
             rec["T_out"][i] = T_out
@@ -367,6 +368,7 @@ def simulate(cfg, weather, crop=None, door_secs=None, record=True, outages=None)
         "cooling_kWh_th": (acc["coil_air"] + acc["coil_pcm"]) * kWh,
         "cooling_to_pcm_kWh_th": acc["coil_pcm"] * kWh,
         "seasonal_COP_elec": (acc["coil_air"] + acc["coil_pcm"]) / acc["comp_e"] if acc["comp_e"] else float("nan"),
+        "T_out_cooling_weighted_C": acc["q_tout"] / (acc["coil_air"] + acc["coil_pcm"]) if (acc["coil_air"] + acc["coil_pcm"]) else float("nan"),
         "load_wall_kWh": acc["wall"] * kWh, "load_door_kWh": acc["door"] * kWh,
         "load_door_latent_kWh": acc["door_lat"] * kWh,
         "load_internal_kWh": acc["internal"] * kWh, "load_resp_kWh": acc["resp"] * kWh,

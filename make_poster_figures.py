@@ -233,6 +233,85 @@ def fig_comparisons():
     save(fig, "06_comparisons")
 
 
+def fig_heatmap_wax_solar():
+    """One clear heat map for the poster: 1.5 kW compressor (the best size), wax x solar."""
+    p = pd.read_csv(RES / "parametric.csv")
+    rec = json.loads((RES / "recommended_overrides.json").read_text())
+    q = rec["refrigeration"]["design_capacity_kW"]
+    x = p[p.Qmax_kW == q]
+    g = x.pivot(index="pcm_mass_kg", columns="pv_kWp", values="grid_hours")
+    d = x.pivot(index="pcm_mass_kg", columns="pv_kWp", values="pct_days_full_solar_pcm")
+    cfg = load_config()
+    marks = {(cfg["pcm"]["mass_kg"], cfg["pv"]["rated_kWp"]): "current", (rec["pcm"]["mass_kg"], rec["pv"]["rated_kWp"]): "recommended"}
+    fig, ax = plt.subplots(figsize=(9, 7))
+    vmax = g.values.max()
+    im = ax.imshow(g.values, cmap=SEQ, vmin=0, vmax=vmax, aspect="auto", origin="lower")
+    for i in range(g.shape[0]):
+        for j in range(g.shape[1]):
+            v = g.values[i, j]
+            ax.text(j, i, f"{v:.0f} h\n{d.values[i, j]:.0f} % days", ha="center", va="center", fontsize=11,
+                    color="white" if v > vmax * 0.45 else INK)
+    for (m, pv), name in marks.items():
+        i, j = list(g.index).index(m), list(g.columns).index(pv)
+        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, ec=ORANGE if name == "recommended" else INK, lw=3.5,
+                                   ls="-" if name == "recommended" else "--"))
+        ax.text(j + 0.47, i + 0.42, name, ha="right", va="top", fontsize=10, fontweight="bold",
+                color=INK if g.values[i, j] < vmax * 0.45 else "white")
+    ax.set_xticks(range(g.shape[1]), [f"{c:g}" for c in g.columns])
+    ax.set_yticks(range(g.shape[0]), [f"{r:g}" for r in g.index])
+    ax.set_xlabel("Solar PV size, kWp"); ax.set_ylabel("Wax (PCM) mass, kg")
+    ax.grid(False)
+    cb = fig.colorbar(im, ax=ax, pad=0.02); cb.set_label("Grid backup hours per year (lower is better)")
+    ax.set_title(f"Grid backup hours per year – wax × solar ({q:g} kW compressor)")
+    save(fig, "11_heatmap_wax_solar", SIM_NOTE + ". Second line in each cell = % of days fully on solar + wax.")
+
+
+def pair_fig(name, title, label_a, label_b, rows, note=SIM_NOTE):
+    """Before/after small multiples: each metric gets its own panel and its own scale."""
+    fig, axes = plt.subplots(1, len(rows), figsize=(3.6 * len(rows), 4.8))
+    for ax, (metric, unit, a, b) in zip(axes, rows):
+        bars = ax.bar([0, 1], [a, b], color=[BLUE, ORANGE], width=0.62, edgecolor=SURFACE)
+        top = max(a, b) if max(a, b) > 0 else 1
+        for bar, v in zip(bars, [a, b]):
+            ax.annotate(f"{v:,.0f}" if abs(v) >= 10 else f"{v:.1f}", (bar.get_x() + bar.get_width() / 2, v),
+                        xytext=(0, 3), textcoords="offset points", ha="center", fontsize=13, fontweight="bold", color=INK)
+        ax.set_ylim(0, top * 1.2)
+        if a == 0 and b == 0:
+            ax.text(0.5, 0.5, "0 h in both:\nnever left 2–8 °C", transform=ax.transAxes, ha="center", va="center",
+                    fontsize=13, color=INK2)
+        ax.set_xticks([0, 1], [label_a, label_b], fontsize=11)
+        ax.set_title(f"{metric}\n({unit})", fontsize=12.5)
+        ax.grid(axis="x", visible=False)
+    fig.suptitle(title, fontweight="bold", fontsize=16)
+    fig.tight_layout()
+    save(fig, name, note)
+
+
+def comparison_figs():
+    comp = pd.read_csv(RES / "comparisons.csv")
+    get = lambda c, m: comp[(comp.comparison == c) & (comp.metric == m)].iloc[0]
+    metrics = [("pct_days_full_solar_pcm", "Days fully on solar + wax", "% of days"),
+               ("grid_hours", "Grid backup", "hours / year"),
+               ("hours_outside_2_8C", "Room outside 2–8 °C", "hours / year"),
+               ("compressor_kWh_e", "Compressor electricity", "kWh / year")]
+    rows = lambda c: [(t, u, get(c, m).value_A, get(c, m).value_B) for m, t, u in metrics]
+    pair_fig("12_curtain_vs_none", "Strip curtain vs. no curtain (recommended design)", "strip curtain", "no curtain", rows("Door curtain"))
+    pair_fig("13_forecast_vs_normal", "Normal vs. forecast-based charging (recommended design)", "normal", "forecast",
+             rows("Charging"), SIM_NOTE + ". Forecast = next day's real weather from the file (a perfect forecast).")
+    s = pd.read_csv(RES / "results_summary.csv")
+    val = lambda sec, item: float(s[(s.section == sec) & (s["item"] == item)].value.iloc[0])
+    items = [("Days fully on solar + PCM", "Days fully on solar + wax", "% of days"),
+             ("Grid backup hours", "Grid backup", "hours / year"),
+             ("Hours outside 2-8 C", "Room outside 2–8 °C", "hours / year"),
+             ("Solar energy wasted", "Solar not needed", "kWh / year")]
+    rows2 = [(t, u, val("Year - current design", i), val("Year - recommended design", i)) for i, t, u in items]
+    rec = json.loads((RES / "recommended_overrides.json").read_text())
+    cfg = load_config()
+    pair_fig("14_current_vs_recommended",
+             f"Current ({cfg['pcm']['mass_kg']:g} kg wax, {cfg['pv']['rated_kWp']:g} kWp) vs. recommended "
+             f"({rec['pcm']['mass_kg']:g} kg, {rec['pv']['rated_kWp']:g} kWp) – both 1.5 kW", "current", "recommended", rows2)
+
+
 # ----------------------------------------------------------------- engine
 def fig_melt_front(cfg):
     s = simulate_slab(cfg, hours=24, T_init_C=2.0, T_air_C=8.0)
@@ -324,6 +403,8 @@ def main():
     fig_melt_front(cfg)
     fig_load_breakdown(cfg, crops)
     fig_ph(cfg)
+    fig_heatmap_wax_solar()
+    comparison_figs()
 
 
 if __name__ == "__main__":

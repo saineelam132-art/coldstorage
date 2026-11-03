@@ -12,7 +12,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from engine import loads, psychro, pv
+from engine import loads, psychro, pv, r290, shelf_life
+from engine.pcm_slab import simulate_slab
 from engine.config import load_config, load_crops
 from engine.pcm import PCMBattery
 from twin.simulate import daily_poa_kWh, door_seconds, simulate
@@ -71,6 +72,10 @@ class TwinState:
         self.day_poa = dp.values
         self.sensors = _strip(json.loads((ROOT / "config" / "sensors.json").read_text(encoding="utf-8")))
         self.cols = {c: self.df[c].values for c in self.df.columns}
+        # index of the most recent 5-min step with a door opening (for "this opening lasted Z s")
+        idx = np.where(self.cols["door_s"] > 0, np.arange(self.n), -1)
+        self.last_open = np.maximum.accumulate(idx)
+        self._slab = None
 
     # --------------------------------------------------------------- helpers
     def index(self, t):
@@ -132,6 +137,10 @@ class TwinState:
         day = min(int((t % self.year_s) // 86400), len(self.day_class) - 1)
 
         T_b = float(c["T_batch"][i])
+        j = int(self.last_open[i])
+        last_s = float(c["door_s"][j]) if j >= 0 else 0.0
+        last_kJ = door["heat_if_open_kW"] * last_s                  # kW x s = kJ
+        wall_kW = max(Q["Q_wall"], 1e-6)
         values = {
             "T_out": T_out, "RH_out": RH_out, "wind": float(c["wind"][i]), "poa": float(c["poa"][i]),
             "T_room": T_room, "RH_room": rh_in, "T_pcm": float(c["T_pcm"][i]),
@@ -147,6 +156,10 @@ class TwinState:
             "backup_h": None if math.isinf(backup) else backup,
             "door_open": open_now, "door_angle": 90.0 if open_now else 0.0,
             "door_s_this_5min": door_s,
+            "last_open_s": last_s,
+            "last_open_kJ": last_kJ,
+            "last_open_wall_minutes": last_kJ / wall_kW / 60.0,
+            "last_open_ago_min": (i - j) * self.dt / 60.0 if j >= 0 else None,
             "gas_ppm": None,
             **{k: v for k, v in door.items() if k not in ("rho_in", "rho_out")},
         }
@@ -157,6 +170,40 @@ class TwinState:
             "day_class": str(self.day_class[day]), "day_poa_kWh_m2": float(self.day_poa[day]),
             "values": values,
         }
+
+    # ------------------------------------------------------------ detail data
+    def cycle(self, t):
+        """Live R290 cycle at this moment (T_cond = T_out + 10 K) + saturation dome for the P-h chart."""
+        T_out = float(self.cols["T_out"][self.index(t)])
+        Q = max(0.3, float(self.cols["Q_coil_air"][self.index(t)] + self.cols["Q_coil_pcm"][self.index(t)]))
+        c = r290.cycle_from_config(self.cfg, T_amb_C=T_out, Q_evap_kW=Q)
+        dome = r290.saturation_dome()
+        return {"cycle": c, "points": r290.cycle_polyline(c), "dome": dome,
+                "design": r290.cycle_from_config(self.cfg)}
+
+    def slab(self):
+        """FTCS enthalpy-method melt of one wax slab in 8 C air (computed once, about 2 s)."""
+        if self._slab is None:
+            s = simulate_slab(self.cfg, hours=24, T_init_C=2.0, T_air_C=8.0, output_every_s=900)
+            self._slab = {k: s[k] for k in ("hours", "liquid_fraction", "melt_front_mm", "thickness_mm",
+                                            "r", "dt_s", "dx_mm", "nx")}
+        return self._slab
+
+    def crop(self, key, t, days):
+        """Shelf life of a crop that has been in THIS room for `days` days up to time t,
+        using the twin's real room-temperature history (Q10 model, engine/shelf_life.py)."""
+        crop = self.crops[key]
+        i1 = self.index(t)
+        n = int(days * 86400 // self.dt)
+        idx = np.arange(i1 - n, i1 + 1) % self.n
+        T = self.cols["T_room"][idx].astype(float)
+        a = shelf_life.assess(crop, list(T), self.dt / 3600.0)
+        hourly = T[:: int(3600 // self.dt)]
+        return {"crop": key, "label": crop["label"], "days_stored": days, "source": crop["source"],
+                "T_opt": [crop["T_opt_low_C"], crop["T_opt_high_C"]], "chill_below_C": crop.get("chill_injury_below_C"),
+                "SL_ref_days": crop["SL_ref_days"], "T_ref_C": crop["T_ref_C"], "Q10": crop["Q10"],
+                "assess": a, "history_T": [round(float(x), 3) for x in hourly],
+                "chill_now": shelf_life.chilling_warning_now(crop, float(T[-1]))}
 
     def series(self, quantity, t, hours=24.0, step_min=15):
         """History of one quantity (for the small graph in a sensor panel)."""

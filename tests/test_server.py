@@ -54,7 +54,7 @@ def test_geometry_follows_design(tw):
 
 def test_hotspots_point_to_real_sensors_and_parts():
     sensors = {s["id"] for s in json.loads((ROOT / "config/sensors.json").read_text(encoding="utf-8"))["sensors"]}
-    parts = {"solar", "condenser", "door", "crates", "worker"}
+    parts = {"solar", "condenser", "door", "crates", "worker", "evaporator", "pcm", "crate_greens", "crate_grapes", "milk", "vaccine"}
     hs = json.loads((ROOT / "web/assets/hotspots.json").read_text(encoding="utf-8"))
     for img, spots in hs.items():
         if img.startswith("_"):
@@ -78,3 +78,24 @@ def test_doorway_settings_are_inside_the_pictures():
             continue
         assert 0 <= d["x0"] < d["x1"] <= 100 and 0 <= d["label_y"] < d["y0"] < d["y1"] <= 100
         assert d["view"] in ("outside", "inside")
+
+
+def test_last_opening_energy_is_power_times_time(tw):
+    t = 86 * 86400 + 8.3 * 3600
+    v = tw.state(t)["values"]
+    assert v["last_open_s"] > 0
+    assert v["last_open_kJ"] == pytest.approx(v["heat_if_open_kW"] * v["last_open_s"])
+
+
+def test_crop_shelf_life_uses_room_history(tw):
+    d = tw.crop("leafy_greens", 86 * 86400 + 12 * 3600, 2)
+    a = d["assess"]
+    assert 0 < a["remaining_days_at_ref"] < d["SL_ref_days"]
+    assert len(d["history_T"]) == 2 * 24 + 1
+    assert all(2 <= T <= 8 for T in d["history_T"])
+
+
+def test_live_cycle_uses_outside_temperature(tw):
+    t = 86 * 86400 + 12 * 3600
+    c = tw.cycle(t)["cycle"]
+    assert c["T_cond_C"] == pytest.approx(tw.state(t)["values"]["T_out"] + 10, abs=0.02)

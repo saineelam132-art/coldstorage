@@ -237,7 +237,12 @@ def summary_rows(cfg, weather_annual, counts, base, rec, pick, comp_out, cut, de
             "PV available - PV used by compressor (wax already frozen, room cold)")
         add(section, "Compressor electricity", s["compressor_kWh_e"], "kWh/yr", "sum of Q_cooling / COP_elec x dt")
         add(section, "Cooling delivered", s["cooling_kWh_th"], "kWh/yr", "air coil + PCM charging coil")
-        add(section, "Seasonal COP (electrical)", s["seasonal_COP_elec"], "-", "cooling / compressor electricity")
+        add(section, "Seasonal COP (electrical)", s["seasonal_COP_elec"], "-",
+            "= cooling delivered over the year / compressor electricity over the year. Same definition as the "
+            "2.2 design value (COP_elec, includes isentropic 0.75 and motor/inverter 0.85 losses). Higher than 2.2 "
+            "because the design value is at 50 C condensing (40 C outside), while the real year is cooler: see next line")
+        add(section, "Outside temperature weighted by cooling", s["T_out_cooling_weighted_C"], "C",
+            "sum(Q_cooling x T_out) / sum(Q_cooling): typical condensing temperature is this + 10 K, not 50 C")
         add(section, "Heat in: walls", s["load_wall_kWh"], "kWh/yr", "U*A*(T_out-T_room)")
         add(section, "Heat in: door (total)", s["load_door_kWh"], "kWh/yr", "ASHRAE Gosney-Olama x D_t x D_f x (1-E)")
         add(section, "Heat in: door (latent part)", s["load_door_latent_kWh"], "kWh/yr", "moisture part of the door load")
@@ -248,7 +253,9 @@ def summary_rows(cfg, weather_annual, counts, base, rec, pick, comp_out, cut, de
         add(section, "ENERGY BALANCE: heat out", s["energy_out_kWh"], "kWh/yr", "evaporator coils + cold produce out")
         add(section, "ENERGY BALANCE: stored change", s["stored_change_kWh"], "kWh/yr", "end - start of room, batch and PCM energy")
         add(section, "ENERGY BALANCE: error", s["energy_balance_error_pct"], "% of heat out",
-            "|in - out - stored change| / out x 100  (must be < 1 %)")
+            "|in - out - stored change| / out x 100 (must be < 1 %). This checks the model's BOOKKEEPING "
+            "(no heat is lost or created by the code). It does NOT prove the physics is right - "
+            "the small-box test in Phase 4 (model vs measured) checks the physics")
 
     year_rows("Year - current design", base)
     year_rows("Year - recommended design", rec)

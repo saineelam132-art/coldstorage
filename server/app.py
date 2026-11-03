@@ -56,6 +56,21 @@ def api_series(q: str, t: float, hours: float = 24.0):
     return twin().series(q, t, hours)
 
 
+@app.get("/api/cycle")
+def api_cycle(t: float = 0.0):
+    return twin().cycle(t)
+
+
+@app.get("/api/slab")
+def api_slab():
+    return twin().slab()
+
+
+@app.get("/api/crop")
+def api_crop(key: str, t: float = 0.0, days: float = 2.0):
+    return twin().crop(key, t, days)
+
+
 @app.get("/api/demo_days")
 def api_demo_days():
     return twin().demo_days()

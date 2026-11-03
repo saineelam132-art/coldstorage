@@ -4,7 +4,7 @@ Demo website and digital twin for the REFCOLD India 2026 poster
 **"Blockchain-Secured Hybrid Solar–PCM Cold Storage with Natural-Refrigerant (R290) VCR System"**
 (GVPCE, Visakhapatnam).
 
-> Status: **Phase 1 (engine) and Phase 2 (digital twin) done. Phase 3 (website) steps 1–2 of 6 done.**
+> Status: **Phase 1 (engine) and Phase 2 (digital twin) done. Phase 3 (website) steps 1–3 of 6 done.**
 
 ## Install (Windows, once)
 
@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Phase 1 – check the engine
 
-Run all tests (should say `73 passed`):
+Run all tests (should say `76 passed`):
 
 ```
 python -m pytest -q
@@ -71,6 +71,7 @@ Main outputs in `results/`:
 | `parametric.csv` | All 72 cases (PCM × PV × compressor) |
 | `comparisons.csv` | With/without PCM, curtain/no curtain, normal/forecast charging |
 | `weather_monthly.csv`, `day_counts.csv` | Weather check and sunny/cloudy/rainy days |
+| `bom_recommended.csv` | Cost table for the recommended design – **all prices are guesses** (`python tools/make_bom.py`) |
 | `power_cut_night.csv` | Room temperature on the power-cut night |
 | `year_*_hourly.csv` | Hour-by-hour simulation results for the year |
 
@@ -96,6 +97,10 @@ address printed in the window.
 - **Low graphics** for a slow laptop.
 - **Enter the cold room ▸** (photo and 3D): walks to the door, the door opens, and the
   warm-air-in / cold-air-out flow is drawn with the live "Heat entering now" value.
+- **Inside** (photo A8–A10 and 3D): wax panels turn blue/clear with the live battery %, the
+  evaporator fan spins with the compressor, click the evaporator (live R290 cycle + P–h chart),
+  the wax panels (battery, backup, FTCS melt-front graph) or a crate (shelf life from the room's
+  real temperature history, chilling warning).
 - Press **F** to show the performance readout (frames per second). Below 30 fps, tick Low graphics.
 
 New pictures: put them in `web/assets/images/` (names starting A, B or C) and run

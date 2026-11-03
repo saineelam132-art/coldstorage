@@ -61,7 +61,7 @@ export class PhotoView {
         const b = document.createElement('button');
         b.className = 'hot' + (h.part ? ' part' : '');
         b.style.left = `${h.x}%`; b.style.top = `${h.y}%`;
-        b.setAttribute('aria-label', h.sensor || h.part);
+        b.setAttribute('aria-label', h.label || h.sensor || h.part);
         const tipHtml = () => (h.sensor ? sensorTip(h.sensor) : partTip(h.part));
         b.onmouseenter = e => showTip(tipHtml(), e.clientX, e.clientY);
         b.onmousemove = e => showTip(tipHtml(), e.clientX, e.clientY);
@@ -70,6 +70,27 @@ export class PhotoView {
         b.dataset.sensor = h.sensor || '';
         hots.appendChild(b);
       });
+      // wax panels: tinted blue (frozen) -> clear (melted) from the live battery %
+      const kb = el.querySelector('.kb');
+      const rects = this.scenes.pcm_panels?.[name];
+      if (rects) {
+        el.pcm = rects.map(([x0, y0, x1, y1]) => {
+          const d = document.createElement('div'); d.className = 'pcmtint';
+          d.style.cssText = `left:${x0}%;top:${y0}%;width:${x1 - x0}%;height:${y1 - y0}%`;
+          kb.insertBefore(d, kb.querySelector('.hots')); return d;
+        });
+        const lb = document.createElement('div'); lb.className = 'pcmlbl';
+        const [x0, y0, x1] = rects[0];
+        lb.style.left = `${Math.min(80, Math.max(20, (x0 + x1) / 2))}%`; lb.style.top = `${Math.max(8, y0)}%`;
+        kb.insertBefore(lb, kb.querySelector('.hots')); el.pcmLabel = lb;
+      }
+      // evaporator fan: glows and spins with the compressor speed
+      const fan = this.scenes.fans?.[name];
+      if (fan) {
+        const f = document.createElement('div'); f.className = 'fanglow';
+        f.style.cssText = `left:${fan.x}%;top:${fan.y}%;width:${2 * fan.r}%;aspect-ratio:1`;
+        kb.insertBefore(f, kb.querySelector('.hots')); el.fan = f;
+      }
       const door = this.scenes.doorways?.[name];
       if (door) this.flows[name] = new Airflow(el.querySelector('.kb'), door);
       this.root.appendChild(el);
@@ -138,8 +159,9 @@ export class PhotoView {
     const cap = this.scenes.mode_captions?.[name] || this.scenes.story_captions[this.story[this.idx]] || '';
     this.caption.textContent = cap;
     this.caption.style.display = cap ? '' : 'none';
+    this.caption.classList.toggle('right', (this.scenes.caption_right || []).includes(name));
     for (const [n, f] of Object.entries(this.flows)) f.show(n === name);
-    const outside = name === this.story[0] || name === this.scenes.modes.night || name === this.scenes.modes.monsoon || name === 'A13_corner_view' || name === 'A2_front';
+    const outside = name === this.story[0] || name === this.scenes.modes.night || name === this.scenes.modes.monsoon || name === 'A3_exterior_side_condenser' || name === 'A2_front';
     this.enterBtn.style.display = outside ? '' : 'none';
   }
 
@@ -147,6 +169,20 @@ export class PhotoView {
   update(state) {
     const v = state.values;
     Object.values(this.flows).forEach(f => f.set(v, v.curtain));
+    const frozen = Math.max(0, Math.min(1, v.pcm_pct / 100));
+    for (const el of Object.values(this.layers)) {
+      if (el.pcm) {
+        el.pcm.forEach(d => (d.style.backgroundColor = `rgba(70,150,255,${(0.03 + 0.27 * frozen).toFixed(3)})`));
+        el.pcmLabel.innerHTML = `Wax battery <b>${v.pcm_pct.toFixed(0)} % frozen</b> · backup <b>${v.backup_h === null ? '∞' : v.backup_h.toFixed(1) + ' h'}</b> <span class="tag C">C</span>`;
+      }
+      if (el.fan) {
+        const sp = Math.max(0, Math.min(1, v.comp_speed_pct / 100));
+        el.fan.style.opacity = (0.15 + 0.85 * sp).toFixed(2);
+        el.fan.style.animationDuration = sp > 0.02 ? `${(1.6 - 1.3 * sp).toFixed(2)}s` : '0s';
+        el.fan.style.animationPlayState = sp > 0.02 ? 'running' : 'paused';
+        el.fan.title = `Compressor ${v.comp_speed_pct.toFixed(0)} %`;
+      }
+    }
     this.root.querySelectorAll('.hot[data-sensor="door_switch"]').forEach(b => b.classList.toggle('warn', !!v.door_open));
   }
 }

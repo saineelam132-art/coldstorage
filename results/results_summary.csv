@@ -75,7 +75,8 @@ Year - current design,Solar energy produced,2331.0,kWh/yr,"P = P_rated*(G_POA/10
 Year - current design,Solar energy wasted,1185.0,kWh/yr,"PV available - PV used by compressor (wax already frozen, room cold)"
 Year - current design,Compressor electricity,1177.0,kWh/yr,sum of Q_cooling / COP_elec x dt
 Year - current design,Cooling delivered,3576.0,kWh/yr,air coil + PCM charging coil
-Year - current design,Seasonal COP (electrical),3.037,-,cooling / compressor electricity
+Year - current design,Seasonal COP (electrical),3.037,-,"= cooling delivered over the year / compressor electricity over the year. Same definition as the 2.2 design value (COP_elec, includes isentropic 0.75 and motor/inverter 0.85 losses). Higher than 2.2 because the design value is at 50 C condensing (40 C outside), while the real year is cooler: see next line"
+Year - current design,Outside temperature weighted by cooling,28.77,C,"sum(Q_cooling x T_out) / sum(Q_cooling): typical condensing temperature is this + 10 K, not 50 C"
 Year - current design,Heat in: walls,1086.0,kWh/yr,U*A*(T_out-T_room)
 Year - current design,Heat in: door (total),349.2,kWh/yr,ASHRAE Gosney-Olama x D_t x D_f x (1-E)
 Year - current design,Heat in: door (latent part),202.3,kWh/yr,moisture part of the door load
@@ -85,7 +86,7 @@ Year - current design,Heat in: produce (in minus out),1580.0,kWh/yr,m*cp*(T_in) 
 Year - current design,ENERGY BALANCE: heat in,3975.0,kWh/yr,sum of all heat entering
 Year - current design,ENERGY BALANCE: heat out,3973.0,kWh/yr,evaporator coils + cold produce out
 Year - current design,ENERGY BALANCE: stored change,2.533,kWh/yr,"end - start of room, batch and PCM energy"
-Year - current design,ENERGY BALANCE: error,1.372e-11,% of heat out,|in - out - stored change| / out x 100  (must be < 1 %)
+Year - current design,ENERGY BALANCE: error,1.372e-11,% of heat out,|in - out - stored change| / out x 100 (must be < 1 %). This checks the model's BOOKKEEPING (no heat is lost or created by the code). It does NOT prove the physics is right - the small-box test in Phase 4 (model vs measured) checks the physics
 Year - recommended design,Design,"PCM 172 kg, PV 2.1 kWp, compressor 1.5 kW",,
 Year - recommended design,Days fully on solar + PCM,93.7,% of days,days with no grid connection / 365
 Year - recommended design,Grid backup hours,95.17,h/yr,time the ATS is switched to grid
@@ -96,7 +97,8 @@ Year - recommended design,Solar energy produced,2719.0,kWh/yr,"P = P_rated*(G_PO
 Year - recommended design,Solar energy wasted,1560.0,kWh/yr,"PV available - PV used by compressor (wax already frozen, room cold)"
 Year - recommended design,Compressor electricity,1174.0,kWh/yr,sum of Q_cooling / COP_elec x dt
 Year - recommended design,Cooling delivered,3572.0,kWh/yr,air coil + PCM charging coil
-Year - recommended design,Seasonal COP (electrical),3.043,-,cooling / compressor electricity
+Year - recommended design,Seasonal COP (electrical),3.043,-,"= cooling delivered over the year / compressor electricity over the year. Same definition as the 2.2 design value (COP_elec, includes isentropic 0.75 and motor/inverter 0.85 losses). Higher than 2.2 because the design value is at 50 C condensing (40 C outside), while the real year is cooler: see next line"
+Year - recommended design,Outside temperature weighted by cooling,28.71,C,"sum(Q_cooling x T_out) / sum(Q_cooling): typical condensing temperature is this + 10 K, not 50 C"
 Year - recommended design,Heat in: walls,1083.0,kWh/yr,U*A*(T_out-T_room)
 Year - recommended design,Heat in: door (total),348.9,kWh/yr,ASHRAE Gosney-Olama x D_t x D_f x (1-E)
 Year - recommended design,Heat in: door (latent part),202.1,kWh/yr,moisture part of the door load
@@ -106,7 +108,7 @@ Year - recommended design,Heat in: produce (in minus out),1578.0,kWh/yr,m*cp*(T_
 Year - recommended design,ENERGY BALANCE: heat in,3973.0,kWh/yr,sum of all heat entering
 Year - recommended design,ENERGY BALANCE: heat out,3970.0,kWh/yr,evaporator coils + cold produce out
 Year - recommended design,ENERGY BALANCE: stored change,2.471,kWh/yr,"end - start of room, batch and PCM energy"
-Year - recommended design,ENERGY BALANCE: error,1.798e-11,% of heat out,|in - out - stored change| / out x 100  (must be < 1 %)
+Year - recommended design,ENERGY BALANCE: error,1.798e-11,% of heat out,|in - out - stored change| / out x 100 (must be < 1 %). This checks the model's BOOKKEEPING (no heat is lost or created by the code). It does NOT prove the physics is right - the small-box test in Phase 4 (model vs measured) checks the physics
 Comparison (recommended design),with PCM: pct_days_full_solar_pcm,93.7,%,full-year simulation
 Comparison (recommended design),with PCM: grid_hours,95.17,h/yr,full-year simulation
 Comparison (recommended design),with PCM: grid_kWh,14.69,kWh/yr,full-year simulation

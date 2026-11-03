@@ -27,8 +27,8 @@ body:not(.model) .only-model{display:none}
 
 /* ---------- photo view ---------- */
 #photoFrame{position:absolute;inset:0;overflow:hidden;background:#000}
-.scene{position:absolute;left:50%;top:50%;opacity:0;transition:opacity 1.4s ease;will-change:transform,opacity}
-.scene.on{opacity:1}
+.scene{position:absolute;left:50%;top:50%;opacity:0;transition:opacity 1.4s ease;will-change:transform,opacity;pointer-events:none;z-index:1}
+.scene.on{opacity:1;pointer-events:auto;z-index:2}
 .scene img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
 .scene .kb{position:absolute;inset:0;transform-origin:50% 55%}
 .scene.on .kb{animation:kenburns 38s ease-in-out infinite alternate}
@@ -50,7 +50,7 @@ body.lowgfx .hot::after{animation:none;display:none}
 #storyDots{display:flex;gap:7px}
 #storyDots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);cursor:pointer}
 #storyDots i.on{background:var(--teal)}
-.caption{position:absolute;left:18px;top:14px;max-width:min(560px,80vw);background:var(--glass);padding:10px 14px;
+.caption{position:absolute;left:18px;top:14px;transition:left .3s,right .3s;max-width:min(560px,80vw);background:var(--glass);padding:10px 14px;
   border-left:4px solid var(--teal);border-radius:6px;font-size:18px;line-height:1.35;z-index:5}
 
 /* ---------- 3D ---------- */
@@ -135,3 +135,20 @@ body.lowgfx .hot::after{animation:none;display:none}
   padding:6px 9px;border-radius:6px;display:none;white-space:pre}
 .fps.on{display:block}
 #modelView .enterbtn{bottom:14px}
+.flowlbl .per{display:block;font-size:14px;margin-top:3px}
+.flowlbl .per b{font-size:15px;color:#9fd3ff}
+.fresh{height:10px;background:#e3ecf3;border-radius:6px;overflow:hidden;margin:8px 0}
+.fresh i{display:block;height:100%}
+.warnbox{background:#fff4e0;border-left:4px solid var(--amber);padding:7px 10px;border-radius:4px;font-size:13.5px;margin:6px 0;color:#5a3a00}
+.okbox{background:#e8f8ef;border-left:4px solid var(--green);padding:7px 10px;border-radius:4px;font-size:13.5px;margin:6px 0;color:#0f3d2a}
+/* inside picture overlays */
+.pcmtint{position:absolute;pointer-events:none;mix-blend-mode:multiply;transition:background-color 1.5s;border-radius:3px}
+.pcmlbl{position:absolute;transform:translate(-50%,-110%);background:rgba(8,24,40,.86);color:#fff;font-size:15px;padding:5px 10px;border-radius:7px;white-space:nowrap;pointer-events:none}
+.pcmlbl b{color:#9fd3ff}
+.fanglow{position:absolute;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);
+  background:conic-gradient(from 0deg,rgba(159,211,255,0) 0 20%,rgba(159,211,255,.55) 25%,rgba(159,211,255,0) 30% 53%,rgba(159,211,255,.55) 58%,rgba(159,211,255,0) 63% 86%,rgba(159,211,255,.55) 91%,rgba(159,211,255,0) 96%);
+  box-shadow:0 0 30px 8px rgba(120,190,255,.35);animation:fanspin 1s linear infinite}
+@keyframes fanspin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+body.lowgfx .fanglow{animation:none}
+.lbl3d.heat small{font-size:12.5px;font-weight:400}
+.caption.right{left:auto;right:18px}

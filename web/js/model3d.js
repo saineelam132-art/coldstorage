@@ -40,7 +40,7 @@ function texture(manifest, key, cName, repeat) {
 export class Model3D {
   constructor(host, cfg, sensors, manifest) {
     this.host = host; this.cfg = cfg; this.geo = cfg.geometry; this.manifest = manifest;
-    this.sensors = sensors.sensors.filter(s => s.scene !== 'inside');
+    this.sensors = sensors.sensors;
     this.picks = []; this.hoverObj = null; this.low = false; this.mode = 'auto';
     this.doorAngle = 0; this.state = null; this.clock = new THREE.Clock();
 
@@ -73,6 +73,7 @@ export class Model3D {
     this.building();
     this.canopy();
     this.equipment();
+    this.interior();
     this.sensorDots();
     this.dimensions();
     this.airflow();
@@ -273,6 +274,69 @@ export class Model3D {
     this.lamp.position.set(0, H - 0.05, L / 2 + 0.4);
   }
 
+  // ------------------------------------------------------------------ inside the room
+  interior() {
+    const [Wi, Hi, Li] = this.geo.inner, t = this.geo.wall_t;
+    const x0 = -Wi / 2, z0 = -Li / 2, y0 = t;          // inner floor level
+    const steel = new THREE.MeshStandardMaterial({ color: 0xc9d1d8, metalness: .8, roughness: .35 });
+    const wire = new THREE.MeshStandardMaterial({ color: 0xd9e0e6, metalness: .7, roughness: .4, transparent: true, opacity: .55 });
+    const add = (m, part) => { m.castShadow = false; if (part) { m.userData.part = part; this.picks.push(m); } this.scene.add(m); return m; };
+    // two wire racks along the west and east walls, 0.45 m deep, leaving a 1.1 m aisle and the door clear
+    const rackL = 1.35, rackD = 0.45, rz = z0 + 0.1 + rackL / 2;
+    const shelvesY = [0.18, 0.62, 1.06, 1.50];
+    for (const side of [-1, 1]) {
+      const rx = side * (Wi / 2 - rackD / 2 - 0.03);
+      for (const [dx, dz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.75, 6), steel);
+        post.position.set(rx + dx * (rackD / 2 - 0.02), y0 + 0.875, rz + dz * (rackL / 2 - 0.02)); add(post);
+      }
+      shelvesY.forEach(y => { const sh = new THREE.Mesh(new THREE.BoxGeometry(rackD, 0.015, rackL), wire); sh.position.set(rx, y0 + y, rz); add(sh); });
+    }
+    // produce crates on the shelves (greens and grapes, as in the A8 picture)
+    const crateTex = canvasTex(256, 256, TEX_DRAW.crate);
+    const crate = (x, y, z, col, top, part) => {
+      const c = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.24, 0.5), new THREE.MeshStandardMaterial({ map: crateTex, color: col }));
+      c.position.set(x, y0 + y + 0.13, z); add(c, part);
+      const veg = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: top }));
+      veg.scale.set(0.95, 0.35, 1.2); veg.position.set(x, y0 + y + 0.25, z); add(veg, part);
+    };
+    const W2 = Wi / 2 - rackD / 2 - 0.03;
+    [[-W2, 0.62, rz - 0.38, 0x8f6f92, 0x2f7a2a, 'crate_greens'], [-W2, 0.62, rz + 0.3, 0x5aa04f, 0x2f7a2a, 'crate_greens'],
+     [-W2, 0.18, rz - 0.38, 0x5670b8, 0x3b8a2e, 'crate_greens'], [-W2, 0.18, rz + 0.3, 0xa06a55, 0xb5d36a, 'crate_grapes'],
+     [W2, 0.62, rz - 0.38, 0x5aa04f, 0xb5d36a, 'crate_grapes'], [W2, 0.62, rz + 0.3, 0x8f6f92, 0xb5d36a, 'crate_grapes'],
+     [W2, 0.18, rz - 0.38, 0x5aa04f, 0xb5d36a, 'crate_grapes'], [W2, 1.06, rz - 0.38, 0x5aa04f, 0x2f7a2a, 'crate_greens']]
+      .forEach(a => crate(...a));
+    // milk cans under the back of the racks and a vaccine box on the top east shelf
+    const can = new THREE.MeshStandardMaterial({ color: 0xdfe4e8, metalness: .85, roughness: .25 });
+    for (const [x, z] of [[-0.3, z0 + 0.25], [0.3, z0 + 0.25]]) {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.5, 18), can); b.position.set(x, y0 + 0.25, z); add(b, 'milk');
+      const n = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, 0.12, 14), can); n.position.set(x, y0 + 0.56, z); add(n, 'milk');
+    }
+    const vx = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, 0.3), new THREE.MeshStandardMaterial({ color: 0xf4f7fa }));
+    vx.position.set(W2, y0 + 1.5 + 0.12, rz + 0.3); add(vx, 'vaccine');
+    const cross = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.12), new THREE.MeshBasicMaterial({ color: 0x2a78d6 }));
+    cross.rotation.y = -Math.PI / 2; cross.position.set(W2 - 0.151, y0 + 1.62, rz + 0.3); add(cross);
+    // wax (PCM) panels: two on the back wall, two on each side wall above the racks' back half
+    this.pcmMat = new THREE.MeshStandardMaterial({ color: 0x9cc9f5, metalness: .5, roughness: .45, transparent: true, opacity: .95 });
+    const panel = (w, h, x, y, z, ry) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.03), this.pcmMat); m.position.set(x, y0 + y, z); m.rotation.y = ry; add(m, 'pcm'); };
+    panel(0.55, 1.2, -0.55, 0.95, z0 + 0.035, 0); panel(0.55, 1.2, 0.55, 0.95, z0 + 0.035, 0);
+    panel(0.55, 0.35, x0 + 0.035, 1.92, z0 + 0.45, Math.PI / 2); panel(0.55, 0.35, -x0 - 0.035, 1.92, z0 + 0.45, -Math.PI / 2);
+    // copper charging tube between the back panels
+    const cop = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.55, 8), new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: .8, roughness: .3 }));
+    cop.rotation.z = Math.PI / 2; cop.position.set(0, y0 + 0.95, z0 + 0.05); add(cop);
+    // evaporator (unit cooler) high on the back wall, fan facing the door
+    const ev = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.36, 0.34), new THREE.MeshStandardMaterial({ color: 0xf2f4f6, roughness: .5 }));
+    ev.position.set(0, y0 + Hi - 0.3, z0 + 0.19); add(ev, 'evaporator');
+    const grill = new THREE.Mesh(new THREE.CircleGeometry(0.14, 28), new THREE.MeshStandardMaterial({ color: 0x5b6268, metalness: .5 }));
+    grill.position.set(0, y0 + Hi - 0.3, z0 + 0.362); add(grill, 'evaporator');
+    this.evapFan = new THREE.Group();
+    for (let i = 0; i < 4; i++) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.12, 0.01), new THREE.MeshStandardMaterial({ color: 0xcfd6dc }));
+      b.position.y = 0.06; const arm = new THREE.Group(); arm.add(b); arm.rotation.z = i * Math.PI / 2; this.evapFan.add(arm);
+    }
+    this.evapFan.position.set(0, y0 + Hi - 0.3, z0 + 0.37); this.scene.add(this.evapFan);
+  }
+
   sensorDots() {
     this.dotGroup = new THREE.Group();
     const glowTex = canvasTex(64, 64, (g, w) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -283,7 +347,8 @@ export class Model3D {
       const m = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, depthWrite: false, blending: THREE.AdditiveBlending, transparent: true }));
       halo.scale.set(0.22, 0.22, 1); m.add(halo);
-      m.position.set(...s.pos); m.userData.sensor = s.id; m.userData.halo = halo;
+      m.position.set(...s.pos); m.userData.sensor = s.id; m.userData.halo = halo; m.userData.scene = s.scene;
+      m.visible = s.scene !== 'inside';
       this.dotGroup.add(m); this.picks.push(m); this.dots.push(m);
     }
     this.scene.add(this.dotGroup);
@@ -350,7 +415,8 @@ export class Model3D {
     nl.computeLineDistances(); nl.visible = false; this.neutralLine = nl; this.scene.add(nl);
     // cool light inside the room so the walk-in is not dark
     this.inLight = new THREE.PointLight(0xdff0ff, 0, 6, 1.0);
-    this.inLight.position.set(0, H - 0.4, 0); this.scene.add(this.inLight);
+    this.inLight.position.set(0, H - 0.55, 0.35); this.scene.add(this.inLight);
+    this.inFill = new THREE.HemisphereLight(0xeaf4ff, 0x9fb3c4, 0); this.scene.add(this.inFill);
   }
 
   stepAirflow(dt, show) {
@@ -381,7 +447,8 @@ export class Model3D {
     }
     const el = this.heatLabel.element;
     el.style.display = '';
-    el.innerHTML = `Heat entering now: <b>${heat.toFixed(1)} kW</b> · curtain ${v.curtain ? 'ON' : 'OFF'}`;
+    el.innerHTML = `Heat entering now: <b>${heat.toFixed(1)} kW</b> · curtain ${v.curtain ? 'ON' : 'OFF'}<br>`
+      + `<small>this opening ${v.last_open_s.toFixed(0)} s → ${v.last_open_kJ.toFixed(0)} kJ (= ${v.last_open_wall_minutes.toFixed(0)} min of wall heat)</small>`;
     this.neutralLine.visible = true;
   }
 
@@ -406,22 +473,27 @@ export class Model3D {
     this.sensorsVisible(false);
     await this.tweenCamera(V(0.9, 1.65, L / 2 + 3.2), V(0, 1.2, L / 2), 2.5);   // walk up to the door
     await new Promise(r => setTimeout(r, 4200));                              // door opens, air flows
-    await this.tweenCamera(V(0, 1.55, L / 2 - 0.35), V(0, 1.3, -L / 2), 2.8);  // step inside
+    this.camera.fov = 62; this.camera.updateProjectionMatrix();              // wider view inside a small room
+    await this.tweenCamera(V(0, 1.6, L / 2 - 0.25), V(0, 1.15, -0.55), 2.8);  // step inside, look at the back wall
     this.inside = true;
+    this.insideSensors(true);
     this.forceDoor = false;                                                   // the worker closes the door behind us
-    this.controls.enabled = true; this.controls.minDistance = 0.2; this.controls.maxDistance = 1.2;
-    this.controls.target.set(0, 1.3, -0.2); this.busy = false;
+    this.controls.enabled = true; this.controls.minDistance = 0.4; this.controls.maxDistance = 1.75;
+    this.controls.enablePan = false; this.busy = false;
     this.onInside?.(true);
   }
 
-  sensorsVisible(on) { this.dots.forEach(d => (d.visible = on)); }
+  sensorsVisible(on) { this.dots.forEach(d => (d.visible = on && d.userData.scene !== 'inside')); }
+  insideSensors(on) { this.dots.forEach(d => { if (d.userData.scene !== 'outside') d.visible = on || d.userData.scene === 'both'; if (on && d.userData.scene === 'outside') d.visible = false; }); }
 
   async exit() {
     if (this.busy) return;
     this.busy = true; this.controls.enabled = false;
-    this.controls.minDistance = 3; this.controls.maxDistance = 30;
+    this.controls.minDistance = 3; this.controls.maxDistance = 30; this.controls.enablePan = true;
+    this.camera.fov = 45; this.camera.updateProjectionMatrix();
     await this.tweenCamera(new THREE.Vector3(4.6, 2.7, 6.0), new THREE.Vector3(0, 1.3, 0), 2.5);
     this.inside = false; this.forceDoor = false;
+    this.insideSensors(false);
     this.setDimsVisible(this.dimsOn !== false);
     this.sensorsVisible(true);
     this.controls.enabled = true; this.busy = false; this.lastInput = performance.now();
@@ -468,6 +540,9 @@ export class Model3D {
     this.pvLabel.element.textContent = `PV ${v.P_pv.toFixed(2)} kW`;
     this.pvMat.emissiveIntensity = Math.min(0.5, v.P_pv / 3);
     this.curtain.visible = !!v.curtain;
+    const fr = Math.max(0, Math.min(1, v.pcm_pct / 100));          // frosty blue when frozen, clear grey when melted
+    this.pcmMat.color.setRGB(0.86 - 0.25 * fr, 0.88 - 0.09 * fr, 0.90 + 0.06 * fr);
+    this.pcmMat.opacity = 0.5 + 0.45 * fr;
     this.sky(state, mode);
   }
 
@@ -515,12 +590,14 @@ export class Model3D {
       this.doorAngle += (target - this.doorAngle) * Math.min(1, dt * 3);
       this.doorPivot.rotation.y = -this.doorAngle;               // outward swing
       this.fan.rotation.x += dt * (v.comp_speed_pct / 100) * 25;
+      this.evapFan.rotation.z += dt * (0.25 + v.comp_speed_pct / 100) * 18;   // evaporator fan always runs; faster with compressor
       this.cups.rotation.y += dt * (v.wind || 0) * 2.2;
     }
     const pulse = 1 + 0.25 * Math.sin(performance.now() / 300);
     for (const d of this.dots) d.userData.halo.scale.setScalar(0.22 * pulse);
     this.stepAirflow(dt, this.doorAngle > 0.5);
-    this.inLight.intensity = (this.doorAngle > 0.2 || this.inside) ? 14 : 0;
+    this.inLight.intensity = (this.doorAngle > 0.2 || this.inside) ? 9 : 0;
+    this.inFill.intensity = this.inside ? 0.45 : 0;
     if (this.tween) this.tween();
     this.controls.autoRotate = !this.inside && !this.busy && performance.now() - this.lastInput > 8000;
     this.controls.update();

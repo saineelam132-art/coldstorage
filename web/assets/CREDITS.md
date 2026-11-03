@@ -6,11 +6,18 @@ They are illustrations, not photographs of the real system.
 
 | File | Kind | Used for |
 |---|---|---|
-| A13_corner_view | A | photographic scene |
+| A10_interior_evaporator | A | photographic scene |
+| A11_solar_canopy_closeup | A | photographic scene |
+| A12_sensor_mast | A | photographic scene |
+| A1_outside | A | photographic scene |
 | A2_front | A | photographic scene |
+| A3_exterior_side_condenser | A | photographic scene |
 | A4_night | A | photographic scene |
 | A5_monsoon | A | photographic scene |
 | A6_door_worker | A | photographic scene |
+| A7_doorway_from_inside | A | photographic scene |
+| A8_interior_wide | A | photographic scene |
+| A9_interior_pcm_wall | A | photographic scene |
 
 ## Software
 

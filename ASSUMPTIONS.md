@@ -187,3 +187,16 @@ All design values live in `config/design.json` — change them there.
     0.87 × 1.30 m, two rows) are our layout choices, matched to the Gemini pictures.
 59. The ethylene/gas sensor is **not simulated**: it shows "no sensor connected" until a real
     sensor sends data (Phase 4).
+
+## What two key numbers mean
+60. **Seasonal COP ≈ 3.0** = cooling delivered over the whole year ÷ compressor electricity
+    over the whole year. It is the same kind of COP as the **2.2 design value** (electrical COP,
+    including the 0.75 isentropic and 0.85 motor/inverter efficiencies). It is higher because
+    2.2 is calculated at 50 °C condensing (40 °C outside), while in the real 2025 year the
+    outside temperature, weighted by when the cooling is done, is about **28.8 °C**, so the
+    condenser runs near 39 °C. A cooler condenser needs less compressor work.
+61. **The energy-balance check (error ≈ 10⁻¹¹ %)** checks the model's **bookkeeping**: every kJ
+    the code adds or removes is accounted for (heat in = heat out + change in stored heat).
+    It does **not** show that the physics (U-value, door formula, wax behaviour) is right.
+    That is what the **small-box test in Phase 4** does: a real box, real sensors, and the
+    model's prediction compared with the measurement.

@@ -2,19 +2,23 @@
   "_about": "Which picture plays which role. Change a file name here if you rename a picture. Missing pictures are skipped automatically.",
   "story": [
     "A1_outside",
-    "A13_corner_view",
+    "A3_exterior_side_condenser",
     "A2_front",
     "A6_door_worker",
-    "A7_doorway_inside",
-    "A8_inside_room"
+    "A7_doorway_from_inside",
+    "A8_interior_wide",
+    "A9_interior_pcm_wall",
+    "A10_interior_evaporator"
   ],
   "story_captions": {
     "A1_outside": "The solar–PCM cold room on a farm near Visakhapatnam",
     "A2_front": "Front: door, sensors and the 17° solar canopy facing south",
     "A6_door_worker": "A farmer brings a crate – every door opening lets warm air in",
-    "A7_doorway_inside": "From inside: the strip curtain cuts the warm-air inflow by 85 %",
-    "A8_inside_room": "Inside: produce at 2–8 °C, wax (PCM) panels and the evaporator",
-    "A13_corner_view": "Back corner: R290 condensing unit, copper lines and the grid-backup (ATS) box"
+    "A3_exterior_side_condenser": "Side: R290 condensing unit, copper lines and the grid-backup (ATS) box",
+    "A7_doorway_from_inside": "From inside: warm air comes in at the top, cold air spills out at the bottom",
+    "A8_interior_wide": "Inside at 2–8 °C: produce, wax (PCM) panels and the evaporator",
+    "A9_interior_pcm_wall": "Wax (PCM) panels with the copper charging coil – the room's cold battery",
+    "A10_interior_evaporator": "Evaporator: R290 at −5 °C takes the heat out of the room air"
   },
   "modes": {
     "day": "A1_outside",
@@ -22,11 +26,11 @@
     "monsoon": "A5_monsoon"
   },
   "closeups": {
-    "pcm": "A9_pcm_wall",
-    "evaporator": "A10_evaporator",
-    "solar": "A11_solar",
+    "pcm": "A9_interior_pcm_wall",
+    "evaporator": "A10_interior_evaporator",
+    "solar": "A11_solar_canopy_closeup",
     "mast": "A12_sensor_mast",
-    "condenser": "A3_condenser"
+    "condenser": "A3_exterior_side_condenser"
   },
   "mode_captions": {
     "A4_night": "Night: no sun – the frozen wax (PCM) keeps the room at 2–8 °C",
@@ -35,26 +39,98 @@
   "enter_sequence": [
     "A2_front",
     "A6_door_worker",
-    "A7_doorway_inside",
-    "A8_inside_room"
+    "A7_doorway_from_inside",
+    "A8_interior_wide"
   ],
   "doorways": {
     "_about": "Where the door opening is in each picture, in % of the picture (x0..x1 left-right, y0 top, y1 bottom/floor). 'view' = which side the camera is on. Used to draw the warm/cold air flow. Edit by hand to fit a new picture.",
     "A6_door_worker": {
       "x0": 44.2,
-      "x1": 55.2,
+      "x1": 55.0,
       "y0": 38.0,
-      "y1": 84.5,
+      "y1": 84.3,
       "view": "outside",
       "label_y": 33.5
     },
-    "A7_doorway_inside": {
-      "x0": 39.8,
-      "x1": 59.8,
-      "y0": 21.0,
-      "y1": 90.5,
+    "A7_doorway_from_inside": {
+      "x0": 40.0,
+      "x1": 59.75,
+      "y0": 21.3,
+      "y1": 89.5,
       "view": "inside",
-      "label_y": 15.0
+      "label_y": 17.0
     }
-  }
+  },
+  "pcm_panels": {
+    "_about": "Wax (PCM) panels in each picture as rectangles in % (x0,y0,x1,y1). They are tinted blue = frozen, clear = melted, from the live wax battery %.",
+    "A8_interior_wide": [
+      [
+        30.4,
+        31.3,
+        40.8,
+        76.9
+      ],
+      [
+        59.2,
+        31.3,
+        69.6,
+        76.9
+      ],
+      [
+        21.8,
+        25.7,
+        27.3,
+        66.4
+      ],
+      [
+        72.9,
+        25.7,
+        78.3,
+        66.4
+      ]
+    ],
+    "A9_interior_pcm_wall": [
+      [
+        0.0,
+        0.0,
+        31.7,
+        87.0
+      ],
+      [
+        55.0,
+        19.4,
+        78.0,
+        73.9
+      ],
+      [
+        55.0,
+        73.5,
+        78.0,
+        100.0
+      ],
+      [
+        87.5,
+        29.9,
+        100.0,
+        71.6
+      ]
+    ]
+  },
+  "fans": {
+    "_about": "Evaporator fan centre and radius in % of picture width; it glows and pulses with the compressor speed.",
+    "A8_interior_wide": {
+      "x": 50.0,
+      "y": 15.7,
+      "r": 3.4
+    },
+    "A10_interior_evaporator": {
+      "x": 52.1,
+      "y": 40.3,
+      "r": 7.9
+    }
+  },
+  "caption_right": [
+    "A8_interior_wide",
+    "A9_interior_pcm_wall"
+  ]
 }

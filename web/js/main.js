@@ -27,6 +27,7 @@ async function boot() {
     model.showDims($('dims').checked);
     if (feed.state) model.update(feed.state, mode);
     model.fps = info => (renderInfo = info);
+    window.__model = model;   // for automated tests
     model.onInside = inside => { $('enter3d').textContent = inside ? '◂ Back outside' : 'Enter the cold room ▸'; };
     return model;
   }
