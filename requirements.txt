@@ -2,5 +2,10 @@
 CoolProp>=6.6
 numpy>=1.24
 pytest>=7.0
-# Phase 2+ (added later): pandas, matplotlib, requests
+# Phase 2 - digital twin and poster figures
+pandas>=2.0
+matplotlib>=3.7
 # Phase 3+ (added later): fastapi, uvicorn, qrcode
+#
+# Only needed to RE-DOWNLOAD weather through the AWS route (data/ already has 2025):
+#   pip install xarray zarr s3fs

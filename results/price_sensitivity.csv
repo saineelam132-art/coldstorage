@@ -1,0 +1,6 @@
+PCM price x,PV price x,pick,grid_hours,pct_days
+1.0,1.0,"172 kg PCM, 2.1 kWp, 1.5 kW",95,93.7
+0.5,1.0,"172 kg PCM, 2.1 kWp, 1.5 kW",95,93.7
+2.0,1.0,"140 kg PCM, 2.4 kWp, 1.5 kW",78,94.5
+1.0,0.75,"140 kg PCM, 2.4 kWp, 1.5 kW",78,94.5
+1.0,1.25,"172 kg PCM, 2.1 kWp, 1.5 kW",95,93.7

@@ -112,5 +112,62 @@
     "T_out_C": 35.0,
     "rh_out_pct": 65.0,
     "_note": "A typical hot, humid Visakhapatnam summer afternoon, used for the design-point report."
+  },
+
+  "door_schedule": {
+    "openings_per_hour": [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.0, 6.0, 6.0, 6.0, 2.0, 2.0,
+                          2.0, 2.0, 2.0, 2.0, 6.0, 6.0, 6.0, 1.0, 1.0, 1.0, 0.1, 0.1],
+    "seconds_min": 8,
+    "seconds_max": 22,
+    "_note": "Average door openings for each clock hour 0-23 (IST). Loading hours 7-10 am and 4-7 pm are busiest, a few in the day, almost none 10 pm-6 am. The simulator draws a random (Poisson) number around this average each hour; each opening lasts a random 8-22 s (mean 15 s). About 54 openings per day in total."
+  },
+
+  "simulation": {
+    "year": 2025,
+    "dt_s": 300,
+    "random_seed": 2026,
+    "stock_mass_kg": 600,
+    "structure_heat_capacity_kJ_K": 60,
+    "batch_arrival_hour": 8,
+    "batch_hours_in_room_before_merge": 24,
+    "pulldown_is_seven_eighths_cooling": true,
+    "inverter_min_capacity_frac": 0.30,
+    "pcm_charge_coil_R_m2K_W": 0.01,
+    "pcm_charge_stop_C": 3.0,
+    "grid_outage_windows": [],
+    "_note": "Stock = produce already in the room (3 days x 200 kg) at room temperature; it is thermal mass. A new 200 kg batch arrives at 8 am each day at 25 C and cools toward room air; the 4 h pull-down time is treated as the industry 'seven-eighths cooling time'. After 24 h the batch joins the stock and an equal old batch leaves at room temperature."
+  },
+
+  "controller": {
+    "mode": "normal",
+    "ats_pcm_pct": 15.0,
+    "protect_above_C": 7.5,
+    "forecast_sunny_kWh_m2": 5.0,
+    "forecast_ats_pcm_pct_if_sunny_tomorrow": 5.0,
+    "forecast_precool_target_C": 3.0,
+    "_note": "normal: room held at target on solar; surplus solar freezes the PCM; at night the PCM cools the room; grid (ATS) only when PCM < 15 % and no sun, or the room passes 7.5 C. forecast: uses TOMORROW's real weather from the file as a perfect forecast. If tomorrow is sunny (>= 5 kWh/m2 on the panel) the PCM may be used down to 5 % tonight, because the sun will recharge it. If tomorrow is cloudy/rainy, today's spare solar is used to pre-cool the room and stock to 3 C, to carry extra cold into the dull day."
+  },
+
+  "day_classes": {
+    "sunny_min_kWh_m2": 5.0,
+    "cloudy_min_kWh_m2": 2.5,
+    "_note": "Days are classed by plane-of-array (panel) irradiation: sunny >= 5.0, cloudy 2.5-5.0, rainy < 2.5 kWh/m2/day."
+  },
+
+  "seasons": {
+    "Winter (Jan-Feb)": [1, 2],
+    "Summer (Mar-May)": [3, 4, 5],
+    "Monsoon (Jun-Sep)": [6, 7, 8, 9],
+    "Post-monsoon (Oct-Dec)": [10, 11, 12],
+    "_note": "India Meteorological Department (IMD) seasons."
+  },
+
+  "design_choice": {
+    "max_grid_hours_per_year": 100,
+    "max_hours_outside_band": 0,
+    "price_pcm_INR_per_kg": 300,
+    "price_pv_INR_per_kWp": 40000,
+    "price_compressor_INR_per_kW": 20000,
+    "_note": "How the parametric study picks ONE design: (1) the room must never leave 2-8 C, (2) grid backup must be at most 100 h/yr (about 2 h a week), (3) of the designs that pass, choose the cheapest. PRICES ARE INDICATIVE GUESSES (encapsulated paraffin PCM, installed PV without battery, DC inverter compressor unit) - replace them with real quotations. The study also reports what happens if the PCM or PV price changes."
   }
 }

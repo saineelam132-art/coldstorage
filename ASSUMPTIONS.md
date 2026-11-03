@@ -13,11 +13,16 @@ All design values live in `config/design.json` — change them there.
    assumed to be in shade). Both would add a little load — a known limitation.
 
 ## Door
-3. Door 0.8 m × 1.8 m (as asked). **3 openings per hour, 15 s each** is our guess for a
-   normal hour; loading hours will be busier (Phase 2 makes this random). In LIVE mode the
-   reed switch gives the real open time, so this guess is not used.
-4. **D_f = 1.1** (as asked in the brief). Note: the ASHRAE Handbook often uses D_f ≈ 0.7–0.8
-   for doors with a large temperature difference; 1.1 is the more conservative choice.
+3. Door 0.8 m × 1.8 m (as asked). For the single **design-point** calculation we use
+   3 openings per hour, 15 s each. For the **year simulation** we use a farm-gate schedule
+   (`door_schedule` in design.json): 6 openings/h in the loading hours 7–10 am and 4–7 pm,
+   2/h in the middle of the day, 1/h around 6 am and 7–10 pm, 0.1/h at night (10 pm–6 am).
+   That is about 54 openings a day. Each opening lasts a random 8–22 s. In LIVE mode the
+   reed switch gives the real open time, so these guesses are not used.
+4. **D_f = 1.1 is kept on purpose (safe side).** The ASHRAE Refrigeration Handbook often
+   uses a doorway flow factor **D_f ≈ 0.7–0.8** for doors with a large temperature
+   difference (the cold air does not fully develop its flow before the door closes). With
+   0.8 instead of 1.1, the door load would be about 27 % smaller. We prefer to over-estimate.
 5. **A strip curtain is installed by default (E = 0.85).** Without a curtain, the door load
    at 35 °C is about 0.58 kW — about seven times more. The What-If screen can switch it off.
 6. Infiltration is split into **sensible** (cooling the air) and **latent** (removing its
@@ -87,3 +92,81 @@ All design values live in `config/design.json` — change them there.
 ## Physics check (sensor anti-tamper)
 31. A reading is flagged "Sensor suspicious" if it differs from the twin's prediction by more
     than **1.5 K for more than 15 minutes**. Short spikes (door opening) are ignored.
+
+## Weather (Phase 2)
+32. **Source:** NASA POWER hourly data for 2025. The POWER web API was blocked from the
+    computer that built this project, so the data was taken from **NASA's official copy of
+    the same POWER data on AWS Open Data** (`s3://nasa-power`): sunlight from CERES SYN1deg
+    (1° grid cell 17.5 N, 83.5 E), temperature/humidity/wind/pressure from MERRA-2
+    (0.5° × 0.625° cell 17.5 N, 83.125 E). The nearest grid cell is used, not interpolated.
+    `python -m twin.fetch_weather` tries the API first, then AWS, then prints the steps to
+    download it by hand. The file header records the source.
+33. NASA hourly values are averages over the hour that **starts** at the UTC time stamp
+    (checked: our sun-position code matches NASA's top-of-atmosphere sunlight with
+    correlation 0.9994 only with this convention). We convert to IST (UTC + 5:30).
+34. Converting to IST pushes the last 5 night hours of 31 Dec into 2026; we wrap those 5
+    hours to the start of 1 Jan 2025 so we have 365 full days.
+35. Inside the simulation the hourly values are interpolated linearly to 5-minute steps.
+36. **2025 was a slightly dull year:** 4.82 kWh/m²/day against a 2001–2024 average of
+    4.97–5.00 (May 2025 was 17 % below normal). The old report's 5.0–5.2 matches the long-term
+    average. We design on 2025 (the real recent year), which is slightly on the safe side.
+37. Sunny / cloudy / rainy days are classed by **daily irradiation on the tilted panel**:
+    ≥ 5.0, 2.5–5.0, < 2.5 kWh/m². "Rainy" here means "very dull" — we do not use rain data.
+    Seasons follow IMD: Winter Jan–Feb, Summer Mar–May, Monsoon Jun–Sep, Post-monsoon Oct–Dec.
+
+## Digital twin room model (Phase 2)
+38. The room is one "lumped" node: air (11 kJ/K) + inner structure, shelves and crates
+    (60 kJ/K, guessed) + **600 kg of produce already stored** (3 days × 200 kg, 2 340 kJ/K).
+    This stored produce is a big cold store by itself — it is why the room warms only
+    slowly in a power cut.
+39. A new 200 kg batch arrives **every day at 8 am at 25 °C**. It cools towards the room air
+    with a heat-transfer rate chosen so that it gets 7/8 of the way in 4 h (the industry
+    "seven-eighths cooling time"). After 24 h it joins the stock and an older batch of the
+    same size leaves at room temperature.
+40. The whole door load (sensible + latent) is added to the room as heat. In reality the
+    latent part partly shows up as higher humidity instead — so our room temperature is
+    slightly pessimistic.
+41. Respiration heat uses the default crop in design.json (tomato) for all stored produce.
+42. **Compressor:** inverter, can run from 30 % to 100 % of its maximum capacity. It runs on
+    solar only if the panels give enough power for 30 % capacity. Efficiency is the
+    Phase 1 R290 cycle with T_cond = T_amb + 10 K (seasonal COP ≈ 3, higher than the
+    50 °C design-point 2.2 because Vizag is usually cooler than 40 °C).
+43. **PCM charging:** the evaporator also has a coil inside the PCM slabs (−5 °C). Charging
+    rate is limited by the compressor and by heat flow through half the slab thickness
+    plus a coil resistance of 0.01 m²K/W. Charging stops when the wax is fully frozen and
+    has cooled to 3 °C (to avoid over-cooling the room).
+44. **PCM ↔ room air** heat flow uses the slab area (12 m²), the air-side coefficient
+    (15 W/m²K) and half the slab thickness. A heavier PCM makes thicker slabs, which
+    exchange heat a little more slowly.
+45. **Controller (normal):** on solar, hold the room at 5 °C, then put all spare cooling into
+    the PCM. With no sun the PCM cools the room on its own. The ATS switches to grid only when
+    there is no sun **and** (PCM < 15 % **or** room > 7.5 °C), and stays on grid until the sun
+    returns. On grid the compressor holds the room at 5 °C but does **not** recharge the PCM.
+46. **"Grid backup hours"** = time the ATS is switched to grid. **"Day fully on solar + PCM"**
+    = a day with no grid connection at all.
+47. The small loads (evaporator fan, controller) need power at night; we assume a small DC
+    battery charged by the panels supplies them. It is not modelled; their heat is counted.
+48. **"Solar wasted"** = solar electricity available but not used by the compressor (the wax
+    is already frozen and the room already cold). It could run other loads.
+49. The grid is assumed to be available whenever the ATS asks for it, except in the
+    power-cut study.
+50. **Random door openings use a fixed seed (2026)**, so every run gives exactly the same
+    numbers, and every case in the parametric study sees the same door openings.
+
+## Forecast-based charging
+51. Uses **tomorrow's real weather from the same file as a perfect forecast** (a real
+    forecast would be less accurate, so the real saving would be somewhat smaller).
+    If tomorrow is sunny (≥ 5 kWh/m² on the panel), the PCM may be run down to 5 % tonight
+    before the ATS switches to grid. If tomorrow is cloudy/rainy, today's spare sun
+    pre-cools the room and stock to 3 °C (still inside 2–8 °C).
+
+## Power-cut night
+52. The hottest evening of 2025 (9 June, 6 pm–6 am average) with the grid off from 6 pm to
+    6 am. "Light room" = only 200 kg of produce stored instead of 600 kg.
+
+## Choosing the recommended design
+53. Rule: never leave 2–8 °C, grid backup ≤ 100 h/yr (about 2 h a week), then the
+    **cheapest** using **indicative prices** in design.json: PCM ₹300/kg (encapsulated),
+    PV ₹40 000/kWp (installed, no battery), compressor ₹20 000/kW. **These prices are guesses
+    — replace them with real quotations.** `results/price_sensitivity.csv` shows the choice
+    if prices change.

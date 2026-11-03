@@ -1,0 +1,29 @@
+comparison,metric,unit,case_A,value_A,case_B,value_B,change_B_minus_A
+PCM,pct_days_full_solar_pcm,%,with PCM,93.699,without PCM,0.0,-93.699
+PCM,grid_hours,h/yr,with PCM,95.167,without PCM,5096.0,5000.833
+PCM,grid_kWh,kWh/yr,with PCM,14.692,without PCM,341.805,327.114
+PCM,hours_outside_2_8C,h/yr,with PCM,0.0,without PCM,0.0,0.0
+PCM,solar_wasted_kWh,kWh/yr,with PCM,1560.223,without PCM,1903.926,343.703
+PCM,T_room_max_C,C,with PCM,7.647,without PCM,7.569,-0.078
+PCM,compressor_kWh_e,kWh/yr,with PCM,1173.62,without PCM,1157.031,-16.589
+Door curtain,pct_days_full_solar_pcm,%,strip curtain,93.699,no curtain,41.37,-52.329
+Door curtain,grid_hours,h/yr,strip curtain,95.167,no curtain,2021.0,1925.833
+Door curtain,grid_kWh,kWh/yr,strip curtain,14.692,no curtain,225.587,210.895
+Door curtain,hours_outside_2_8C,h/yr,strip curtain,0.0,no curtain,28.25,28.25
+Door curtain,solar_wasted_kWh,kWh/yr,strip curtain,1560.223,no curtain,1145.542,-414.681
+Door curtain,T_room_max_C,C,strip curtain,7.647,no curtain,8.942,1.295
+Door curtain,compressor_kWh_e,kWh/yr,strip curtain,1173.62,no curtain,1799.196,625.576
+Charging,pct_days_full_solar_pcm,%,normal charging,93.699,forecast charging,95.342,1.644
+Charging,grid_hours,h/yr,normal charging,95.167,forecast charging,71.583,-23.583
+Charging,grid_kWh,kWh/yr,normal charging,14.692,forecast charging,16.27,1.578
+Charging,hours_outside_2_8C,h/yr,normal charging,0.0,forecast charging,0.0,0.0
+Charging,solar_wasted_kWh,kWh/yr,normal charging,1560.223,forecast charging,1542.995,-17.228
+Charging,T_room_max_C,C,normal charging,7.647,forecast charging,7.609,-0.039
+Charging,compressor_kWh_e,kWh/yr,normal charging,1173.62,forecast charging,1192.425,18.806
+Charging (current design),pct_days_full_solar_pcm,%,"current design, normal charging",88.219,"current design, forecast charging",91.507,3.288
+Charging (current design),grid_hours,h/yr,"current design, normal charging",313.25,"current design, forecast charging",207.0,-106.25
+Charging (current design),grid_kWh,kWh/yr,"current design, normal charging",31.184,"current design, forecast charging",32.797,1.613
+Charging (current design),hours_outside_2_8C,h/yr,"current design, normal charging",0.0,"current design, forecast charging",0.0,0.0
+Charging (current design),solar_wasted_kWh,kWh/yr,"current design, normal charging",1184.601,"current design, forecast charging",1168.007,-16.594
+Charging (current design),T_room_max_C,C,"current design, normal charging",7.569,"current design, forecast charging",7.62,0.051
+Charging (current design),compressor_kWh_e,kWh/yr,"current design, normal charging",1177.284,"current design, forecast charging",1195.492,18.208

@@ -1,0 +1,11 @@
+{
+  "pcm": {
+    "mass_kg": 172.0
+  },
+  "pv": {
+    "rated_kWp": 2.1
+  },
+  "refrigeration": {
+    "design_capacity_kW": 1.5
+  }
+}

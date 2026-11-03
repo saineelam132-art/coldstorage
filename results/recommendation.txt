@@ -1,0 +1,14 @@
+RECOMMENDED DESIGN  (rule in twin/studies.py -> recommend)
+  PCM 172 kg, PV 2.1 kWp, compressor 1.5 kW
+  93.7 % of days fully on solar + PCM, 95 grid hours/yr, 0.0 h outside 2-8 C, 1560 kWh/yr solar not used
+  Rule: never outside 2-8 C, grid <= 100 h/yr, then cheapest at Rs 300/kg PCM, Rs 40000/kWp PV (indicative prices).
+  7 of 72 designs pass the rule.
+CURRENT DESIGN (115 kg, 1.8 kWp, 1.5 kW): 88.2 % days, 313 grid h/yr
+
+WHAT IF PRICES CHANGE?
+ PCM price x  PV price x                        pick  grid_hours  pct_days
+         1.0        1.00 172 kg PCM, 2.1 kWp, 1.5 kW          95      93.7
+         0.5        1.00 172 kg PCM, 2.1 kWp, 1.5 kW          95      93.7
+         2.0        1.00 140 kg PCM, 2.4 kWp, 1.5 kW          78      94.5
+         1.0        0.75 140 kg PCM, 2.4 kWp, 1.5 kW          78      94.5
+         1.0        1.25 172 kg PCM, 2.1 kWp, 1.5 kW          95      93.7
