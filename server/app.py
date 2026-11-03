@@ -11,10 +11,11 @@ Serves the website in web/ and these JSON APIs:
 """
 from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from server.ledger_service import lan_ip
 from server.twin_state import TwinState, _strip, geometry
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -37,7 +38,9 @@ def _startup():
 @app.get("/api/config")
 def api_config():
     tw = twin()
-    return {"design": _strip(tw.cfg), "geometry": geometry(tw.cfg), "year_summary": {
+    return {"design": _strip(tw.cfg), "geometry": geometry(tw.cfg), "lan_ip": lan_ip(), "crops": {
+        k: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]]} for k, v in tw.crops.items()},
+        "year_summary": {
         k: v for k, v in tw.summary.items() if isinstance(v, (int, float, str, bool))}}
 
 
@@ -69,6 +72,59 @@ def api_slab():
 @app.get("/api/crop")
 def api_crop(key: str, t: float = 0.0, days: float = 2.0):
     return twin().crop(key, t, days)
+
+
+# ------------------------------------------------------------ batches + ledger
+@app.post("/api/batch")
+def api_new_batch(data: dict = Body(...)):
+    tw = twin()
+    t = float(data.get("t", 0))
+    tw.ledger.advance(t)
+    try:
+        b = tw.ledger.new_batch(t, str(data.get("farmer", "")), str(data.get("crop", "")), float(data.get("weight_kg", 0)))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return b
+
+
+@app.get("/api/batches")
+def api_batches():
+    return list(twin().ledger.batches.values())
+
+
+@app.get("/api/batch/{bid}")
+def api_batch(bid: str, t: float = -1):
+    tw = twin()
+    t = t if t >= 0 else (tw.ledger.last_hour or 0) * 3600.0
+    v = tw.ledger.batch_view(bid, t)
+    if v is None:
+        raise HTTPException(404, "batch not found")
+    return v
+
+
+@app.get("/api/ledger")
+def api_ledger(last: int = 40):
+    return twin().ledger.ledger(last)
+
+
+@app.post("/api/ledger/tamper")
+def api_tamper():
+    return twin().ledger.tamper() or {"error": "ledger too short"}
+
+
+@app.post("/api/ledger/reset")
+def api_reset():
+    twin().ledger.chain.reset_tamper()
+    return {"ok": True}
+
+
+@app.post("/api/fault")
+def api_fault(data: dict = Body(...)):
+    tw = twin()
+    if data.get("clear"):
+        tw.ledger.clear_fault()
+        return {"fault": None}
+    return {"fault": tw.ledger.inject_fault(float(data.get("t", 0)), float(data.get("offset", 3.0)))}
 
 
 @app.get("/api/demo_days")

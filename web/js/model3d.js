@@ -483,6 +483,50 @@ export class Model3D {
     this.onInside?.(true);
   }
 
+  // a simple worker carries a crate from the pad into the room (placeholder figure)
+  async walkIn(batchId) {
+    if (this.busy) return;
+    if (this.inside) await this.exit();
+    const L = this.geo.outer[2], t = this.geo.wall_t;
+    const g = new THREE.Group();
+    const cloth = new THREE.MeshStandardMaterial({ color: 0xe9e2d2 }), skin = new THREE.MeshStandardMaterial({ color: 0x6b4a32 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.75, 12), cloth); body.position.y = 1.15;
+    const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.11, 0.8, 10), new THREE.MeshStandardMaterial({ color: 0x3b3f46 })); legs.position.y = 0.4;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 10), skin); head.position.y = 1.65;
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 0.32), new THREE.MeshStandardMaterial({ color: 0x5aa04f }));
+    crate.position.set(0, 1.1, -0.25);
+    g.add(body, legs, head, crate); g.traverse(o => o.isMesh && (o.castShadow = true));
+    this.scene.add(g);
+    this.busy = true; this.controls.enabled = false;
+    await this.tweenCamera(new THREE.Vector3(2.6, 2.1, L / 2 + 3.6), new THREE.Vector3(0, 1.0, L / 2), 1.5);
+    const path = [[1.8, L / 2 + 2.4], [0, L / 2 + 0.6], [0, L / 2 - 0.4], [-0.45, -0.1]];
+    let p0 = [path[0][0], path[0][1]];
+    g.position.set(p0[0], 0, p0[1]);
+    for (let k = 1; k < path.length; k++) {
+      if (k === 2) { this.forceDoor = true; await new Promise(r => setTimeout(r, 900)); }
+      const p1 = path[k], dist = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), dur = dist / 1.1 * 1000, start = performance.now();
+      g.rotation.y = Math.atan2(p1[0] - p0[0], p1[1] - p0[1]) + Math.PI;
+      await new Promise(res => {
+        const step = () => {
+          const e = Math.min(1, (performance.now() - start) / dur);
+          g.position.set(p0[0] + (p1[0] - p0[0]) * e, Math.abs(Math.sin(e * dist * 6)) * 0.03, p0[1] + (p1[1] - p0[1]) * e);
+          e < 1 ? requestAnimationFrame(step) : res();
+        };
+        step();
+      });
+      p0 = p1;
+    }
+    this.scene.remove(g);
+    // the new crate on the top west shelf, clickable, with a label
+    const y0 = t, W2 = this.geo.inner[0] / 2 - 0.255;
+    const nc = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.24, 0.5), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0x7a4a00, emissiveIntensity: 0.35 }));
+    nc.position.set(-W2, y0 + 1.5 + 0.13, -0.55); nc.userData.part = 'batch:' + batchId; this.picks.push(nc); this.scene.add(nc);
+    const tag = document.createElement('div'); tag.className = 'lbl3d heat'; tag.textContent = `NEW · ${batchId}`;
+    const lab = new CSS2DObject(tag); lab.position.set(-W2, y0 + 1.9, -0.55); this.scene.add(lab);
+    this.newCrate?.forEach(o => this.scene.remove(o)); this.newCrate = [nc, lab];
+    this.forceDoor = false; this.busy = false; this.controls.enabled = true; this.lastInput = performance.now();
+  }
+
   sensorsVisible(on) { this.dots.forEach(d => (d.visible = on && d.userData.scene !== 'inside')); }
   insideSensors(on) { this.dots.forEach(d => { if (d.userData.scene !== 'outside') d.visible = on || d.userData.scene === 'both'; if (on && d.userData.scene === 'outside') d.visible = false; }); }
 

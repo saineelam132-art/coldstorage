@@ -131,6 +131,22 @@ export class PhotoView {
     if (user) clearTimeout(this.enterTimer);
     this.idx = Math.max(0, Math.min(this.story.length - 1, i)); this.show();
   }
+  goByName(name) { const i = this.story.indexOf(name); if (i >= 0) this.go(i, true); }
+
+  // a glowing "NEW" crate marker on the inside picture for a new batch
+  addBatchSpot(id, [x, y]) {
+    const el = this.layers.A8_interior_wide;
+    if (!el) return;
+    const hots = el.querySelector('.hots');
+    hots.querySelectorAll('.newtag').forEach(n => n.remove());
+    const b = document.createElement('button');
+    b.className = 'hot part'; b.style.left = `${x}%`; b.style.top = `${y}%`; b.setAttribute('aria-label', 'batch:' + id);
+    b.onclick = () => document.dispatchEvent(new CustomEvent('openbatch', { detail: id }));
+    const tag = document.createElement('div'); tag.className = 'newtag'; tag.style.left = `${x}%`; tag.style.top = `${y}%`;
+    tag.textContent = `NEW · ${id}`;
+    hots.append(b, tag);
+  }
+
   setMode(m) { if (m !== this.mode) { this.mode = m; this.show(); } }
   setLow(low) {
     this.low = low;

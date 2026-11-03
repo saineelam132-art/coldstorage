@@ -5,6 +5,12 @@ export async function getJSON(url) {
   return r.json();
 }
 
+export async function postJSON(url, data = {}) {
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  return r.json();
+}
+
 // Simulated clock: t = seconds from 1 Jan 2025 00:00 (IST). speed = simulated seconds per real second.
 export class SimClock {
   constructor(t0 = 0, speed = 720) { this.t = t0; this.speed = speed; this.playing = true; this.last = performance.now(); }

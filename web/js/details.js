@@ -24,6 +24,7 @@ export function sensorTip(id) {
   return `<b>${s.name}</b>${tagChip(s.tag)}<span class="v">${sensorValue(s, st)}</span><small>${s.location}</small>`;
 }
 export function partTip(id) {
+  if (id.startsWith('batch:')) return `<b>New batch ${id.slice(6)}</b><span class="v">click for batch card + QR</span>`;
   const p = PARTS[id], st = getState();
   if (!p || !st) return '';
   return `<b>${p.name}</b><span class="v">${p.headline(st.values)}</span><small>Click for details</small>`;
@@ -143,6 +144,7 @@ export const PARTS = {
 };
 
 export function openPart(id) {
+  if (id.startsWith('batch:')) { document.dispatchEvent(new CustomEvent('openbatch', { detail: id.slice(6) })); return; }
   const p = PARTS[id];
   if (!p) return;
   const el = openPanel(() => {

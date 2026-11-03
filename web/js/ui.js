@@ -85,9 +85,9 @@ export async function drawHistory(canvas, quantity, t, unit, label) {
 const $ = id => document.getElementById(id);
 export function updateDataBar(s, cfg) {
   const v = s.values, sp = cfg.design.setpoint;
-  const room = $('d_room');
-  room.textContent = fmt(v.T_room, '°C');
-  room.className = v.T_room < sp.band_low_C || v.T_room > sp.band_high_C ? 'bad' : (v.T_room > sp.band_high_C - 0.5 ? 'warn' : 'good');
+  const room = $('d_room'), Tr = v.T_room_sensor ?? v.T_room;          // what the room SENSOR shows
+  room.innerHTML = fmt(Tr, '°C') + (v.fault_active ? `<small class="flag">${v.sensor_suspicious ? '⚠ SENSOR SUSPICIOUS' : 'sensor ≠ physics…'}</small>` : '');
+  room.className = v.sensor_suspicious ? 'bad' : (Tr < sp.band_low_C || Tr > sp.band_high_C ? 'bad' : (Tr > sp.band_high_C - 0.5 ? 'warn' : 'good'));
   $('d_out').textContent = fmt(v.T_out, '°C');
   $('d_load').textContent = fmt(v.Q_total, 'kW');
   $('d_pv').textContent = fmt(v.P_pv, 'kW');

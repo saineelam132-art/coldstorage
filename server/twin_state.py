@@ -76,6 +76,8 @@ class TwinState:
         idx = np.where(self.cols["door_s"] > 0, np.arange(self.n), -1)
         self.last_open = np.maximum.accumulate(idx)
         self._slab = None
+        from server.ledger_service import LedgerService
+        self.ledger = LedgerService(self)
 
     # --------------------------------------------------------------- helpers
     def index(self, t):
@@ -121,6 +123,8 @@ class TwinState:
         open_now = door_s > 0 and into_step < door_s
 
         T_out, RH_out, T_room = float(c["T_out"][i]), float(c["RH_out"][i]), float(c["T_room"][i])
+        self.ledger.advance(t)
+        phys = self.ledger.physics(t)
         rh_in = cfg["setpoint"]["rh_room_pct"]
         door = self.doorway(T_out, RH_out, T_room, rh_in, curtain, open_now)
 
@@ -143,7 +147,10 @@ class TwinState:
         wall_kW = max(Q["Q_wall"], 1e-6)
         values = {
             "T_out": T_out, "RH_out": RH_out, "wind": float(c["wind"][i]), "poa": float(c["poa"][i]),
-            "T_room": T_room, "RH_room": rh_in, "T_pcm": float(c["T_pcm"][i]),
+            "T_room": T_room, "RH_room": rh_in,
+            "T_room_sensor": T_room + self.ledger.sensor_offset(t),
+            "physics_residual_K": phys["residual_K"], "physics_status": phys["status"],
+            "sensor_suspicious": phys["suspicious"], "fault_active": self.ledger.fault is not None, "T_pcm": float(c["T_pcm"][i]),
             "pcm_pct": float(c["pcm_pct"][i]), "T_batch": None if math.isnan(T_b) else T_b,
             "P_pv": float(c["P_pv"][i]), "P_comp": float(c["P_comp"][i]),
             "P_solar_used": float(c["P_solar_used"][i]), "P_grid": float(c["P_grid"][i]),
@@ -169,6 +176,8 @@ class TwinState:
             "sun": {"elevation_deg": elev, "azimuth_deg": az},
             "day_class": str(self.day_class[day]), "day_poa_kWh_m2": float(self.day_poa[day]),
             "values": values,
+            "ledger": {"length": len(self.ledger.chain.blocks), "valid": self.ledger.chain.verify()["valid"],
+                       "batches": len(self.ledger.batches)},
         }
 
     # ------------------------------------------------------------ detail data

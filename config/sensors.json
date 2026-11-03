@@ -69,7 +69,7 @@
      "location": "Back wall, 0.3 m high", "pos": [-0.5, 0.4, -0.95],
      "used_in": "Room air temperature (the twin has ONE air node, so all room sensors show the same value in SIMULATED mode)"},
     {"id": "t_mid", "name": "Room T / RH – middle", "scene": "inside", "tag": "M",
-     "quantity": "T_room", "unit": "°C", "type": "SHT31 T/RH",
+     "quantity": "T_room_sensor", "unit": "°C", "type": "SHT31 T/RH",
      "range": "-40 to +125 °C, 0–100 %RH", "accuracy": "±0.3 °C, ±2 %RH", "protocol": "I²C → ESP32",
      "location": "Back wall, 1.2 m high", "pos": [0.0, 1.3, -0.95],
      "used_in": "Main control sensor; Q_wall, door enthalpy h_in, shelf life"},

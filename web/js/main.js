@@ -3,6 +3,8 @@ import { getJSON, SimClock, StateFeed } from './api.js';
 import { updateDataBar, refreshPanel, hideTip } from './ui.js';
 import { initDetails } from './details.js';
 import { PhotoView } from './photo.js';
+import { LedgerUI } from './ledgerui.js';
+import { Batches } from './batch.js';
 
 const $ = id => document.getElementById(id);
 
@@ -31,6 +33,9 @@ async function boot() {
     model.onInside = inside => { $('enter3d').textContent = inside ? '◂ Back outside' : 'Enter the cold room ▸'; };
     return model;
   }
+
+  const ledgerUI = new LedgerUI(clock, feed);
+  new Batches({ cfg, manifest, photo, getModel: () => model, clock, feed, ledgerUI });
 
   // ---- controls
   $('viewSeg').onclick = async e => {

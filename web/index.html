@@ -25,6 +25,10 @@
     <button data-mode="night" title="Jump the simulated clock to 10 pm">Night</button>
     <button data-mode="monsoon" title="Jump to the rainiest day of 2025, 11 am">Monsoon</button>
   </div>
+  <div class="acts">
+    <button id="newBatchBtn" class="act">+ New batch</button>
+    <button id="ledgerBtn" class="act">⛓ Ledger <span id="ledgerBadge" class="lb ok">✓</span></button>
+  </div>
   <div class="tools">
     <label class="chk" title="Strip curtain in the doorway (E = 0.85)"><input type="checkbox" id="curtain" checked> Curtain</label>
     <label class="chk only-model" title="Engineering dimension lines"><input type="checkbox" id="dims" checked> Dimensions</label>
@@ -78,8 +82,39 @@
   </div>
 </footer>
 <div id="fps" class="fps" aria-hidden="true"></div>
+
+<!-- new batch form -->
+<div id="batchModal" class="modal" role="dialog" aria-label="New farmer batch">
+  <form id="batchForm" class="card">
+    <h2>New farmer batch</h2>
+    <label>Farmer name <input name="farmer" required maxlength="40" value="Suresh (Kothavalasa)"></label>
+    <label>Crop <select name="crop" id="cropSel"></select></label>
+    <label>Weight (kg) <input name="weight_kg" type="number" min="1" max="500" value="80" required></label>
+    <div class="note">Entry time = the simulated clock now. A batch ID and QR code are created, and the batch is sealed in the ledger every hour.</div>
+    <div class="row"><button type="button" id="batchCancel" class="ghost">Cancel</button><button type="submit">Create batch ▸</button></div>
+  </form>
+</div>
+<!-- batch card with QR -->
+<div id="cardModal" class="modal" role="dialog" aria-label="Batch card"><div class="card wide" id="cardBody"></div></div>
+<!-- ledger drawer -->
+<section id="ledgerDrawer" class="drawer" aria-label="Ledger">
+  <header>
+    <b>⛓ Hash-chain ledger</b><span id="ledgerStatus"></span>
+    <div class="btns">
+      <button id="tamperBtn" class="warnbtn" title="Change one old reading without re-sealing">Tamper with an old reading</button>
+      <button id="resetBtn" class="ghost">Undo tamper</button>
+      <button id="faultBtn" class="warnbtn" title="Room sensor reads 3 °C too high">Inject sensor fault (+3 °C)</button>
+      <button id="ledgerClose" class="ghost" aria-label="Close">×</button>
+    </div>
+  </header>
+  <div id="ledgerExplain" class="explain"></div>
+  <div id="chain" class="chain"></div>
+  <div class="note">Demo uses a local hash-chain (SHA-256). Real deployment: permissioned ledger (Hyperledger Fabric) with farmer, transporter and buyer nodes.</div>
+</section>
+<div id="walker" class="walker" aria-hidden="true"></div>
 <div id="simnote" class="simnote">Simulated – digital twin using real Visakhapatnam weather (NASA POWER 2025)</div>
 
+<script src="vendor/qrcode/qrcode.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

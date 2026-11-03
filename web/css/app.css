@@ -152,3 +152,59 @@ body.lowgfx .hot::after{animation:none;display:none}
 body.lowgfx .fanglow{animation:none}
 .lbl3d.heat small{font-size:12.5px;font-weight:400}
 .caption.right{left:auto;right:18px}
+
+/* ---------- step 4: batches + ledger ---------- */
+.acts{display:flex;gap:8px}
+.act{background:#0e2740;color:#e8f1f8;border:1px solid #23496d;border-radius:8px;padding:6px 11px;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.act:hover{border-color:var(--teal)}
+.lb{display:inline-block;min-width:18px;text-align:center;border-radius:9px;font-size:11px;font-weight:700;padding:1px 5px;margin-left:3px}
+.lb.ok{background:#14532d;color:#86efac}.lb.bad{background:#7f1d1d;color:#fecaca}
+.modal{position:fixed;inset:0;background:rgba(2,10,20,.6);display:none;align-items:center;justify-content:center;z-index:50}
+.modal.on{display:flex}
+.card{background:#f7fbfe;color:var(--ink);border-radius:14px;padding:20px 22px;width:min(400px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:92vh;overflow:auto}
+.card.wide{width:min(640px,96vw)}
+.card h2{margin:0 0 12px}
+.card label{display:block;font-size:13.5px;color:var(--ink2);margin:8px 0}
+.card input,.card select{display:block;width:100%;margin-top:4px;padding:8px;border:1px solid #c5d6e3;border-radius:7px;font-size:15px}
+.card .row{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.card button{background:var(--teal);color:#032;border:0;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer}
+.card button.ghost,.drawer .ghost{background:#e3ecf3;color:var(--ink)}
+.card .note{font-size:12.5px;color:var(--muted)}
+.bc{display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:start}
+.bc .id{font:700 24px Consolas,monospace;color:var(--blue)}
+.bc canvas,.bc img{width:200px;height:200px;image-rendering:pixelated;background:#fff;border-radius:8px}
+.bc .url{font:12px Consolas,monospace;word-break:break-all;color:var(--ink2)}
+@media (max-width:560px){.bc{grid-template-columns:1fr}}
+.drawer{position:fixed;left:0;right:0;bottom:64px;height:300px;background:#f2f7fb;color:var(--ink);z-index:24;
+  transform:translateY(110%);transition:transform .35s;box-shadow:0 -10px 40px rgba(0,0,0,.4);padding:10px 14px;display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.drawer header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.drawer header b{font-size:17px}
+.drawer .btns{margin-left:auto;display:flex;gap:6px}
+.drawer button{border:0;border-radius:7px;padding:6px 11px;font-size:13px;cursor:pointer}
+.warnbtn{background:#fee2e2;color:#7f1d1d}
+#ledgerStatus.ok{color:#15803d;font-weight:700}#ledgerStatus.bad{color:#b91c1c;font-weight:700}
+.explain{font-size:14px;margin:6px 0;min-height:20px}
+.explain.bad{color:#b91c1c;font-weight:600}
+.chain{flex:1;display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:6px 2px}
+.blk{flex:0 0 178px;background:#fff;border:2px solid #86efac;border-radius:10px;padding:7px 9px;font-size:12px;position:relative}
+.blk.bad{border-color:#ef4444;background:#fff5f5}
+.blk.flag{box-shadow:inset 0 0 0 2px #f59e0b}
+.blk.newb{animation:blkin .9s ease}
+@keyframes blkin{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+.blk h4{margin:0 0 3px;font-size:13px}
+.blk .h{font:11px Consolas,monospace;color:#64748b}
+.blk .st{font-weight:700;font-size:11.5px}
+.blk .st.ok{color:#15803d}.blk .st.bad{color:#b91c1c}
+.blk .ids{color:var(--blue);font-weight:600;word-break:break-all}
+.link{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:20px}
+.link.bad{color:#ef4444}
+.drawer .note{font-size:12px;color:var(--muted)}
+/* worker walking in (placeholder until the B cut-out arrives) */
+.walker{position:fixed;z-index:15;pointer-events:none;display:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+.walker.on{display:block}
+.walker img,.walker svg{width:100%;height:100%;display:block}
+.newtag{position:absolute;transform:translate(-50%,-140%);background:#f59e0b;color:#231400;font-weight:800;font-size:13px;
+  padding:3px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{transform:translate(-50%,-150%)}}
+.databar .cell small.flag{display:block;font-size:11px;color:#fca5a5;font-weight:700}

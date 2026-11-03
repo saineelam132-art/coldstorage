@@ -99,3 +99,40 @@ def test_live_cycle_uses_outside_temperature(tw):
     t = 86 * 86400 + 12 * 3600
     c = tw.cycle(t)["cycle"]
     assert c["T_cond_C"] == pytest.approx(tw.state(t)["values"]["T_out"] + 10, abs=0.02)
+
+
+def test_ledger_rolls_forward_and_batches_are_recorded():
+    tw = TwinState()
+    t0 = 86 * 86400 + 7 * 3600
+    tw.state(t0)                                    # seeds 3 batches + 24 blocks
+    n0 = len(tw.ledger.chain.blocks)
+    assert n0 == 24 and len(tw.ledger.batches) == 3
+    b = tw.ledger.new_batch(t0, "Test farmer", "pomegranate", 50)
+    tw.state(t0 + 3 * 3600 + 10)
+    assert len(tw.ledger.chain.blocks) == n0 + 3
+    assert b["id"] in tw.ledger.chain.blocks[-1]["batch_ids"]
+    v = tw.ledger.batch_view(b["id"], t0 + 3 * 3600)
+    assert v["chain_valid"] and len(v["blocks"]) == 3
+
+
+def test_sensor_fault_is_flagged_and_sealed_in_the_ledger():
+    tw = TwinState()
+    t0 = 86 * 86400 + 7 * 3600
+    tw.state(t0)
+    tw.ledger.inject_fault(t0, 3.0)
+    s = tw.state(t0 + 600)["values"]                # 10 min: not yet suspicious
+    assert s["T_room_sensor"] == pytest.approx(s["T_room"] + 3.0) and not s["sensor_suspicious"]
+    s = tw.state(t0 + 1200)["values"]               # 20 min > 15 min persistence
+    assert s["sensor_suspicious"]
+    tw.state(t0 + 2 * 3600)
+    assert tw.ledger.chain.blocks[-1]["flag"] == "Sensor suspicious – check"
+
+
+def test_tamper_demo_breaks_chain_and_reset_fixes_it():
+    tw = TwinState()
+    tw.state(86 * 86400 + 7 * 3600)
+    r = tw.ledger.tamper()
+    lg = tw.ledger.ledger()
+    assert not lg["valid"] and lg["first_bad"] == r["index"]
+    tw.ledger.chain.reset_tamper()
+    assert tw.ledger.ledger()["valid"]
