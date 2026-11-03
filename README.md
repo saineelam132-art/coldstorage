@@ -4,7 +4,7 @@ Demo website and digital twin for the REFCOLD India 2026 poster
 **"Blockchain-Secured Hybrid Solar–PCM Cold Storage with Natural-Refrigerant (R290) VCR System"**
 (GVPCE, Visakhapatnam).
 
-> Status: **Phase 1 (engine) and Phase 2 (digital twin) done. Phase 3 (website) step 1 of 6 done.**
+> Status: **Phase 1 (engine) and Phase 2 (digital twin) done. Phase 3 (website) steps 1–2 of 6 done.**
 
 ## Install (Windows, once)
 
@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Phase 1 – check the engine
 
-Run all tests (should say `72 passed`):
+Run all tests (should say `73 passed`):
 
 ```
 python -m pytest -q
@@ -94,6 +94,9 @@ address printed in the window.
   picture and the numbers always agree.
 - **Curtain** switches the strip curtain: the door heat changes at once.
 - **Low graphics** for a slow laptop.
+- **Enter the cold room ▸** (photo and 3D): walks to the door, the door opens, and the
+  warm-air-in / cold-air-out flow is drawn with the live "Heat entering now" value.
+- Press **F** to show the performance readout (frames per second). Below 30 fps, tick Low graphics.
 
 New pictures: put them in `web/assets/images/` (names starting A, B or C) and run
 

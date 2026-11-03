@@ -6,7 +6,7 @@ They are illustrations, not photographs of the real system.
 
 | File | Kind | Used for |
 |---|---|---|
-| A1_outside | A | photographic scene |
+| A13_corner_view | A | photographic scene |
 | A2_front | A | photographic scene |
 | A4_night | A | photographic scene |
 | A5_monsoon | A | photographic scene |

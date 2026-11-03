@@ -2,22 +2,49 @@
 // and glowing hotspots placed at % positions from assets/hotspots.json.
 import { showTip, hideTip } from './ui.js';
 import { sensorTip, partTip, openSensor, openPart } from './details.js';
+import { Airflow } from './airflow.js';
 
 export class PhotoView {
   constructor(root, manifest, scenes, hotspots) {
     this.root = root; this.manifest = manifest; this.scenes = scenes; this.hot = hotspots;
     this.story = scenes.story.filter(n => manifest.A[n]);          // skip missing pictures
-    this.idx = 0; this.mode = 'day'; this.layers = {}; this.low = false;
+    this.idx = 0; this.mode = 'day'; this.layers = {}; this.low = false; this.flows = {};
     this.caption = document.getElementById('caption');
     this.dots = document.getElementById('storyDots');
     this.build();
     addEventListener('resize', () => this.layout());
     root.addEventListener('mousemove', e => this.parallax(e));
     root.addEventListener('wheel', e => this.onWheel(e), { passive: true });
-    document.getElementById('prevScene').onclick = () => this.go(this.idx - 1);
-    document.getElementById('nextScene').onclick = () => this.go(this.idx + 1);
+    document.getElementById('prevScene').onclick = () => this.go(this.idx - 1, true);
+    document.getElementById('nextScene').onclick = () => this.go(this.idx + 1, true);
+    this.enterBtn = document.createElement('button');
+    this.enterBtn.className = 'enterbtn';
+    this.enterBtn.textContent = 'Enter the cold room ▸';
+    this.enterBtn.onclick = () => this.enter();
+    root.parentElement.appendChild(this.enterBtn);
     this.layout();
     this.show();
+    let last = performance.now();
+    const loop = now => {
+      const dt = Math.min(0.1, (now - last) / 1000); last = now;
+      const f = this.flows[this.current()];
+      if (f && this.root.parentElement.classList.contains('on')) f.step(dt);
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+
+  // Walk in: front -> door opens with a worker -> doorway from inside -> inside the room.
+  enter() {
+    const seq = (this.scenes.enter_sequence || []).filter(n => this.story.includes(n));
+    clearTimeout(this.enterTimer);
+    let k = 0;
+    const next = () => {
+      if (k >= seq.length) return;
+      this.go(this.story.indexOf(seq[k++]));
+      this.enterTimer = setTimeout(next, k === 1 ? 2200 : 5200);
+    };
+    next();
   }
 
   build() {
@@ -43,11 +70,13 @@ export class PhotoView {
         b.dataset.sensor = h.sensor || '';
         hots.appendChild(b);
       });
+      const door = this.scenes.doorways?.[name];
+      if (door) this.flows[name] = new Airflow(el.querySelector('.kb'), door);
       this.root.appendChild(el);
       this.layers[name] = el;
     }
     this.dots.innerHTML = this.story.map((_, i) => `<i data-i="${i}"></i>`).join('');
-    this.dots.onclick = e => { if (e.target.dataset.i) this.go(+e.target.dataset.i); };
+    this.dots.onclick = e => { if (e.target.dataset.i) this.go(+e.target.dataset.i, true); };
   }
 
   // Size each picture to COVER the screen while keeping its shape, so % hotspots stay on target.
@@ -61,6 +90,7 @@ export class PhotoView {
       el.style.width = `${w}px`; el.style.height = `${h}px`;
       el.style.marginLeft = `${-w / 2}px`; el.style.marginTop = `${-h / 2}px`;
     }
+    Object.values(this.flows).forEach(f => f.resize());
   }
 
   parallax(e) {
@@ -73,10 +103,13 @@ export class PhotoView {
     const now = performance.now();
     if (now - (this.lastWheel || 0) < 900 || Math.abs(e.deltaY) < 20) return;
     this.lastWheel = now;
-    this.go(this.idx + (e.deltaY > 0 ? 1 : -1));
+    this.go(this.idx + (e.deltaY > 0 ? 1 : -1), true);
   }
 
-  go(i) { this.idx = Math.max(0, Math.min(this.story.length - 1, i)); this.show(); }
+  go(i, user = false) {
+    if (user) clearTimeout(this.enterTimer);
+    this.idx = Math.max(0, Math.min(this.story.length - 1, i)); this.show();
+  }
   setMode(m) { if (m !== this.mode) { this.mode = m; this.show(); } }
   setLow(low) {
     this.low = low;
@@ -85,6 +118,7 @@ export class PhotoView {
       el.querySelector('img').src = low ? a.small : a.src;
       if (low) el.style.transform = '';
     }
+    Object.values(this.flows).forEach(f => { f.low = low; f.resize(); });
   }
 
   current() {
@@ -104,11 +138,15 @@ export class PhotoView {
     const cap = this.scenes.mode_captions?.[name] || this.scenes.story_captions[this.story[this.idx]] || '';
     this.caption.textContent = cap;
     this.caption.style.display = cap ? '' : 'none';
+    for (const [n, f] of Object.entries(this.flows)) f.show(n === name);
+    const outside = name === this.story[0] || name === this.scenes.modes.night || name === this.scenes.modes.monsoon || name === 'A13_corner_view' || name === 'A2_front';
+    this.enterBtn.style.display = outside ? '' : 'none';
   }
 
   // colour the dots of out-of-range values
   update(state) {
     const v = state.values;
+    Object.values(this.flows).forEach(f => f.set(v, v.curtain));
     this.root.querySelectorAll('.hot[data-sensor="door_switch"]').forEach(b => b.classList.toggle('warn', !!v.door_open));
   }
 }

@@ -69,3 +69,12 @@ def test_sun_is_south_at_noon_in_winter():
     assert 45 < elev < 55 and 170 < az < 190
     _, az_morning = pv.sun_angles(15, 8.0, 17.68, 83.2, 5.5)
     assert 100 < az_morning < 140                   # morning sun in the south-east
+
+
+def test_doorway_settings_are_inside_the_pictures():
+    sc = json.loads((ROOT / "web/assets/scenes.json").read_text(encoding="utf-8"))
+    for name, d in sc["doorways"].items():
+        if name.startswith("_"):
+            continue
+        assert 0 <= d["x0"] < d["x1"] <= 100 and 0 <= d["label_y"] < d["y0"] < d["y1"] <= 100
+        assert d["view"] in ("outside", "inside")

@@ -59,6 +59,8 @@ body.lowgfx .hot::after{animation:none;display:none}
 .hint{position:absolute;left:16px;bottom:12px;color:#cfe0ee;font-size:13px;background:var(--glass);padding:5px 10px;border-radius:6px}
 .lbl3d{color:#fff;font-size:12.5px;background:rgba(8,24,40,.8);padding:2px 7px;border-radius:5px;white-space:nowrap;pointer-events:none}
 .lbl3d.dim{background:rgba(255,255,255,.92);color:#0d1b2a;font-weight:600;font-size:12px}
+.lbl3d.heat{background:rgba(255,122,61,.95);color:#fff;font-size:15px;padding:4px 10px}
+.lbl3d.heat b{font-size:17px}
 .lbl3d.pv{background:rgba(245,158,11,.92);color:#231400;font-weight:700;font-size:13px}
 
 /* ---------- tooltip + panel ---------- */
@@ -116,3 +118,20 @@ body.lowgfx .hot::after{animation:none;display:none}
   .topbar{height:auto;min-height:52px}
   .caption{font-size:15px}
 }
+
+/* ---------- door air flow overlay ---------- */
+.airflow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.flowlbl{position:absolute;transform:translate(-50%,-100%);background:rgba(8,24,40,.86);color:#fff;padding:7px 12px;
+  border-radius:8px;font-size:17px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,140,80,.6)}
+.flowlbl b{color:#ffb38a;font-size:20px}
+.flowlbl small{display:block;font-size:12px;color:#bcd3e6;margin-top:2px}
+.neutral{position:absolute;border-top:2px dashed rgba(255,255,255,.75);pointer-events:none}
+.neutral span{position:absolute;right:-4px;top:-20px;transform:translateX(100%);font-size:12px;color:#fff;
+  background:rgba(8,24,40,.7);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.enterbtn{position:absolute;right:18px;bottom:16px;z-index:6;background:var(--teal);color:#032;border:0;border-radius:30px;
+  padding:12px 20px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 6px 24px rgba(20,184,166,.45)}
+.enterbtn:hover{filter:brightness(1.08)}
+.fps{position:fixed;top:58px;right:10px;z-index:40;background:rgba(0,0,0,.78);color:#7ff0b0;font:13px/1.35 Consolas,monospace;
+  padding:6px 9px;border-radius:6px;display:none;white-space:pre}
+.fps.on{display:block}
+#modelView .enterbtn{bottom:14px}

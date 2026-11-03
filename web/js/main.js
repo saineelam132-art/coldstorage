@@ -26,6 +26,8 @@ async function boot() {
     model.setLow($('lowgfx').checked);
     model.showDims($('dims').checked);
     if (feed.state) model.update(feed.state, mode);
+    model.fps = info => (renderInfo = info);
+    model.onInside = inside => { $('enter3d').textContent = inside ? '◂ Back outside' : 'Enter the cold room ▸'; };
     return model;
   }
 
@@ -56,6 +58,30 @@ async function boot() {
     [...$('modeSeg').children].forEach(x => x.classList.toggle('on', x === b));
     setTimeout(() => [...$('modeSeg').children].forEach(x => x.classList.toggle('on', x.dataset.mode === 'auto')), 1500);
   }
+  $('enter3d').onclick = async () => { const m = await ensureModel(); m.inside ? m.exit() : m.enter(); };
+
+  // ---- performance readout: press F to show / hide (for testing on the stall laptop)
+  let renderInfo = null, frames = 0, fpsT = performance.now();
+  addEventListener('keydown', e => {
+    if ((e.key === 'f' || e.key === 'F') && !['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) $('fps').classList.toggle('on');
+  });
+  const fpsLoop = now => {
+    frames++;
+    if (now - fpsT >= 1000) {
+      if ($('fps').classList.contains('on')) {
+        const fps = frames * 1000 / (now - fpsT);
+        let txt = `${fps.toFixed(0)} fps  (${view === 'model' ? '3D model' : 'photo view'})`;
+        txt += fps >= 30 ? '  OK' : fps >= 20 ? '  try Low graphics' : '  SLOW – use Low graphics';
+        if (view === 'model' && renderInfo) txt += `\n${renderInfo.calls} draw calls · ${(renderInfo.triangles / 1000).toFixed(0)}k triangles`;
+        txt += `\nscreen ${innerWidth}×${innerHeight} @${devicePixelRatio}x · low gfx ${$('lowgfx').checked ? 'ON' : 'off'}`;
+        $('fps').textContent = txt;
+      }
+      frames = 0; fpsT = now;
+    }
+    requestAnimationFrame(fpsLoop);
+  };
+  requestAnimationFrame(fpsLoop);
+
   $('curtain').onchange = e => { feed.curtain = e.target.checked; feed.poll(); };
   $('dims').onchange = e => model?.showDims(e.target.checked);
   $('lowgfx').onchange = e => {
@@ -68,8 +94,8 @@ async function boot() {
   $('jump').onchange = e => { if (e.target.value) { clock.jump(+e.target.value); feed.poll(); } e.target.value = ''; };
   addEventListener('keydown', e => {
     if (view !== 'photo' || e.target.tagName === 'SELECT') return;
-    if (e.key === 'ArrowRight') photo.go(photo.idx + 1);
-    if (e.key === 'ArrowLeft') photo.go(photo.idx - 1);
+    if (e.key === 'ArrowRight') photo.go(photo.idx + 1, true);
+    if (e.key === 'ArrowLeft') photo.go(photo.idx - 1, true);
   });
 
   function autoMode(s) {

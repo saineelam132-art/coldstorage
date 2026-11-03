@@ -1,8 +1,8 @@
 {
   "A": {
-    "A1_outside": {
-      "src": "assets/img/A1_outside.webp",
-      "small": "assets/img/A1_outside_960.webp",
+    "A13_corner_view": {
+      "src": "assets/img/A13_corner_view.webp",
+      "small": "assets/img/A13_corner_view_960.webp",
       "w": 1920,
       "h": 1071
     },

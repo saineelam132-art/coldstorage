@@ -2,6 +2,7 @@
   "_about": "Which picture plays which role. Change a file name here if you rename a picture. Missing pictures are skipped automatically.",
   "story": [
     "A1_outside",
+    "A13_corner_view",
     "A2_front",
     "A6_door_worker",
     "A7_doorway_inside",
@@ -12,7 +13,8 @@
     "A2_front": "Front: door, sensors and the 17° solar canopy facing south",
     "A6_door_worker": "A farmer brings a crate – every door opening lets warm air in",
     "A7_doorway_inside": "From inside: the strip curtain cuts the warm-air inflow by 85 %",
-    "A8_inside_room": "Inside: produce at 2–8 °C, wax (PCM) panels and the evaporator"
+    "A8_inside_room": "Inside: produce at 2–8 °C, wax (PCM) panels and the evaporator",
+    "A13_corner_view": "Back corner: R290 condensing unit, copper lines and the grid-backup (ATS) box"
   },
   "modes": {
     "day": "A1_outside",
@@ -29,5 +31,30 @@
   "mode_captions": {
     "A4_night": "Night: no sun – the frozen wax (PCM) keeps the room at 2–8 °C",
     "A5_monsoon": "Monsoon day: little sun – the wax carries the load, the grid (ATS) is the last backup"
+  },
+  "enter_sequence": [
+    "A2_front",
+    "A6_door_worker",
+    "A7_doorway_inside",
+    "A8_inside_room"
+  ],
+  "doorways": {
+    "_about": "Where the door opening is in each picture, in % of the picture (x0..x1 left-right, y0 top, y1 bottom/floor). 'view' = which side the camera is on. Used to draw the warm/cold air flow. Edit by hand to fit a new picture.",
+    "A6_door_worker": {
+      "x0": 44.2,
+      "x1": 55.2,
+      "y0": 38.0,
+      "y1": 84.5,
+      "view": "outside",
+      "label_y": 33.5
+    },
+    "A7_doorway_inside": {
+      "x0": 39.8,
+      "x1": 59.8,
+      "y0": 21.0,
+      "y1": 90.5,
+      "view": "inside",
+      "label_y": 15.0
+    }
   }
 }

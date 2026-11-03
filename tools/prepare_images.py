@@ -81,6 +81,13 @@ def main():
         else:
             continue
         print(f"  {kind}  {f.name}")
+    # remove converted files whose original was renamed or deleted
+    keep = {Path(v["src"]).stem for k in man for v in man[k].values()} | {Path(v["small"]).stem for v in man["A"].values()}
+    for d in (OUT_A, OUT_B, OUT_C):
+        for f in d.glob("*.webp"):
+            if f.stem not in keep:
+                f.unlink()
+                print(f"  removed old {f.name}")
     (ROOT / "web" / "assets" / "manifest.json").write_text(json.dumps(man, indent=2))
     lines = ["# Image credits", "",
              "All pictures in `web/assets/images/` (and the converted copies in `img/`, `cutouts/`, `tex/`)",

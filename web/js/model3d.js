@@ -75,6 +75,7 @@ export class Model3D {
     this.equipment();
     this.sensorDots();
     this.dimensions();
+    this.airflow();
     this.pointer();
     addEventListener('resize', () => this.resize());
     this.resize();
@@ -159,7 +160,11 @@ export class Model3D {
     handle.position.set(dw - 0.12, 1.0, 0.09);
     this.doorPivot.add(leaf, handle);
     this.scene.add(this.doorPivot);
-    const fr = frame.clone(); fr.position.set(0, t + dh / 2, L / 2 + 0.001); this.scene.add(fr);
+    // door frame: four thin dark bars around the opening (not a solid panel!)
+    const fm = new THREE.MeshStandardMaterial({ color: 0x2a2f33, metalness: .4, roughness: .5 });
+    for (const [w, h, x, y] of [[0.04, dh + 0.04, -dw / 2 - 0.02, t + dh / 2], [0.04, dh + 0.04, dw / 2 + 0.02, t + dh / 2], [dw + 0.08, 0.04, 0, t + dh + 0.02]]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.03), fm); bar.position.set(x, y, L / 2 + 0.012); this.scene.add(bar);
+    }
     leaf.userData.part = 'door'; this.picks.push(leaf);
     // strip curtain (visible when the door is open)
     this.curtain = new THREE.Group();
@@ -277,7 +282,7 @@ export class Model3D {
     for (const s of this.sensors) {
       const m = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, depthWrite: false, blending: THREE.AdditiveBlending, transparent: true }));
-      halo.scale.set(0.32, 0.32, 1); m.add(halo);
+      halo.scale.set(0.22, 0.22, 1); m.add(halo);
       m.position.set(...s.pos); m.userData.sensor = s.id; m.userData.halo = halo;
       this.dotGroup.add(m); this.picks.push(m); this.dots.push(m);
     }
@@ -314,6 +319,113 @@ export class Model3D {
     const arrow = new THREE.ArrowHelper(V(0, 0, 1), V(2.6, 0.02, 1.8), 0.9, 0xffd166, 0.22, 0.14);
     this.dimGroup.add(arrow); label('S (sun side)', V(2.6, 0.05, 2.85));
     this.scene.add(this.dimGroup);
+  }
+
+  // ------------------------------------------------------------------ door air exchange (3D)
+  // Same physics as the photo overlay: warm air IN through the top half of the doorway,
+  // cold air OUT along the floor; particles per second ∝ heat entering, speed ∝ air speed.
+  airflow() {
+    const [, H, L] = this.geo.outer, t = this.geo.wall_t, [dw, dh] = this.geo.door;
+    this.door = { z: L / 2, y0: t, dw, dh };
+    this.flowMax = 700;
+    const dot = canvasTex(32, 32, (g, w) => { const r = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+      r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.6, 'rgba(255,255,255,.6)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = r; g.fillRect(0, 0, w, w); });
+    const mk = color => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.flowMax * 3), 3));
+      g.setDrawRange(0, 0);
+      const m = new THREE.PointsMaterial({ color, map: dot, size: 0.06, transparent: true, opacity: 0.9, depthWrite: false, sizeAttenuation: true });
+      const pts = new THREE.Points(g, m); pts.frustumCulled = false; this.scene.add(pts);
+      return { pts, list: [] };
+    };
+    this.warm = mk(0xff7a3d); this.cold = mk(0x50aaff);
+    this.flowAcc = 0;
+    const lbl = document.createElement('div'); lbl.className = 'lbl3d heat'; lbl.style.display = 'none';
+    this.heatLabel = new CSS2DObject(lbl);
+    this.heatLabel.position.set(0, t + dh + 0.45, L / 2 + 0.3);
+    this.scene.add(this.heatLabel);
+    const nl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-dw / 2, t + dh / 2, L / 2 + 0.02), new THREE.Vector3(dw / 2, t + dh / 2, L / 2 + 0.02)]),
+      new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.06, gapSize: 0.04 }));
+    nl.computeLineDistances(); nl.visible = false; this.neutralLine = nl; this.scene.add(nl);
+    // cool light inside the room so the walk-in is not dark
+    this.inLight = new THREE.PointLight(0xdff0ff, 0, 6, 1.0);
+    this.inLight.position.set(0, H - 0.4, 0); this.scene.add(this.inLight);
+  }
+
+  stepAirflow(dt, show) {
+    const v = this.state?.values;
+    const d = this.door;
+    const flows = [this.warm, this.cold];
+    if (!show || !v) { flows.forEach(f => { f.list.length = 0; f.pts.geometry.setDrawRange(0, 0); }); this.heatLabel.element.style.display = 'none'; this.neutralLine.visible = false; return; }
+    const heat = v.heat_if_open_kW, speed = 0.45 + 1.6 * v.v_door_if_open;      // m/s for the drawing
+    this.flowAcc += Math.min(this.low ? 140 : 320, 9 * heat) * dt;
+    while (this.flowAcc >= 1) {
+      this.flowAcc -= 1;
+      const warm = Math.random() < 0.5, f = warm ? this.warm : this.cold;
+      if (f.list.length >= this.flowMax) continue;
+      const x = (Math.random() - 0.5) * d.dw;
+      const y = warm ? d.y0 + d.dh * (0.55 + Math.random() * 0.42) : d.y0 + d.dh * (0.03 + Math.random() * 0.42);
+      f.list.push(warm ? { x, y, z: d.z + 1.2, vz: -speed, vy: 0.06 } : { x, y, z: d.z - 0.9, vz: speed, vy: -0.25 });
+    }
+    for (const f of flows) {
+      const arr = f.pts.geometry.attributes.position.array;
+      f.list = f.list.filter(q => {
+        q.z += q.vz * dt; q.y = Math.max(0.03, q.y + q.vy * dt * (q.vz > 0 ? (q.z > d.z ? 1 : 0.2) : 0.3));
+        if (q.vz > 0) q.x *= 1 + 0.35 * dt * (q.z > d.z ? 1 : 0);                 // cold air spreads out on the pad
+        return q.vz < 0 ? q.z > d.z - 1.3 : q.z < d.z + 1.6;
+      });
+      f.list.forEach((q, i) => { arr[i * 3] = q.x; arr[i * 3 + 1] = q.y; arr[i * 3 + 2] = q.z; });
+      f.pts.geometry.attributes.position.needsUpdate = true;
+      f.pts.geometry.setDrawRange(0, f.list.length);
+    }
+    const el = this.heatLabel.element;
+    el.style.display = '';
+    el.innerHTML = `Heat entering now: <b>${heat.toFixed(1)} kW</b> · curtain ${v.curtain ? 'ON' : 'OFF'}`;
+    this.neutralLine.visible = true;
+  }
+
+  // ------------------------------------------------------------------ walk-in camera
+  tweenCamera(pos, target, secs) {
+    return new Promise(res => {
+      const p0 = this.camera.position.clone(), t0 = this.controls.target.clone(), start = performance.now();
+      this.tween = () => {
+        const k = Math.min(1, (performance.now() - start) / (secs * 1000));
+        const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        this.camera.position.lerpVectors(p0, pos, e); this.controls.target.lerpVectors(t0, target, e);
+        if (k >= 1) { this.tween = null; res(); }
+      };
+    });
+  }
+
+  async enter() {
+    if (this.busy) return;
+    this.busy = true; this.forceDoor = true; this.lastInput = performance.now() + 1e9; this.controls.enabled = false;
+    const L = this.geo.outer[2], V = (x, y, z) => new THREE.Vector3(x, y, z);
+    this.setDimsVisible(false);
+    this.sensorsVisible(false);
+    await this.tweenCamera(V(0.9, 1.65, L / 2 + 3.2), V(0, 1.2, L / 2), 2.5);   // walk up to the door
+    await new Promise(r => setTimeout(r, 4200));                              // door opens, air flows
+    await this.tweenCamera(V(0, 1.55, L / 2 - 0.35), V(0, 1.3, -L / 2), 2.8);  // step inside
+    this.inside = true;
+    this.forceDoor = false;                                                   // the worker closes the door behind us
+    this.controls.enabled = true; this.controls.minDistance = 0.2; this.controls.maxDistance = 1.2;
+    this.controls.target.set(0, 1.3, -0.2); this.busy = false;
+    this.onInside?.(true);
+  }
+
+  sensorsVisible(on) { this.dots.forEach(d => (d.visible = on)); }
+
+  async exit() {
+    if (this.busy) return;
+    this.busy = true; this.controls.enabled = false;
+    this.controls.minDistance = 3; this.controls.maxDistance = 30;
+    await this.tweenCamera(new THREE.Vector3(4.6, 2.7, 6.0), new THREE.Vector3(0, 1.3, 0), 2.5);
+    this.inside = false; this.forceDoor = false;
+    this.setDimsVisible(this.dimsOn !== false);
+    this.sensorsVisible(true);
+    this.controls.enabled = true; this.busy = false; this.lastInput = performance.now();
+    this.onInside?.(false);
   }
 
   // ------------------------------------------------------------------ interaction
@@ -384,7 +496,8 @@ export class Model3D {
     this.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
     this.resize();
   }
-  showDims(on) { this.dimGroup.visible = on; }
+  setDimsVisible(on) { this.dimGroup.traverse(o => (o.visible = on)); }
+  showDims(on) { this.dimsOn = on; if (!this.inside && !this.busy) this.setDimsVisible(on); }
   setActive(on) { this.active = on; if (on) this.resize(); }
 
   resize() {
@@ -398,16 +511,20 @@ export class Model3D {
     const dt = Math.min(0.1, this.clock.getDelta());
     const v = this.state?.values;
     if (v) {
-      const target = (v.door_angle || 0) * D2R;
+      const target = (this.forceDoor ? 95 : (v.door_angle || 0)) * D2R;
       this.doorAngle += (target - this.doorAngle) * Math.min(1, dt * 3);
       this.doorPivot.rotation.y = -this.doorAngle;               // outward swing
       this.fan.rotation.x += dt * (v.comp_speed_pct / 100) * 25;
       this.cups.rotation.y += dt * (v.wind || 0) * 2.2;
     }
     const pulse = 1 + 0.25 * Math.sin(performance.now() / 300);
-    for (const d of this.dots) d.userData.halo.scale.setScalar(0.32 * pulse);
-    this.controls.autoRotate = performance.now() - this.lastInput > 8000;
+    for (const d of this.dots) d.userData.halo.scale.setScalar(0.22 * pulse);
+    this.stepAirflow(dt, this.doorAngle > 0.5);
+    this.inLight.intensity = (this.doorAngle > 0.2 || this.inside) ? 14 : 0;
+    if (this.tween) this.tween();
+    this.controls.autoRotate = !this.inside && !this.busy && performance.now() - this.lastInput > 8000;
     this.controls.update();
+    this.fps?.(this.renderer.info.render);
     this.renderer.render(this.scene, this.camera);
     this.labels.render(this.scene, this.camera);
   }
