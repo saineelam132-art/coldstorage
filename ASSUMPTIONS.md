@@ -170,3 +170,20 @@ All design values live in `config/design.json` — change them there.
     PV ₹40 000/kWp (installed, no battery), compressor ₹20 000/kW. **These prices are guesses
     — replace them with real quotations.** `results/price_sensitivity.csv` shows the choice
     if prices change.
+
+## Website (Phase 3)
+54. In SIMULATED mode the twin has **one room-air node**, so the low / middle / high / evaporator
+    room sensors all show the same value. Real sensors will differ (warm air rises).
+55. The door is drawn **90° open** whenever the twin's door switch says "open". The twin knows
+    how many seconds the door was open in each 5 minutes; the website puts that opening at the
+    start of the 5 minutes.
+56. **Doorway air speed and stack pressure** are **calculated (tag C)** from the same ASHRAE
+    formula as the door load: V̇ = 0.221·A·√(gH(1 − ρ_out/ρ_in))·F_m in each direction,
+    mean speed ≈ V̇/(A/2), reduced by (1 − E) with the curtain; Δp at the top of the door
+    = (ρ_in − ρ_out)·g·H/2. When the real sensors are fitted they become measurements (M).
+57. "Heat entering now" = the door load **while the door is open** (q·D_f·(1 − E)); the year
+    simulation uses its time average (× D_t).
+58. Sensor positions in `config/sensors.json` and the module size for drawing (8 × 225 W,
+    0.87 × 1.30 m, two rows) are our layout choices, matched to the Gemini pictures.
+59. The ethylene/gas sensor is **not simulated**: it shows "no sensor connected" until a real
+    sensor sends data (Phase 4).

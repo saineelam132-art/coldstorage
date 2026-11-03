@@ -69,7 +69,13 @@
     "performance_ratio": 0.79,
     "temp_coeff_per_C": -0.004,
     "NOCT_C": 45.0,
-    "ground_albedo": 0.20
+    "ground_albedo": 0.20,
+    "module_W": 225,
+    "module_width_m": 0.87,
+    "module_length_m": 1.30,
+    "module_rows": 2,
+    "canopy_low_edge_above_roof_m": 0.30,
+    "_module_note": "Array = modules of 225 W (0.87 x 1.30 m, about 20 % efficient) in 2 rows up the slope. 1.8 kWp -> 8 modules (as in the pictures); 2.1 kWp -> 10. Used only to draw the 3D model."
   },
 
   "pcm": {

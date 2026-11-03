@@ -191,7 +191,8 @@ def simulate(cfg, weather, crop=None, door_secs=None, record=True, outages=None)
                prod_in=0.0, prod_out=0.0, pv=0.0, pv_used=0.0, grid=0.0, comp_e=0.0, aux=0.0)
 
     if record:
-        rec = {k: np.empty(n) for k in ("T_out", "T_room", "T_pcm", "pcm_pct", "T_batch", "Q_wall", "Q_door",
+        wind_s = to_steps(weather, weather["wind"], dt)
+        rec = {k: np.empty(n) for k in ("RH_out", "wind", "poa", "P_comp", "cop", "pcm_h", "T_out", "T_room", "T_pcm", "pcm_pct", "T_batch", "Q_wall", "Q_door",
                                         "Q_int", "Q_resp", "Q_batch", "Q_coil_air", "Q_coil_pcm",
                                         "P_pv", "P_solar_used", "P_grid", "door_s")}
         rec_grid = np.zeros(n, dtype=bool)
@@ -303,6 +304,12 @@ def simulate(cfg, weather, crop=None, door_secs=None, record=True, outages=None)
 
         if record:
             rec["T_out"][i] = T_out
+            rec["RH_out"][i] = RH_out_s[i]
+            rec["wind"][i] = wind_s[i]
+            rec["poa"][i] = poa_s[i]
+            rec["P_comp"][i] = P_comp
+            rec["cop"][i] = cop
+            rec["pcm_h"][i] = h
             rec["T_room"][i] = T_r
             rec["T_pcm"][i] = T_pcm_of(h) if has_pcm else np.nan
             rec["pcm_pct"][i] = 100.0 * (1.0 - min(1.0, max(0.0, h / L))) if has_pcm else 0.0

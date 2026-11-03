@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ColdTrust Twin</title>
+<link rel="stylesheet" href="css/app.css">
+<script type="importmap">
+{ "imports": {
+    "three": "./vendor/three/three.module.min.js",
+    "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">❄</span><div><b>ColdTrust Twin</b><small>Solar–PCM cold room · R290 · Visakhapatnam</small></div></div>
+  <div class="seg" id="viewSeg" role="tablist" aria-label="View">
+    <button data-view="photo" class="on">Photo view</button>
+    <button data-view="model">3D model</button>
+  </div>
+  <div class="seg" id="modeSeg" aria-label="Scene mode">
+    <button data-mode="auto" class="on" title="The picture follows the simulated time and weather">Auto</button>
+    <button data-mode="day" title="Jump the simulated clock to 11 am">Day</button>
+    <button data-mode="night" title="Jump the simulated clock to 10 pm">Night</button>
+    <button data-mode="monsoon" title="Jump to the rainiest day of 2025, 11 am">Monsoon</button>
+  </div>
+  <div class="tools">
+    <label class="chk" title="Strip curtain in the doorway (E = 0.85)"><input type="checkbox" id="curtain" checked> Curtain</label>
+    <label class="chk only-model" title="Engineering dimension lines"><input type="checkbox" id="dims" checked> Dimensions</label>
+    <label class="chk" title="For slow laptops"><input type="checkbox" id="lowgfx"> Low graphics</label>
+  </div>
+</header>
+
+<main id="stage">
+  <section id="photoView" class="view on" aria-label="Photo view">
+    <div id="photoFrame"></div>
+    <div class="storynav">
+      <button id="prevScene" aria-label="Previous scene">‹</button>
+      <div id="storyDots"></div>
+      <button id="nextScene" aria-label="Next scene">›</button>
+    </div>
+    <div id="caption" class="caption"></div>
+  </section>
+  <section id="modelView" class="view" aria-label="3D model">
+    <div id="three"></div>
+    <div class="hint">Drag to turn · scroll to zoom · click a glowing dot</div>
+  </section>
+
+  <aside id="panel" class="panel" aria-live="polite">
+    <button class="close" id="panelClose" aria-label="Close">×</button>
+    <div id="panelBody"></div>
+  </aside>
+  <div id="tip" class="tip" role="tooltip"></div>
+</main>
+
+<footer class="databar">
+  <div class="cell"><span>Room</span><b id="d_room">–</b></div>
+  <div class="cell"><span>Outside</span><b id="d_out">–</b></div>
+  <div class="cell"><span>Heat load</span><b id="d_load">–</b></div>
+  <div class="cell"><span>Solar PV</span><b id="d_pv">–</b></div>
+  <div class="cell"><span>Wax battery</span><b id="d_pcm">–</b></div>
+  <div class="cell"><span>Backup left</span><b id="d_backup">–</b></div>
+  <div class="cell"><span>Power from</span><b id="d_src">–</b></div>
+  <div class="clock">
+    <div class="sim">
+      <button id="play" aria-label="Play / pause">❚❚</button>
+      <select id="speed" title="Simulation speed">
+        <option value="1">1× real time</option>
+        <option value="60">1 min / s</option>
+        <option value="720" selected>1 day / 2 min</option>
+        <option value="2880">1 day / 30 s</option>
+      </select>
+      <select id="jump" title="Jump to an interesting day"><option value="">Jump to…</option></select>
+    </div>
+    <div class="row"><b id="d_clock">–</b><span id="d_src_label"><span class="badge sim">SIMULATED</span></span></div>
+  </div>
+</footer>
+<div id="simnote" class="simnote">Simulated – digital twin using real Visakhapatnam weather (NASA POWER 2025)</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

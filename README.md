@@ -4,7 +4,7 @@ Demo website and digital twin for the REFCOLD India 2026 poster
 **"Blockchain-Secured Hybrid Solar–PCM Cold Storage with Natural-Refrigerant (R290) VCR System"**
 (GVPCE, Visakhapatnam).
 
-> Status: **Phase 1 (engine) and Phase 2 (digital twin) done.** Phases 3–5 (website, ESP32, polish) come next.
+> Status: **Phase 1 (engine) and Phase 2 (digital twin) done. Phase 3 (website) step 1 of 6 done.**
 
 ## Install (Windows, once)
 
@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Phase 1 – check the engine
 
-Run all tests (should say `65 passed`):
+Run all tests (should say `72 passed`):
 
 ```
 python -m pytest -q
@@ -74,6 +74,35 @@ Main outputs in `results/`:
 | `power_cut_night.csv` | Room temperature on the power-cut night |
 | `year_*_hourly.csv` | Hour-by-hour simulation results for the year |
 
+## Phase 3 – the website (step 1: outside view)
+
+Start it (no internet needed):
+
+```
+python run.py
+```
+
+The browser opens http://localhost:8000. Phones on the laptop's Wi-Fi hotspot can open the
+address printed in the window.
+
+- **Photo view** – the Gemini pictures with slow zoom, glowing dots on every sensor and part.
+  Hover a dot for the live value, click it for the detail panel. ‹ › or the arrow keys move
+  through the story; scrolling also works.
+- **3D model** – true size from `config/design.json`; drag to turn, scroll to zoom,
+  dimension lines on/off, click any glowing dot.
+- **Day / Night / Monsoon** move the simulated clock to a real matching moment, so the
+  picture and the numbers always agree.
+- **Curtain** switches the strip curtain: the door heat changes at once.
+- **Low graphics** for a slow laptop.
+
+New pictures: put them in `web/assets/images/` (names starting A, B or C) and run
+
+```
+python tools/prepare_images.py
+```
+
+Hotspot positions (in % of each picture) are in `web/assets/hotspots.json` – edit by hand.
+
 ## Where things are
 
 | Folder / file | What it holds |
@@ -84,5 +113,9 @@ Main outputs in `results/`:
 | `twin/` | Digital twin: weather download/loading, year simulation, studies. |
 | `data/weather_vizag_2025.csv` | Real NASA POWER hourly weather for 2025. |
 | `results/`, `figures/` | Outputs of `twin.run_all` and `make_poster_figures.py`. |
-| `tests/` | Automatic checks of the engine and the twin. |
+| `server/` | FastAPI server: runs the twin and answers "what does every sensor read now". |
+| `web/` | The website (HTML/CSS/JS, three.js saved locally in `web/vendor/`). |
+| `config/sensors.json` | Every sensor: type, range, accuracy, location, protocol, position, M/C/E/AI tag. |
+| `tools/prepare_images.py` | Compresses pictures, removes white backgrounds, makes textures. |
+| `tests/` | Automatic checks of the engine, the twin and the server. |
 | `ASSUMPTIONS.md` | Every assumption, in plain English. |

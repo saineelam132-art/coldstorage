@@ -5,7 +5,10 @@ pytest>=7.0
 # Phase 2 - digital twin and poster figures
 pandas>=2.0
 matplotlib>=3.7
-# Phase 3+ (added later): fastapi, uvicorn, qrcode
+# Phase 3 - website server
+fastapi>=0.110
+uvicorn>=0.27
+# Optional, only to cut out B-pictures once:  pip install rembg onnxruntime
 #
 # Only needed to RE-DOWNLOAD weather through the AWS route (data/ already has 2025):
 #   pip install xarray zarr s3fs

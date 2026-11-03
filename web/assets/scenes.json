@@ -1,0 +1,33 @@
+{
+  "_about": "Which picture plays which role. Change a file name here if you rename a picture. Missing pictures are skipped automatically.",
+  "story": [
+    "A1_outside",
+    "A2_front",
+    "A6_door_worker",
+    "A7_doorway_inside",
+    "A8_inside_room"
+  ],
+  "story_captions": {
+    "A1_outside": "The solar–PCM cold room on a farm near Visakhapatnam",
+    "A2_front": "Front: door, sensors and the 17° solar canopy facing south",
+    "A6_door_worker": "A farmer brings a crate – every door opening lets warm air in",
+    "A7_doorway_inside": "From inside: the strip curtain cuts the warm-air inflow by 85 %",
+    "A8_inside_room": "Inside: produce at 2–8 °C, wax (PCM) panels and the evaporator"
+  },
+  "modes": {
+    "day": "A1_outside",
+    "night": "A4_night",
+    "monsoon": "A5_monsoon"
+  },
+  "closeups": {
+    "pcm": "A9_pcm_wall",
+    "evaporator": "A10_evaporator",
+    "solar": "A11_solar",
+    "mast": "A12_sensor_mast",
+    "condenser": "A3_condenser"
+  },
+  "mode_captions": {
+    "A4_night": "Night: no sun – the frozen wax (PCM) keeps the room at 2–8 °C",
+    "A5_monsoon": "Monsoon day: little sun – the wax carries the load, the grid (ATS) is the last backup"
+  }
+}

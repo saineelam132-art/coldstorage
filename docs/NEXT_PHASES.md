@@ -1,5 +1,19 @@
 # Notes for the next phases (from Sai's Phase 2 feedback)
 
+## Picture checklist (web/assets/images/)
+Have (as files): A1_outside (= picture 2, corner view with condenser), A2_front, A4_night,
+A5_monsoon, A6_door_worker.
+Seen in chat but NOT received as files – please add them to the folder: A7 doorway from
+inside, A8 inside room, A9 PCM wall, A10 evaporator.
+Not received yet: A3 condenser close-up, A11 solar close-up, A12 sensor mast close-up,
+all B (cut-outs) and all C (textures).
+To regenerate:
+- A7: the door must open OUTWARD (door leaf outside the room) with the hinge on the RIGHT
+  as seen from inside (it is on the left as seen from outside in A2/A6).
+- A1 (optional): day picture from the SAME camera angle as A4 night / A5 monsoon, so the
+  day/night/monsoon cross-fade looks like the same photo changing light.
+
+
 ## Phase 3 – website
 Sai will share two HTML demos made by a junior. Reuse their good ideas, but replace their
 physics with our `engine/` and `twin/`:

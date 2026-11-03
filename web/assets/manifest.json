@@ -1,0 +1,36 @@
+{
+  "A": {
+    "A1_outside": {
+      "src": "assets/img/A1_outside.webp",
+      "small": "assets/img/A1_outside_960.webp",
+      "w": 1920,
+      "h": 1071
+    },
+    "A2_front": {
+      "src": "assets/img/A2_front.webp",
+      "small": "assets/img/A2_front_960.webp",
+      "w": 1920,
+      "h": 1071
+    },
+    "A4_night": {
+      "src": "assets/img/A4_night.webp",
+      "small": "assets/img/A4_night_960.webp",
+      "w": 1920,
+      "h": 1071
+    },
+    "A5_monsoon": {
+      "src": "assets/img/A5_monsoon.webp",
+      "small": "assets/img/A5_monsoon_960.webp",
+      "w": 1920,
+      "h": 1071
+    },
+    "A6_door_worker": {
+      "src": "assets/img/A6_door_worker.webp",
+      "small": "assets/img/A6_door_worker_960.webp",
+      "w": 1920,
+      "h": 1071
+    }
+  },
+  "B": {},
+  "C": {}
+}

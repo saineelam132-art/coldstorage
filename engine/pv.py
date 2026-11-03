@@ -82,3 +82,17 @@ def pv_power(cfg, G_poa, T_amb_C):
         "formula": "P = P_rated*(G/1000)*PR*[1 - 0.004*(T_cell-25)], "
                    "T_cell = T_amb + (NOCT-20)/800*G",
     }
+
+
+def sun_angles(day_of_year, local_std_hour, lat_deg, lon_deg, utc_offset_h):
+    """Sun elevation and azimuth in degrees (azimuth measured from NORTH, clockwise:
+    90 = east, 180 = south, 270 = west). Used to place the sun in the 3D scene."""
+    cos_z, decl, w = solar_position(day_of_year, local_std_hour, lat_deg, lon_deg, utc_offset_h)
+    elev = math.degrees(math.asin(max(-1.0, min(1.0, cos_z))))
+    lat, d, ww = map(math.radians, (lat_deg, decl, w))
+    sin_z = math.sqrt(max(1e-12, 1 - cos_z**2))
+    cos_az = (math.sin(d) * math.cos(lat) - math.cos(d) * math.sin(lat) * math.cos(ww)) / sin_z
+    az = math.degrees(math.acos(max(-1.0, min(1.0, cos_az))))
+    if w > 0:          # afternoon: sun is in the west
+        az = 360.0 - az
+    return elev, az
