@@ -1,0 +1,6 @@
+# Phase 1 - engine
+CoolProp>=6.6
+numpy>=1.24
+pytest>=7.0
+# Phase 2+ (added later): pandas, matplotlib, requests
+# Phase 3+ (added later): fastapi, uvicorn, qrcode

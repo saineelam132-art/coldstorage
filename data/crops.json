@@ -1,0 +1,64 @@
+{
+  "_about": "Crop table for shelf-life and respiration. Edit freely. JSON has no comments, so every crop has a 'source' field. SL_ref_days is the storage life when kept at T_ref_C. Q10 = how many times faster quality is lost for every 10 C warmer. Q10 values are typical literature ranges (2-4 for fresh produce) and are APPROXIMATE - treat shelf-life output as an estimate, not a guarantee.",
+
+  "tomato": {
+    "label": "Tomato (firm-ripe)",
+    "T_opt_low_C": 10.0, "T_opt_high_C": 12.0,
+    "T_ref_C": 10.0, "SL_ref_days": 14.0, "Q10": 2.5,
+    "chill_injury_below_C": 10.0,
+    "respiration_W_per_kg_at_ref": 0.035,
+    "source": "USDA Agriculture Handbook 66 (2016), Tomato: firm-ripe 10-12 C for safe storage (8-10 C only for a few days), 1-3 weeks, chilling-sensitive below ~10 C. Respiration ~25-45 mW/kg at 10 C (ASHRAE Refrigeration Handbook, Commodity Storage Requirements). Q10 2.5 typical for produce (assumed)."
+  },
+  "leafy_greens": {
+    "label": "Leafy greens (spinach / lettuce)",
+    "T_opt_low_C": 0.0, "T_opt_high_C": 2.0,
+    "T_ref_C": 0.0, "SL_ref_days": 14.0, "Q10": 3.0,
+    "chill_injury_below_C": null,
+    "freeze_below_C": -0.2,
+    "respiration_W_per_kg_at_ref": 0.025,
+    "source": "USDA Agriculture Handbook 66 (2016), Spinach: 0 C, 95-100 % RH, 10-14 days. Respiration ~20-30 mW/kg at 0 C (ASHRAE). Q10 ~3 for leafy vegetables (assumed, literature range 2-4)."
+  },
+  "grapes": {
+    "label": "Grapes (table)",
+    "T_opt_low_C": -1.0, "T_opt_high_C": 0.0,
+    "T_ref_C": 0.0, "SL_ref_days": 42.0, "Q10": 3.0,
+    "chill_injury_below_C": null,
+    "freeze_below_C": -1.5,
+    "respiration_W_per_kg_at_ref": 0.005,
+    "source": "USDA Agriculture Handbook 66 (2016), Grape: -1 to 0 C, 1-6 months depending on cultivar; 6 weeks used (conservative, no SO2 pads). Respiration ~3-7 mW/kg at 0 C (ASHRAE). Q10 3 assumed."
+  },
+  "pomegranate": {
+    "label": "Pomegranate",
+    "T_opt_low_C": 5.0, "T_opt_high_C": 7.0,
+    "T_ref_C": 5.0, "SL_ref_days": 60.0, "Q10": 2.5,
+    "chill_injury_below_C": 5.0,
+    "respiration_W_per_kg_at_ref": 0.008,
+    "source": "USDA Agriculture Handbook 66 (2016), Pomegranate: 5 C, 90-95 % RH, 2-3 months; chilling injury below 5 C. Respiration ~5-10 mW/kg at 5 C (approximate). Q10 2.5 assumed."
+  },
+  "mango": {
+    "label": "Mango",
+    "T_opt_low_C": 12.0, "T_opt_high_C": 13.0,
+    "T_ref_C": 13.0, "SL_ref_days": 21.0, "Q10": 2.5,
+    "chill_injury_below_C": 12.0,
+    "respiration_W_per_kg_at_ref": 0.070,
+    "source": "USDA Agriculture Handbook 66 (2016), Mango: 13 C, 2-3 weeks; chilling injury below 10-13 C depending on cultivar (12 C used). Respiration ~50-90 mW/kg at 13 C (ASHRAE). Q10 2.5 assumed. NOTE: our 2-8 C room is too cold for mango - the site will warn."
+  },
+  "milk": {
+    "label": "Milk (pasteurised, packed)",
+    "T_opt_low_C": 2.0, "T_opt_high_C": 4.0,
+    "T_ref_C": 4.0, "SL_ref_days": 10.0, "Q10": 3.0,
+    "chill_injury_below_C": null,
+    "freeze_below_C": -0.5,
+    "respiration_W_per_kg_at_ref": 0.0,
+    "source": "FSSAI / typical dairy practice: pasteurised milk at or below 4 C, about 7-14 days; 10 days used. Spoilage Q10 ~3 for psychrotrophic bacteria (assumed). Not a living product, so no respiration heat."
+  },
+  "vaccines": {
+    "label": "Vaccines (VVM30 class, illustrative)",
+    "T_opt_low_C": 2.0, "T_opt_high_C": 8.0,
+    "T_ref_C": 5.0, "SL_ref_days": 1460.0, "Q10": 3.37,
+    "chill_injury_below_C": 2.0,
+    "freeze_below_C": 0.0,
+    "respiration_W_per_kg_at_ref": 0.0,
+    "source": "WHO: store at +2 to +8 C, do not freeze. VVM30 category = end point after 30 days at 37 C or 4 years at 5 C (WHO PQS E006/IN05). Q10 derived from those two points: (1460/30)^(10/32) = 3.37. Illustrative only - real vaccines follow their own VVM."
+  }
+}

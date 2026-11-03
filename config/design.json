@@ -1,0 +1,116 @@
+{
+  "_about": "ALL design values for ColdTrust Twin live here. Change a number here and every screen, test and graph uses the new value.",
+
+  "site": {
+    "name": "Visakhapatnam",
+    "lat_deg": 17.68,
+    "lon_deg": 83.20,
+    "utc_offset_h": 5.5,
+    "pressure_Pa": 101325,
+    "_note": "Sea-level pressure used until real weather (PS) is loaded."
+  },
+
+  "chamber": {
+    "length_m": 2.0,
+    "width_m": 2.0,
+    "height_m": 2.2,
+    "envelope_area_m2": 25.6,
+    "insulation_thickness_m": 0.100,
+    "insulation_k_W_mK": 0.022,
+    "_note": "U = k / thickness = 0.022 / 0.100 = 0.22 W/m2K. Air films and thermal bridges ignored (see ASSUMPTIONS.md)."
+  },
+
+  "setpoint": {
+    "band_low_C": 2.0,
+    "band_high_C": 8.0,
+    "target_C": 5.0,
+    "rh_room_pct": 90.0
+  },
+
+  "door": {
+    "width_m": 0.8,
+    "height_m": 1.8,
+    "openings_per_hour": 3,
+    "seconds_per_opening": 15,
+    "flow_factor_Df": 1.1,
+    "curtain_installed": true,
+    "curtain_effectiveness_E": 0.85,
+    "_note": "Openings/hour and seconds/opening are design-point guesses. In LIVE mode the door switch gives the real open fraction."
+  },
+
+  "internal_loads": {
+    "evaporator_fan_W": 40,
+    "lights_W": 10,
+    "lights_on_fraction": 0.1,
+    "controller_sensors_W": 5,
+    "safety_margin_frac": 0.10
+  },
+
+  "refrigeration": {
+    "refrigerant": "R290",
+    "coolprop_name": "Propane",
+    "charge_g_min": 150,
+    "charge_g_max": 300,
+    "T_evap_C": -5.0,
+    "T_cond_design_C": 50.0,
+    "cond_approach_K": 10.0,
+    "superheat_K": 0.0,
+    "subcool_K": 0.0,
+    "eta_isentropic": 0.75,
+    "eta_motor_drive": 0.85,
+    "design_capacity_kW": 1.5,
+    "_note": "Live condensing temperature = ambient + cond_approach_K."
+  },
+
+  "pv": {
+    "rated_kWp": 1.8,
+    "tilt_deg": 17.0,
+    "azimuth_deg": 180.0,
+    "performance_ratio": 0.79,
+    "temp_coeff_per_C": -0.004,
+    "NOCT_C": 45.0,
+    "ground_albedo": 0.20
+  },
+
+  "pcm": {
+    "name": "Paraffin (organic)",
+    "T_melt_C": 4.0,
+    "latent_kJ_kg": 190.0,
+    "latent_range_note": "Datasheet range for this paraffin is 190-200 kJ/kg. We use the LOWER value (190) to be safe.",
+    "cp_solid_kJ_kgK": 1.8,
+    "cp_liquid_kJ_kgK": 2.1,
+    "k_W_mK": 0.2,
+    "density_kg_m3": 800.0,
+    "mass_kg": 115.0,
+    "slab_area_m2": 12.0,
+    "air_side_h_W_m2K": 15.0,
+    "T_fully_used_C": 8.0,
+    "_note": "Slab thickness = mass / (density * area) = 115/(800*12) = 12 mm. 'Fully used' = all wax liquid and warmed to the 8 C top of the band."
+  },
+
+  "product": {
+    "batch_mass_kg": 200.0,
+    "T_entry_C": 25.0,
+    "T_final_C": 5.0,
+    "pulldown_hours": 4.0,
+    "cp_kJ_kgK": 3.9,
+    "default_crop": "tomato"
+  },
+
+  "grid_backup": {
+    "ats_switch_pcm_pct": 15.0,
+    "_note": "Automatic transfer switch moves the compressor to grid when PCM battery < 15 % and there is no solar power."
+  },
+
+  "physics_check": {
+    "threshold_K": 1.5,
+    "persist_minutes": 15,
+    "_note": "If |measured - predicted| room temperature stays above threshold for longer than persist_minutes, the sensor is flagged."
+  },
+
+  "design_ambient": {
+    "T_out_C": 35.0,
+    "rh_out_pct": 65.0,
+    "_note": "A typical hot, humid Visakhapatnam summer afternoon, used for the design-point report."
+  }
+}
