@@ -283,3 +283,4 @@ body.touring .storynav,body.touring .caption,body.touring .enterbtn{display:none
 @keyframes cratein{from{transform:translate(-50%,-140%);opacity:0}to{transform:translate(-50%,-62%);opacity:1}}
 .bc img.cropimg{width:110px;height:auto;background:none;image-rendering:auto;border-radius:0;float:right;margin:0 0 6px 8px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))}
 .walker img{object-fit:contain}
+.acts a.act{text-decoration:none;display:inline-flex;align-items:center}

@@ -140,7 +140,7 @@ def main():
         f.write("window.STATIC_DATA = ")
         json.dump(data, f, separators=(",", ":"), allow_nan=False)
         f.write(";\n")
-    for sub in ("assets/img", "assets/cutouts", "assets/tex", "css", "vendor/qrcode"):
+    for sub in ("assets/img", "assets/cutouts", "assets/tex", "css", "vendor/qrcode", "vendor/chartjs", "live"):
         src = ROOT / "web" / sub
         if src.exists():
             shutil.copytree(src, OUT / sub)
@@ -157,6 +157,8 @@ def main():
     bh = bh.replace('<script type="module" src="js/buyer/buyer.js"></script>',
                     '<script src="js/data.js"></script>\n<script src="js/buyer.bundle.js"></script>')
     (OUT / "buyer.html").write_text(bh, encoding="utf-8")
+    # the Live Year Run page is a plain script page: it works from a folder as it is
+    shutil.copy(ROOT / "web" / "live.html", OUT / "live.html")
     (OUT / "README.txt").write_text(
         "ColdTrust Twin - STATIC BACKUP (no Python needed)\n\n"
         "Double-click index.html (Chrome or Edge). Everything runs from these files.\n"

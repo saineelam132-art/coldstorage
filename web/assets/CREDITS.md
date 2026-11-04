@@ -36,6 +36,9 @@ They are illustrations, not photographs of the real system.
 ## Software
 
 - three.js r160 (MIT licence) – `web/vendor/three/` – https://threejs.org
+- Chart.js 4.4.4 (MIT licence) – `web/vendor/chartjs/` – https://www.chartjs.org
+- qrcode-generator 1.4.4 (MIT licence) – `web/vendor/qrcode/`
+- Weather data by Open-Meteo.com (CC BY 4.0); NASA POWER; ISHRAE 2014 design year (not redistributed).
 - All 3D objects are built in code from simple shapes; no third-party 3D models are used.
 - No brand logos are used. The small Gemini sparkle mark in the corner of each picture is
   Google's visible AI-image watermark and is left in place on purpose.

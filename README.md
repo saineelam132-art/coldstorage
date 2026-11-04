@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Phase 1 – check the engine
 
-Run all tests (should say `87 passed`):
+Run all tests (should say `111 passed`):
 
 ```
 python -m pytest -q
@@ -112,6 +112,33 @@ python tools/prepare_images.py
 ```
 
 Hotspot positions (in % of each picture) are in `web/assets/hotspots.json` – edit by hand.
+
+## Live Year Run (real 2026 weather, today, tomorrow)
+
+Open **📅 Live 2026** in the top bar (or `live.html`). Tabs: Year so far, Calendar (click a
+day for hour-by-hour graphs), Today, Tomorrow (a **prediction**: the Open-Meteo forecast run
+through our physics twin), Design year (ISHRAE) vs 2026, Money, Fixed inputs.
+
+Update it by hand (needs internet; otherwise it uses the last saved data):
+
+```
+python -m twin.live_run --fetch
+```
+
+**Every day at 06:00 IST** GitHub runs `.github/workflows/daily-live.yml`: it downloads the
+weather, runs the twin, rebuilds `static_site/` and commits. To check it ran:
+1. GitHub → your repository → **Actions** tab → "Daily Live Year Run": a green tick for today.
+2. The commit list shows "Daily Live Year Run <date>".
+3. The Live page shows "Weather last updated: <today, about 06:0x IST>".
+To run it now: Actions → Daily Live Year Run → **Run workflow**.
+
+Fixed inputs live in `config/design.json` → `live_run`. With `python run.py` they can be edited
+on the "Fixed inputs" tab (the twin re-runs in about 15 s), and the server refreshes the weather
+every hour while the laptop is online.
+
+Weather data by Open-Meteo.com (CC BY 4.0). The ISHRAE design-year file is **not** stored in
+git (its licence forbids sharing); it is downloaded where it is used and only our simulation
+results are published.
 
 ## At the stall
 

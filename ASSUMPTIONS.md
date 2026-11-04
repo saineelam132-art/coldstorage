@@ -200,3 +200,36 @@ All design values live in `config/design.json` — change them there.
     It does **not** show that the physics (U-value, door formula, wax behaviour) is right.
     That is what the **small-box test in Phase 4** does: a real box, real sensors, and the
     model's prediction compared with the measurement.
+
+## Live Year Run (real 2026 weather)
+62. **Weather:** Open-Meteo historical archive (ERA5) for 1 Jan 2026 → yesterday, the Open-Meteo
+    forecast (past 7 days) to fill the last hours, and the forecast for today and tomorrow. NASA
+    POWER (AWS) is the backup. Open-Meteo gives about **12 % more sunlight than NASA POWER** for
+    Jan–Aug 2026 (5.6 vs 5.0 kWh/m²/day) – ERA5 is known to see fewer clouds; solar results are
+    therefore on the optimistic side.
+63. **Half-hour correction of sunlight:** checked against the sun's position on the clearest days,
+    both Open-Meteo and ISHRAE sunlight were 30 min early (India is UTC+5:30; the models work in
+    whole UTC hours). Each hour's sunlight is set to the average of that hour and the one before.
+64. **Design year:** ISHRAE 2014 typical year, Visakhapatnam (WMO 431500), from
+    climate.onebuilding.org. Licence: single machine, no redistribution → never committed.
+65. **Fixed inputs:** room 2.0 × 2.0 × 2.2 m inside, 100 mm PUF, curtain on; compressor max 1.5 kW;
+    200 kg always inside; at 8:00 the whole 200 kg is swapped and the fresh produce enters at that
+    hour's outside temperature; door 4 × 15 s (8:00, 8:10, 12:00, 17:00).
+66. **"Cooled"** = the batch is within 0.5 K of the 5 °C set-point (5.5 °C). Fresh produce cools at
+    the same rate as before (7/8 of the way in 4 h with the room at 5 °C) – slower when the
+    compressor is at its limit.
+67. **No battery for cooling.** Compressor and 40 W evaporator fan run only on solar or grid. With
+    them off, the wax panels cool the room by natural convection (h = 4 W/m²K instead of 15).
+    A 12 V 50 Ah LiFePO4 battery (0.6 kWh) runs only controller 5 W + sensors 2 W + IoT gateway 3 W
+    = 10 W = 0.24 kWh/day (about 2 days without sun at 80 % depth of discharge).
+68. **Grid during morning loading:** by default the grid does NOT help while the fresh batch cools
+    (8–11 am); the room air is then warm for about an hour (shown separately as "warm air while a
+    fresh batch cools"). Switch: `live_run.grid_assist_during_loading`.
+69. **PCM effectiveness** = cold given by the wax to the room ÷ cold stored by the charging coil.
+    The model has no other path for the wax to lose cold, so it is ~100 %; the share given when
+    there is no sun shows the real time-shift. Wax cycles = cold given ÷ (mass × latent heat).
+70. **Money (running cost only, prices are guesses):** grid ₹8/kWh; diesel ₹93/L at 0.5 L/kWh
+    during an assumed 10:00–18:00 daily power cut; CO₂ 0.71 kg/kWh (CEA grid) and 2.68 kg/L
+    diesel. Grid-only room = same room and inputs, no wax, no solar, grid always (twin run).
+71. **Tomorrow** is a PREDICTION: the Open-Meteo forecast run through our physics twin, starting
+    from the twin's state at the end of today. It is not measured and not AI.

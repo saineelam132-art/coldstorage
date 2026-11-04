@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Year Run</title>
+<link rel="stylesheet" href="live/live.css">
+</head>
+<body>
+<header class="top">
+  <a href="index.html" class="back" title="Back to the cold room">❄ ColdTrust Twin</a>
+  <h1>Live Year Run <small>real 2026 Visakhapatnam weather</small></h1>
+  <div class="seg" id="designSeg" role="tablist" aria-label="Design">
+    <button data-d="current" class="on">Current<br><small>115 kg wax · 1.8 kWp</small></button>
+    <button data-d="recommended">Recommended<br><small>172 kg wax · 2.1 kWp</small></button>
+  </div>
+</header>
+<div class="strip">
+  <span id="updated">Weather last updated: –</span>
+  <span class="credit">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a></span>
+  <span class="battery">🔋 No battery for cooling (the wax is the storage). Small 12 V battery only for sensors and controller.</span>
+  <span class="sim">Simulated – digital twin using real 2026 weather</span>
+</div>
+<nav class="tabs" id="tabs">
+  <button data-tab="year" class="on">Year so far</button><button data-tab="calendar">Calendar</button>
+  <button data-tab="today">Today</button><button data-tab="tomorrow">Tomorrow</button>
+  <button data-tab="compare">Design year vs 2026</button><button data-tab="money">Money</button>
+  <button data-tab="inputs">Fixed inputs</button>
+</nav>
+<main id="main"></main>
+<footer class="foot">Every number is calculated by the ColdTrust physics twin (engine/ and twin/live_sim.py) from saved weather files.
+  Works offline with the last saved data. <span id="genAt"></span></footer>
+
+<script src="vendor/chartjs/chart.umd.js"></script>
+<script src="live/data/summary.js"></script>
+<script src="live/live.js"></script>
+</body>
+</html>

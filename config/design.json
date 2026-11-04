@@ -175,5 +175,33 @@
     "price_pv_INR_per_kWp": 40000,
     "price_compressor_INR_per_kW": 20000,
     "_note": "How the parametric study picks ONE design: (1) the room must never leave 2-8 C, (2) grid backup must be at most 100 h/yr (about 2 h a week), (3) of the designs that pass, choose the cheapest. PRICES ARE INDICATIVE GUESSES (encapsulated paraffin PCM, installed PV without battery, DC inverter compressor unit) - replace them with real quotations. The study also reports what happens if the PCM or PV price changes."
+  },
+
+  "live_run": {
+    "inside_m": [2.0, 2.0, 2.2],
+    "insulation_thickness_m": 0.100,
+    "curtain_installed": true,
+    "compressor_max_kW": 1.5,
+    "produce_kg": 200,
+    "setpoint_C": 5.0,
+    "band_C": [2.0, 8.0],
+    "swap_hour": 8,
+    "cooled_within_K": 0.5,
+    "door_openings": [[8, 0], [8, 10], [12, 0], [17, 0]],
+    "door_seconds": 15,
+    "designs": {
+      "current": {"label": "Current (115 kg wax, 1.8 kWp)", "pcm_kg": 115, "pv_kWp": 1.8},
+      "recommended": {"label": "Recommended (172 kg wax, 2.1 kWp)", "pcm_kg": 172, "pv_kWp": 2.1}
+    },
+    "evaporator_fan_W": 40,
+    "natural_convection_h_W_m2K": 4.0,
+    "grid_assist_during_loading": false,
+    "loading_window_h": 3,
+    "battery_12V": {"capacity_Ah": 50, "chemistry": "LiFePO4", "loads_W": {"controller": 5, "sensors": 2, "iot_gateway": 3},
+                    "note": "Only for controller, sensors and IoT gateway (10 W = 0.24 kWh/day, about 2 days without sun at 80 % depth of discharge). NO battery for cooling: the wax is the storage."},
+    "money": {"grid_tariff_INR_kWh": 8.0, "diesel_INR_L": 93.0, "diesel_L_per_kWh": 0.5,
+              "power_cut_hours": [10, 18], "grid_kg_CO2_kWh": 0.71, "diesel_kg_CO2_L": 2.68,
+              "note": "ALL PRICES ARE GUESSES - check locally. Power cut 10:00-18:00 is an ASSUMPTION (editable). CO2: CEA India grid baseline ~0.71 kg/kWh; diesel 2.68 kg/L."},
+    "_note": "Fixed inputs for the Live Year Run (real 2026 weather). The compressor maximum is only a LIMIT; the real load is calculated every 5 minutes. At swap_hour the 200 kg inside goes out and 200 kg fresh produce comes in at that hour's outside temperature. A batch counts as cooled when it is within cooled_within_K of the set-point. The evaporator fan runs only when the compressor runs (solar or grid); with the compressor off, the wax panels cool the room by natural convection only."
   }
 }

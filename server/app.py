@@ -129,6 +129,62 @@ def api_fault(data: dict = Body(...)):
     return {"fault": tw.ledger.inject_fault(float(data.get("t", 0)), float(data.get("offset", 3.0)))}
 
 
+# ------------------------------------------------------------ Live Year Run
+LIVE_KEYS = {"compressor_max_kW", "produce_kg", "setpoint_C", "swap_hour", "cooled_within_K", "natural_convection_h_W_m2K"}
+
+
+@app.get("/api/live/config")
+def api_live_config():
+    from engine.config import load_config
+    return load_config()["live_run"]
+
+
+@app.post("/api/live/config")
+def api_live_config_save(data: dict = Body(...)):
+    """Save edited fixed inputs into config/design.json -> live_run and re-run the twin (offline)."""
+    import json as _json
+    import re
+    path = ROOT / "config" / "design.json"
+    text = path.read_text(encoding="utf-8")
+    for k, v in data.items():
+        if k not in LIVE_KEYS:
+            raise HTTPException(400, f"{k} cannot be edited here")
+        v = float(v)
+        if k == "swap_hour":
+            v = int(v)
+        # replace the value inside the live_run block only, keeping the file's comments and layout
+        start = text.index('"live_run"')
+        m = re.compile(rf'("{k}":\s*)([-0-9.]+)').search(text, start)
+        if not m:
+            raise HTTPException(400, f"{k} not found")
+        text = text[:m.start(2)] + _json.dumps(v) + text[m.end(2):]
+    _json.loads(text)
+    path.write_text(text, encoding="utf-8")
+    from twin import live_run
+    live_run.run(fetch=False)
+    return {"ok": True}
+
+
+def _live_refresh_loop():
+    """While the server runs: refresh the weather and the Live Year Run every hour if online."""
+    import time
+    from twin import live_run
+    while True:
+        try:
+            live_run.run(fetch=True)
+        except Exception as e:  # noqa: BLE001 - offline is fine: the saved data keeps working
+            print("live refresh skipped:", e)
+        time.sleep(3600)
+
+
+@app.on_event("startup")
+def _start_live_refresh():
+    import os
+    import threading
+    if os.environ.get("COLDTRUST_NO_LIVE_REFRESH") != "1":
+        threading.Thread(target=_live_refresh_loop, daemon=True).start()
+
+
 @app.get("/api/demo_days")
 def api_demo_days():
     return twin().demo_days()

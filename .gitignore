@@ -4,3 +4,6 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# ISHRAE weather data: licence forbids redistribution - never commit
+data/live/ishrae/
