@@ -115,8 +115,13 @@ Hotspot positions (in % of each picture) are in `web/assets/hotspots.json` – e
 
 ## At the stall
 
-**Normal start:** double-click `start.bat` (or run `python run.py`). If Python fails, `start.bat`
-opens the static backup by itself.
+**Normal start:** double-click `start.bat`. It uses **Python 3.12** first (`py -3.12`, because
+CoolProp needs 3.12) and falls back to `python` only if 3.12 is not found. If Python fails,
+it opens the static backup by itself. Install the packages for 3.12 once with:
+
+```
+py -3.12 -m pip install -r requirements.txt
+```
 
 **Static backup (no Python at all):** open `static_site/index.html` in Chrome or Edge
 (double-click). Everything works from saved files: photo view, 3D, tour, Control centre,
