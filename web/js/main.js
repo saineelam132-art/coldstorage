@@ -5,6 +5,8 @@ import { initDetails } from './details.js';
 import { PhotoView } from './photo.js';
 import { LedgerUI } from './ledgerui.js';
 import { Batches } from './batch.js';
+import { Control } from './control.js';
+import { Tour } from './tour.js';
 
 const $ = id => document.getElementById(id);
 
@@ -35,7 +37,20 @@ async function boot() {
   }
 
   const ledgerUI = new LedgerUI(clock, feed);
-  new Batches({ cfg, manifest, photo, getModel: () => model, clock, feed, ledgerUI });
+  const batches = new Batches({ cfg, manifest, photo, getModel: () => model, clock, feed, ledgerUI });
+  const control = new Control({ cfg, sensors, feed });
+  const toPhoto = () => { if (view !== 'photo') $('viewSeg').querySelector('[data-view=photo]').click(); };
+  new Tour({ photo, clock, feed, demo, ledgerUI, control, batches, toPhoto });
+
+  // 2D mode: photo view only, three.js is never loaded (safest on a weak laptop). Remembered; also ?2d=1
+  const set2d = on => {
+    document.body.classList.toggle('flat', on); $('flat2d').checked = on;
+    try { localStorage.setItem('ct2d', on ? '1' : '0'); } catch (e) { /* private mode */ }
+    if (on) toPhoto();
+  };
+  $('flat2d').onchange = e => set2d(e.target.checked);
+  let want2d = new URLSearchParams(location.search).get('2d') === '1';
+  try { want2d = want2d || localStorage.getItem('ct2d') === '1'; } catch (e) { /* ignore */ }
 
   // ---- controls
   $('viewSeg').onclick = async e => {
@@ -117,6 +132,7 @@ async function boot() {
     refreshPanel();
   });
   feed.start();
+  if (want2d || window.STATIC_FORCE_2D) set2d(true);
   const loop = () => { clock.tick(); requestAnimationFrame(loop); };
   loop();
 }

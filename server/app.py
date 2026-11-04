@@ -39,7 +39,9 @@ def _startup():
 def api_config():
     tw = twin()
     return {"design": _strip(tw.cfg), "geometry": geometry(tw.cfg), "lan_ip": lan_ip(), "crops": {
-        k: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]]} for k, v in tw.crops.items()},
+        k: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]], "T_ref_C": v["T_ref_C"],
+            "SL_ref_days": v["SL_ref_days"], "Q10": v["Q10"], "chill_injury_below_C": v.get("chill_injury_below_C")}
+        for k, v in tw.crops.items()},
         "year_summary": {
         k: v for k, v in tw.summary.items() if isinstance(v, (int, float, str, bool))}}
 
@@ -137,4 +139,8 @@ def health():
     return JSONResponse({"ok": True})
 
 
+for _d in ("results", "figures"):
+    (ROOT / _d).mkdir(exist_ok=True)
+app.mount("/results", StaticFiles(directory=ROOT / "results"), name="results")
+app.mount("/figures", StaticFiles(directory=ROOT / "figures"), name="figures")
 app.mount("/", StaticFiles(directory=ROOT / "web", html=True), name="web")

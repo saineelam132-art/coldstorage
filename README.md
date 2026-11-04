@@ -4,7 +4,7 @@ Demo website and digital twin for the REFCOLD India 2026 poster
 **"Blockchain-Secured Hybrid Solar–PCM Cold Storage with Natural-Refrigerant (R290) VCR System"**
 (GVPCE, Visakhapatnam).
 
-> Status: **Phase 1 (engine) and Phase 2 (digital twin) done. Phase 3 (website) steps 1–3 of 6 done.**
+> Status: **Phase 1 (engine) and Phase 2 (digital twin) done. Phase 3 (website) steps 1–5 of 6 done.**
 
 ## Install (Windows, once)
 
@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Phase 1 – check the engine
 
-Run all tests (should say `76 passed`):
+Run all tests (should say `86 passed`):
 
 ```
 python -m pytest -q
@@ -111,6 +111,39 @@ python tools/prepare_images.py
 
 Hotspot positions (in % of each picture) are in `web/assets/hotspots.json` – edit by hand.
 
+## At the stall
+
+**Normal start:** double-click `start.bat` (or run `python run.py`). If Python fails, `start.bat`
+opens the static backup by itself.
+
+**Static backup (no Python at all):** open `static_site/index.html` in Chrome or Edge
+(double-click). Everything works from saved files: photo view, 3D, tour, Control centre,
+batches, QR, ledger, tamper, sensor fault. Limits: only the saved demo days (hottest,
+sunniest, rainiest, most-grid days and their neighbours; the clock jumps between them), and
+phones cannot open the QR buyer page (no server) – open it on the laptop.
+After changing the design or the website, rebuild it:
+
+```
+sh tools/build_static_bundle.sh
+```
+```
+python tools/export_static.py
+```
+(the first needs Node.js once; the result is saved in the repository).
+
+**Guided tour:** press **▶ Start tour** (about 2 minutes, 13 steps). → / ← next / back,
+Space pause, Esc stop.
+
+**Control centre:** Calculations (every formula + heat by source), What-If sliders, Two rooms
+(normal vs smart control, live), Year results (poster graphs), Sensors (type, range,
+accuracy, location, protocol).
+
+**Batches and ledger:** **+ New batch** → the worker walks in → batch card with QR code.
+**⛓ Ledger** shows the hash-chain; *Tamper with an old reading* turns it red from that block;
+*Inject sensor fault* makes the room sensor read +3 °C → flagged after 15 min and sealed.
+
+**2D mode** (tick box) = photos only, no 3D: the safest choice on a weak laptop.
+
 ## Where things are
 
 | Folder / file | What it holds |
@@ -125,5 +158,6 @@ Hotspot positions (in % of each picture) are in `web/assets/hotspots.json` – e
 | `web/` | The website (HTML/CSS/JS, three.js saved locally in `web/vendor/`). |
 | `config/sensors.json` | Every sensor: type, range, accuracy, location, protocol, position, M/C/E/AI tag. |
 | `tools/prepare_images.py` | Compresses pictures, removes white backgrounds, makes textures. |
+| `static_site/` | The static backup (opens without Python). |
 | `tests/` | Automatic checks of the engine, the twin and the server. |
 | `ASSUMPTIONS.md` | Every assumption, in plain English. |

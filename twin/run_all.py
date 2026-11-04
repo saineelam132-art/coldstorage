@@ -91,8 +91,12 @@ def main():
     pcn.round(3).to_csv(RES / "power_cut_night.csv")
     print(f"POWER CUT {start} -> {end}")
 
-    # 6. summary
+    # 6. summary (+ files the website reads: design point, what-if table)
     rows = design_point(cfg, include_slab=True)
+    from twin import whatif
+    clean = [{k: (None if isinstance(v, float) and v != v else v) for k, v in r.items()} for r in rows]   # NaN -> null
+    (RES / "design_point.json").write_text(json.dumps(clean, indent=1, allow_nan=False))
+    (RES / "whatif.json").write_text(json.dumps(whatif.build(cfg, weather)))
     summ = studies.summary_rows(cfg, annual, counts, base, rec, pick, comp_out, cut, rows)
     summ.to_csv(RES / "results_summary.csv", index=False, float_format="%.4g")
     (RES / "recommendation.txt").write_text(recommendation_text(cfg, pick, passing, base, rec, sens), encoding="utf-8")

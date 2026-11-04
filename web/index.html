@@ -16,8 +16,8 @@
 <header class="topbar">
   <div class="brand"><span class="logo">❄</span><div><b>ColdTrust Twin</b><small>Solar–PCM cold room · R290 · Visakhapatnam</small></div></div>
   <div class="seg" id="viewSeg" role="tablist" aria-label="View">
-    <button data-view="photo" class="on">Photo view</button>
-    <button data-view="model">3D model</button>
+    <button data-view="photo" class="on">Photo</button>
+    <button data-view="model">3D</button>
   </div>
   <div class="seg" id="modeSeg" aria-label="Scene mode">
     <button data-mode="auto" class="on" title="The picture follows the simulated time and weather">Auto</button>
@@ -26,6 +26,8 @@
     <button data-mode="monsoon" title="Jump to the rainiest day of 2025, 11 am">Monsoon</button>
   </div>
   <div class="acts">
+    <button id="tourBtn" class="act tour">▶ Start tour</button>
+    <button id="ccBtn" class="act">☰ Control centre</button>
     <button id="newBatchBtn" class="act">+ New batch</button>
     <button id="ledgerBtn" class="act">⛓ Ledger <span id="ledgerBadge" class="lb ok">✓</span></button>
   </div>
@@ -33,6 +35,7 @@
     <label class="chk" title="Strip curtain in the doorway (E = 0.85)"><input type="checkbox" id="curtain" checked> Curtain</label>
     <label class="chk only-model" title="Engineering dimension lines"><input type="checkbox" id="dims" checked> Dimensions</label>
     <label class="chk" title="For slow laptops"><input type="checkbox" id="lowgfx"> Low graphics</label>
+    <label class="chk" title="Photo view only, no 3D (safest on a weak laptop)"><input type="checkbox" id="flat2d"> 2D mode</label>
   </div>
 </header>
 
@@ -112,6 +115,26 @@
   <div class="note">Demo uses a local hash-chain (SHA-256). Real deployment: permissioned ledger (Hyperledger Fabric) with farmer, transporter and buyer nodes.</div>
 </section>
 <div id="walker" class="walker" aria-hidden="true"></div>
+
+<!-- control centre -->
+<section id="cc" class="cc" aria-label="Control centre">
+  <header><b>☰ Control centre</b>
+    <nav id="ccTabs">
+      <button data-tab="calc" class="on">Calculations</button><button data-tab="whatif">What-If</button>
+      <button data-tab="rooms">Two rooms</button><button data-tab="year">Year results</button><button data-tab="sensors">Sensors</button>
+    </nav>
+    <button id="ccClose" class="x" aria-label="Close">×</button></header>
+  <div id="ccBody" class="ccbody"></div>
+</section>
+
+<!-- guided tour -->
+<div id="tourBar" class="tourbar" role="status">
+  <div id="tourCap" class="tcap"></div>
+  <div class="tctl"><span id="tourStep"></span>
+    <button id="tourPrev" aria-label="Back">◀</button><button id="tourPause" aria-label="Pause">❚❚</button>
+    <button id="tourNext" aria-label="Next">▶</button><button id="tourStop" aria-label="Stop tour">■</button></div>
+  <div class="tprog"><i id="tourProg"></i></div>
+</div>
 <div id="simnote" class="simnote">Simulated – digital twin using real Visakhapatnam weather (NASA POWER 2025)</div>
 
 <script src="vendor/qrcode/qrcode.js"></script>

@@ -1,11 +1,13 @@
 // Talks to the Python server. Every number on screen comes from these calls.
 export async function getJSON(url) {
+  if (window.STATIC_API) return window.STATIC_API.get(url);       // static backup (no Python)
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: ${r.status}`);
   return r.json();
 }
 
 export async function postJSON(url, data = {}) {
+  if (window.STATIC_API) return window.STATIC_API.post(url, data);
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   if (!r.ok) throw new Error(`${url}: ${r.status}`);
   return r.json();
@@ -18,9 +20,10 @@ export class SimClock {
     const dt = Math.min(0.25, (now - this.last) / 1000);
     this.last = now;
     if (this.playing) this.t = (this.t + dt * this.speed) % (365 * 86400);
+    if (window.STATIC_API) this.t = window.STATIC_API.clamp(this.t);   // static backup: stay in saved days
     return this.t;
   }
-  jump(t) { this.t = t; }
+  jump(t) { this.t = window.STATIC_API ? window.STATIC_API.clamp(t) : t; }
 }
 
 // Polls /api/state about 3 times a second and hands the newest state to listeners.

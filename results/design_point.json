@@ -1,0 +1,370 @@
+[
+ {
+  "group": "1 Wall",
+  "name": "U-value",
+  "formula": "U = k / t",
+  "substituted": "0.022 / 0.1",
+  "value": 0.21999999999999997,
+  "unit": "W/m2K"
+ },
+ {
+  "group": "1 Wall",
+  "name": "Q_wall",
+  "formula": "Q_wall = U * A * (T_out - T_in)",
+  "substituted": "0.220 x 25.6 x (35.0 - 5.0) / 1000",
+  "value": 0.16895999999999997,
+  "unit": "kW"
+ },
+ {
+  "group": "2 Door",
+  "name": "h_out",
+  "formula": "h = 1.006T + W(2501 + 1.86T)",
+  "substituted": "T=35.0, RH=65.0% -> W=0.0233",
+  "value": 94.98665231361103,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "2 Door",
+  "name": "h_in",
+  "formula": "h = 1.006T + W(2501 + 1.86T)",
+  "substituted": "T=5.0, RH=90.0% -> W=0.0049",
+  "value": 17.223855831336646,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "2 Door",
+  "name": "rho_out",
+  "formula": "rho = p/(R_da*T)*(1+W)/(1+1.608W)",
+  "substituted": "",
+  "value": 1.1299015849967498,
+  "unit": "kg/m3"
+ },
+ {
+  "group": "2 Door",
+  "name": "rho_in",
+  "formula": "rho = p/(R_da*T)*(1+W)/(1+1.608W)",
+  "substituted": "",
+  "value": 1.2653708769174132,
+  "unit": "kg/m3"
+ },
+ {
+  "group": "2 Door",
+  "name": "F_m",
+  "formula": "F_m = [2/(1+(rho_in/rho_out)^(1/3))]^1.5",
+  "substituted": "rho_in/rho_out = 1.1199",
+  "value": 0.9718286336149013,
+  "unit": "-"
+ },
+ {
+  "group": "2 Door",
+  "name": "q (door fully open)",
+  "formula": "q = 0.221*A*(h_out-h_in)*rho_in*(1-rho_out/rho_in)^0.5*(g*H)^0.5*F_m",
+  "substituted": "0.221 x 1.44 x 77.8 x 1.265 x 0.327 x 4.202 x 0.972",
+  "value": 41.842384961644726,
+  "unit": "kW"
+ },
+ {
+  "group": "2 Door",
+  "name": "Q_infiltration (average)",
+  "formula": "Q = q * D_t * D_f * (1 - E)",
+  "substituted": "41.84 x 0.0125 x 1.1 x (1 - 0.85)",
+  "value": 0.08629991898339227,
+  "unit": "kW"
+ },
+ {
+  "group": "2 Door",
+  "name": "  sensible part",
+  "formula": "h(T_out,W_out) - h(T_in,W_out)",
+  "substituted": "",
+  "value": 0.034935835158907816,
+  "unit": "kW"
+ },
+ {
+  "group": "2 Door",
+  "name": "  latent part",
+  "formula": "h(T_in,W_out) - h(T_in,W_in)",
+  "substituted": "",
+  "value": 0.05136408382448446,
+  "unit": "kW"
+ },
+ {
+  "group": "2 Door",
+  "name": "Q_infiltration WITHOUT curtain",
+  "formula": "Q = q * D_t * D_f * (1 - 0)",
+  "substituted": "",
+  "value": 0.5753327932226151,
+  "unit": "kW"
+ },
+ {
+  "group": "3 Product",
+  "name": "Q_pulldown",
+  "formula": "Q = m * cp * (T_entry - T_final) / time",
+  "substituted": "200.0 x 3.9 x 20.0 / (4.0 x 3600)",
+  "value": 1.0833333333333333,
+  "unit": "kW"
+ },
+ {
+  "group": "3 Product",
+  "name": "Q_respiration (Tomato (firm-ripe))",
+  "formula": "Q = m * r_ref * Q10^((T-T_ref)/10)",
+  "substituted": "200.0 x 0.035 W/kg x 2.5^((5.0-10.0)/10) / 1000",
+  "value": 0.004427188724235732,
+  "unit": "kW"
+ },
+ {
+  "group": "4 Total",
+  "name": "Fans, lights, controller",
+  "formula": "Q = P_fan + P_lights*on_fraction + P_controller",
+  "substituted": "",
+  "value": 0.046,
+  "unit": "kW"
+ },
+ {
+  "group": "4 Total",
+  "name": "Total load (pull-down hours)",
+  "formula": "wall + door + product + internal",
+  "substituted": "0.169 + 0.086 + 1.088 + 0.046",
+  "value": 1.3890204410409612,
+  "unit": "kW"
+ },
+ {
+  "group": "4 Total",
+  "name": "Safety margin (10 %)",
+  "formula": "0.10 x total",
+  "substituted": "",
+  "value": 0.13890204410409612,
+  "unit": "kW"
+ },
+ {
+  "group": "4 Total",
+  "name": "Total with margin",
+  "formula": "total x 1.10",
+  "substituted": "",
+  "value": 1.5279224851450572,
+  "unit": "kW"
+ },
+ {
+  "group": "4 Total",
+  "name": "Holding load (no pull-down)",
+  "formula": "wall + door + respiration + internal",
+  "substituted": "",
+  "value": 0.30568710770762797,
+  "unit": "kW"
+ },
+ {
+  "group": "5 R290",
+  "name": "P_evap",
+  "formula": "P_sat(T_evap)",
+  "substituted": "T_evap = -5.0 C",
+  "value": 4.060370303960548,
+  "unit": "bar"
+ },
+ {
+  "group": "5 R290",
+  "name": "P_cond",
+  "formula": "P_sat(T_cond)",
+  "substituted": "T_cond = 50.0 C",
+  "value": 17.13304265091172,
+  "unit": "bar"
+ },
+ {
+  "group": "5 R290",
+  "name": "h1",
+  "formula": "sat. vapour at T_evap",
+  "substituted": "",
+  "value": 569.3038274975027,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "5 R290",
+  "name": "h2s",
+  "formula": "h(P_cond, s = s1)",
+  "substituted": "",
+  "value": 636.8058765782597,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "5 R290",
+  "name": "h2 (real)",
+  "formula": "h2 = h1 + (h2s-h1)/eta_is",
+  "substituted": "569.3 + 67.5/0.75",
+  "value": 659.3065596051787,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "5 R290",
+  "name": "h3 = h4",
+  "formula": "sat. liquid at T_cond",
+  "substituted": "",
+  "value": 336.8011804664063,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "5 R290",
+  "name": "q_e",
+  "formula": "q_e = h1 - h4",
+  "substituted": "569.3 - 336.8",
+  "value": 232.50264703109633,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "5 R290",
+  "name": "w_s",
+  "formula": "w_s = h2s - h1",
+  "substituted": "636.8 - 569.3",
+  "value": 67.50204908075705,
+  "unit": "kJ/kg"
+ },
+ {
+  "group": "5 R290",
+  "name": "COP_ideal",
+  "formula": "q_e / w_s",
+  "substituted": "232.5 / 67.5",
+  "value": 3.444379099557977,
+  "unit": "-"
+ },
+ {
+  "group": "5 R290",
+  "name": "COP_real",
+  "formula": "COP_ideal x eta_is",
+  "substituted": "3.444 x 0.75",
+  "value": 2.5832843246684827,
+  "unit": "-"
+ },
+ {
+  "group": "5 R290",
+  "name": "COP_elec",
+  "formula": "COP_real x eta_motor",
+  "substituted": "2.583 x 0.85",
+  "value": 2.19579167596821,
+  "unit": "-"
+ },
+ {
+  "group": "5 R290",
+  "name": "mass flow",
+  "formula": "m = Q / q_e",
+  "substituted": "1.5 / 232.5",
+  "value": 6.451539451933125,
+  "unit": "g/s"
+ },
+ {
+  "group": "5 R290",
+  "name": "Electrical power",
+  "formula": "P = Q / COP_elec",
+  "substituted": "1.5 / 2.196",
+  "value": 0.6831249140875769,
+  "unit": "kW"
+ },
+ {
+  "group": "5 R290",
+  "name": "COP_elec live (T_cond = 35.0+10 C)",
+  "formula": "same cycle, T_cond = T_amb + 10 K",
+  "substituted": "",
+  "value": 2.5314422536020262,
+  "unit": "-"
+ },
+ {
+  "group": "6 PV",
+  "name": "T_cell",
+  "formula": "T_cell = T_amb + (NOCT-20)/800 * G",
+  "substituted": "35.0 + (45.0-20)/800 x 800.0",
+  "value": 60.0,
+  "unit": "C"
+ },
+ {
+  "group": "6 PV",
+  "name": "P_pv",
+  "formula": "P = P_rated*(G/1000)*PR*[1-0.004*(T_cell-25)]",
+  "substituted": "1.8 x 0.8 x 0.79 x 0.860",
+  "value": 0.9783360000000001,
+  "unit": "kW"
+ },
+ {
+  "group": "7 PCM",
+  "name": "Latent store",
+  "formula": "E = m * L * frozen_fraction",
+  "substituted": "115.0 x 190.0 x 1.0",
+  "value": 6.069444444444445,
+  "unit": "kWh"
+ },
+ {
+  "group": "7 PCM",
+  "name": "Total cold store (to 8 C)",
+  "formula": "E = m * [L + cp_l*(T_used - T_m)]",
+  "substituted": "115.0 x [190.0 + 2.1 x (8.0 - 4.0)]",
+  "value": 6.337777777777778,
+  "unit": "kWh"
+ },
+ {
+  "group": "7 PCM",
+  "name": "Backup time (holding load)",
+  "formula": "t = E_remaining / Q_holding",
+  "substituted": "22816 kJ / 0.306 kW / 3600",
+  "value": 20.73289196036195,
+  "unit": "h"
+ },
+ {
+  "group": "8 Slab",
+  "name": "Slab thickness",
+  "formula": "t = m / (rho * A)",
+  "substituted": "115.0 / (800.0 x 12.0)",
+  "value": 11.979166666666668,
+  "unit": "mm"
+ },
+ {
+  "group": "8 Slab",
+  "name": "Stability number r",
+  "formula": "r = alpha*dt/dx^2 <= 0.5",
+  "substituted": "1.389e-07 x 0.718 / (0.0005)^2",
+  "value": 0.4,
+  "unit": "-"
+ },
+ {
+  "group": "8 Slab",
+  "name": "Liquid fraction after 12 h in 8 C air",
+  "formula": "enthalpy method",
+  "substituted": "",
+  "value": 0.969521545322331,
+  "unit": "-"
+ },
+ {
+  "group": "8 Slab",
+  "name": "Melt front after 12 h",
+  "formula": "sum(liquid fraction * dx)",
+  "substituted": "",
+  "value": 11.614060178340425,
+  "unit": "mm"
+ },
+ {
+  "group": "9 Shelf life",
+  "name": "rate at 5.0 C (Tomato (firm-ripe))",
+  "formula": "rate = 1/SL_ref * Q10^((T-T_ref)/10)",
+  "substituted": "1/14.0 x 2.5^((5.0-10.0)/10)",
+  "value": 0.04517539514526256,
+  "unit": "1/day"
+ },
+ {
+  "group": "9 Shelf life",
+  "name": "Remaining after 3 days at 5 C (at T_ref)",
+  "formula": "SL_ref * (1 - sum(rate*dt))",
+  "substituted": "",
+  "value": 12.10263340389897,
+  "unit": "days"
+ },
+ {
+  "group": "9 Shelf life",
+  "name": "Freshness score",
+  "formula": "100 * (1 - used)",
+  "substituted": "",
+  "value": 86.4,
+  "unit": "/100"
+ },
+ {
+  "group": "9 Shelf life",
+  "name": "WARNING",
+  "formula": "",
+  "substituted": "Chilling injury risk: 72.0 h below 10 C (safe range for Tomato (firm-ripe) is 10-12 C).",
+  "value": null,
+  "unit": ""
+ }
+]

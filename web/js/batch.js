@@ -33,6 +33,7 @@ export class Batches {
   }
 
   buyerURL(id) {
+    if (location.protocol === 'file:') return `buyer.html?b=${encodeURIComponent(id)}`;   // static backup
     const h = location.hostname;
     const host = (h === 'localhost' || h === '127.0.0.1') ? `${this.cfg.lan_ip}:${location.port || 8000}` : location.host;
     return `http://${host}/buyer.html?b=${encodeURIComponent(id)}`;
@@ -40,7 +41,7 @@ export class Batches {
 
   async create(form) {
     $('batchModal').classList.remove('on');
-    const data = Object.fromEntries(form.entries());
+    const data = Object.fromEntries(form.entries());   // FormData or Map
     data.t = this.clock.t;
     const b = await postJSON('api/batch', data);
     this.feed.poll();
@@ -100,7 +101,7 @@ export class Batches {
         <canvas id="cardHist" style="width:100%;height:100px"></canvas>
       </div><div>
         <div id="qr"></div><div class="url">${url}</div>
-        <div class="note">Buyers scan this on a phone connected to the laptop's Wi-Fi hotspot.</div>
+        <div class="note">${location.protocol === 'file:' ? 'Static backup (no server): the buyer page opens on this laptop only – phones need the Python version.' : "Buyers scan this on a phone connected to the laptop's Wi-Fi hotspot."}</div>
         <a href="buyer.html?b=${encodeURIComponent(id)}" target="_blank">Open buyer page ▸</a>
       </div></div>
       <div class="row"><button class="ghost" onclick="document.getElementById('cardModal').classList.remove('on')">Close</button></div>`;

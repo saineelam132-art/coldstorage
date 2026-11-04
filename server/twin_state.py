@@ -62,6 +62,15 @@ class TwinState:
         self.door = door_seconds(self.cfg, self.weather)
         self.summary, self.df = simulate(self.cfg, self.weather, door_secs=self.door)
         self.dt = float(self.cfg["simulation"]["dt_s"])
+        # the SAME room with smart (forecast-based) control, for the side-by-side comparison
+        from engine.config import with_overrides
+        self.smart_summary, sdf = simulate(with_overrides(self.cfg, {"controller": {"mode": "forecast"}}),
+                                           self.weather, door_secs=self.door)
+        self.smart = {k: sdf[k].values for k in ("T_room", "pcm_pct", "P_grid", "P_solar_used")}
+        self.smart["grid_on"] = sdf["grid_on"].values
+        self.grid_h_cum = {"normal": np.cumsum(self.df["grid_on"].values) * self.dt / 3600,
+                           "smart": np.cumsum(self.smart["grid_on"]) * self.dt / 3600}
+        self.dt = float(self.cfg["simulation"]["dt_s"])
         self.n = len(self.df)
         self.t0 = self.df.index[0]
         self.year_s = self.n * self.dt
@@ -176,6 +185,14 @@ class TwinState:
             "sun": {"elevation_deg": elev, "azimuth_deg": az},
             "day_class": str(self.day_class[day]), "day_poa_kWh_m2": float(self.day_poa[day]),
             "values": values,
+            "compare": {
+                "normal": {"T_room": T_room, "pcm_pct": float(c["pcm_pct"][i]), "grid_on": bool(c["grid_on"][i]),
+                           "grid_h_so_far": float(self.grid_h_cum["normal"][i])},
+                "smart": {"T_room": float(self.smart["T_room"][i]), "pcm_pct": float(self.smart["pcm_pct"][i]),
+                          "grid_on": bool(self.smart["grid_on"][i]), "grid_h_so_far": float(self.grid_h_cum["smart"][i])},
+                "year": {"normal_grid_h": self.summary["grid_hours"], "smart_grid_h": self.smart_summary["grid_hours"],
+                         "normal_days_pct": self.summary["pct_days_full_solar_pcm"],
+                         "smart_days_pct": self.smart_summary["pct_days_full_solar_pcm"]}},
             "ledger": {"length": len(self.ledger.chain.blocks), "valid": self.ledger.chain.verify()["valid"],
                        "batches": len(self.ledger.batches)},
         }

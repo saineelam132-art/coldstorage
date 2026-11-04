@@ -176,8 +176,8 @@ body.lowgfx .fanglow{animation:none}
 .bc .url{font:12px Consolas,monospace;word-break:break-all;color:var(--ink2)}
 @media (max-width:560px){.bc{grid-template-columns:1fr}}
 .drawer{position:fixed;left:0;right:0;bottom:64px;height:300px;background:#f2f7fb;color:var(--ink);z-index:24;
-  transform:translateY(110%);transition:transform .35s;box-shadow:0 -10px 40px rgba(0,0,0,.4);padding:10px 14px;display:flex;flex-direction:column}
-.drawer.on{transform:none}
+  transform:translateY(calc(100% + 90px));visibility:hidden;transition:transform .35s,visibility .35s;box-shadow:0 -10px 40px rgba(0,0,0,.4);padding:10px 14px;display:flex;flex-direction:column}
+.drawer.on{transform:none;visibility:visible}
 .drawer header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .drawer header b{font-size:17px}
 .drawer .btns{margin-left:auto;display:flex;gap:6px}
@@ -208,3 +208,69 @@ body.lowgfx .fanglow{animation:none}
   padding:3px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;animation:pulse 1.4s infinite}
 @keyframes pulse{50%{transform:translate(-50%,-150%)}}
 .databar .cell small.flag{display:block;font-size:11px;color:#fca5a5;font-weight:700}
+
+/* ---------- step 5: control centre, tour, 2D ---------- */
+.act.tour{background:var(--teal);color:#032;font-weight:700;border-color:var(--teal)}
+body.flat #viewSeg{display:none}
+.cc{position:fixed;inset:60px 18px 72px 18px;background:#f4f8fb;color:var(--ink);border-radius:14px;z-index:30;display:none;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden}
+.cc.on{display:flex}
+.cc header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:#e3ecf3;flex-wrap:wrap}
+.cc header b{font-size:18px}
+.cc nav{display:flex;gap:4px;flex-wrap:wrap}
+.cc nav button{border:0;background:none;padding:7px 12px;border-radius:8px;font-size:14px;cursor:pointer;color:var(--ink2)}
+.cc nav button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.cc .x{margin-left:auto;border:0;background:none;font-size:26px;cursor:pointer;color:var(--ink2)}
+.ccbody{overflow:auto;padding:12px 18px 20px}
+.ccbody .lead{font-size:15px;color:var(--ink2);margin:4px 0 10px}
+.ccbody h3{margin:16px 0 6px}
+.ccbody .small{font-size:12.5px;color:var(--muted)}
+table.calc{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;border-radius:8px}
+table.calc td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.calc tr.grp td{background:#eaf3fb;font-weight:700}
+table.calc code{font-size:12.5px} table.calc code.sub{color:var(--ink2)}
+table.calc .num{text-align:right;white-space:nowrap;font-weight:600}
+table.sens td{font-size:12.5px}
+.sharebar{display:inline-block;width:70px;height:8px;background:#e3ecf3;border-radius:4px;margin-right:6px;vertical-align:middle;overflow:hidden}
+.sharebar i{display:block;height:100%;background:var(--blue)}
+.wi{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:18px}
+.wiIn{background:#fff;border-radius:10px;padding:12px 14px}
+.sl{display:block;margin:10px 0;font-size:14px}
+.sl input[type=range]{width:100%}
+.sl select{width:100%;padding:6px;margin-top:4px}
+.chk2{display:inline-flex;gap:6px;margin:6px 14px 6px 0;font-size:14px}
+.wiOut{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;align-content:start}
+.out{background:#fff;border-radius:10px;padding:10px 12px;border-left:4px solid var(--teal)}
+.out span{display:block;font-size:12.5px;color:var(--ink2)} .out b{display:block;font-size:26px;margin:2px 0}
+.out small{font-size:12px;color:var(--muted)}
+.out.warn{border-color:var(--amber)} .out.bad{border-color:var(--red)} .out.bad b{color:var(--red)}
+.rooms{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.room{background:#fff;border-radius:12px;padding:12px 16px;border-top:5px solid var(--blue);position:relative;min-height:220px}
+.room.smart{border-color:var(--teal)}
+.room h3{margin:0}
+.rbig{font-size:46px;font-weight:800;margin:6px 0}
+.tank{position:absolute;right:18px;top:16px;width:60px;height:120px;border:2px solid #93c5fd;border-radius:8px;overflow:hidden;background:#f1f5f9}
+.tank i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#93c5fd,#2a78d6);transition:height 1s}
+.tank span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:700;color:#0d1b2a}
+.kv2{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:14px;max-width:70%}
+.kv2.wide{max-width:none;background:#fff;border-radius:10px;padding:10px 14px;margin-top:12px;font-size:16px}
+.kv2 b.g{color:var(--amber)} .kv2 b.s{color:#15803d}
+.figs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.figs figure{margin:0;background:#fff;border-radius:10px;padding:8px}
+.figs img{width:100%;display:block}
+.figs figcaption{font-size:13px;color:var(--ink2);margin-top:4px}
+.tourbar{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);width:min(980px,96vw);background:rgba(4,14,26,.93);
+  color:#fff;border-radius:14px;padding:14px 18px 16px;z-index:45;display:none;border:1px solid rgba(20,184,166,.6);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.tourbar.on{display:block}
+.tcap{font-size:22px;line-height:1.35;padding-right:200px;min-height:60px}
+.tcap b{color:#7ff0d6}
+.tctl{position:absolute;right:14px;top:12px;display:flex;align-items:center;gap:6px}
+.tctl span{font-size:13px;color:#9fb6c8;margin-right:4px}
+.tctl button{background:#0e2740;color:#fff;border:1px solid #23496d;border-radius:7px;width:34px;height:30px;cursor:pointer}
+.tprog{position:absolute;left:0;right:0;bottom:0;height:4px;background:#12314d;border-radius:0 0 14px 14px;overflow:hidden}
+.tprog i{display:block;height:100%;background:var(--teal);transition:width .5s}
+body.touring .storynav,body.touring .caption,body.touring .enterbtn{display:none}
+@media (max-width:900px){.wi,.rooms{grid-template-columns:1fr}.tcap{font-size:17px;padding-right:0;padding-top:30px}.acts .act:not(.tour){display:none}}
+
+@media (max-width:1500px){.brand small{display:none}.topbar{gap:10px}.seg button{padding:6px 9px}.act{padding:6px 9px}}
+@media (max-width:1280px){.chk.lowpri{display:none}}
