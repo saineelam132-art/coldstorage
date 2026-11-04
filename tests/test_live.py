@@ -46,12 +46,19 @@ def test_compressor_never_above_its_maximum(run):
     assert H.Q_cool.max() <= load_config()["live_run"]["compressor_max_kW"] + 1e-9
 
 
-def test_fresh_batch_enters_at_8_am_at_outside_temperature(run, weather):
+def test_produce_swap_happens_at_the_chosen_time_with_the_right_mass(run, weather):
     *_, H, tot, end, bt = run
-    first = H[H.time_ist.dt.hour == 8].iloc[0]
-    assert first.T_batch > 20                                # hot May morning, warmer than the room
-    w8 = weather[weather.time_ist.dt.hour == 8].T_out.values
-    assert np.allclose(bt.T_in_C.values[: len(w8)], w8, atol=1.5)   # interpolated within the hour
+    ld = load_config()["live_run"]["loading"]
+    assert sum(e["kg"] for e in ld) == 150 == tot["produce_kg"]
+    hours = {e["hour"] for e in ld}
+    days = H.time_ist.dt.date.nunique()
+    assert len(bt) == days * len(ld)                          # one swap per event per day
+    w = weather.set_index("time_ist").T_out
+    for _, b in bt.head(10).iterrows():
+        ev = ld[int(b.event)]
+        assert b.kg == ev["kg"]
+        t = pd.Timestamp(b.date) + pd.Timedelta(hours=ev["hour"])
+        assert abs(b.T_in_C - w.loc[t]) < 1.5                    # enters at that hour's outside temperature
 
 
 def test_no_battery_for_cooling(run):

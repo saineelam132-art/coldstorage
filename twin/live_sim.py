@@ -2,10 +2,15 @@
 FIXED inputs in config/design.json -> live_run.
 
 Same physics as twin/simulate.py, with these differences (all asked for):
-  * 200 kg of produce is ALWAYS inside. At 8 am every day the 200 kg inside goes out and 200 kg of
-    fresh produce comes in at THAT HOUR'S OUTSIDE TEMPERATURE. We record how long it takes to
-    reach 5.5 C (within 0.5 K of the 5 C set-point).
-  * Door: 4 openings a day, 15 s each, at fixed times (8:00, 8:10, 12:00, 17:00). No randomness.
+  * 150 kg of produce (rated capacity) is ALWAYS inside. Loading events (live_run.loading) swap
+    produce: at each event that share goes out and the same mass of fresh produce comes in at
+    THAT HOUR'S OUTSIDE TEMPERATURE. We record how long it takes to reach 5.5 C.
+  * Door: each loading = 2 openings (hh:00 and hh:10); with one event, 2 more at 12:00 and 17:00.
+    4 a day, 15 s each. No randomness.
+  * Wax panels sit behind a BAFFLE CHANNEL (engine/fan.py). Fan off: cold air falls down the
+    channel by itself (natural draft). Night fan: runs only when the compressor is off and the room
+    is above 5 C, at the lowest speed that holds about 6 C. Its power is heat added to the room.
+  * Sunlight is multiplied by live_run.sun_factor (0.88 = NASA level, conservative).
   * Compressor maximum 1.5 kW cooling (DC inverter, 30-100 %). The real load is calculated every
     5 minutes; 1.5 kW is only the limit.
   * NO battery for cooling. The compressor AND the 40 W evaporator fan run only on solar or grid.
@@ -34,6 +39,13 @@ def _steps(hourly, centre_offset_h, n_hours):
     return np.interp(t, x, np.asarray(hourly, dtype=float))
 
 
+def _hottest_night(weather):
+    """Mean outside temperature (19:00-06:00) of the hottest night in the weather given."""
+    w = weather[(weather.time_ist.dt.hour >= 19) | (weather.time_ist.dt.hour < 6)]
+    nights = (w.time_ist - pd.Timedelta(hours=7)).dt.date
+    return w.groupby(nights).T_out.mean().max()
+
+
 def cycle_table(cfg):
     T = np.arange(-5.0, 55.01, 0.25)
     rows = [r290.cycle_from_config(cfg, T_amb_C=t, Q_evap_kW=1.0) for t in T]
@@ -48,11 +60,27 @@ def poa_hourly(cfg, weather):
                      for g, t in zip(weather["ghi"].values, mid)])
 
 
-def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_key=None, init=None):
+def door_times(loading):
+    """B6: each loading = 2 openings (hh:00, hh:10); with one event add 12:00 and 17:00."""
+    t = []
+    for ev in loading:
+        t += [(ev["hour"], 0), (ev["hour"], 10)]
+    if len(loading) == 1:
+        t += [(12, 0), (17, 0)]
+    return t
+
+
+def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_key=None, init=None,
+                  fan_on=None, sun_factor=None, loading=None):
     """Run the live twin. weather: hourly frame with time_ist, T_out, RH_out, ps_Pa, ghi, wind.
-    Returns (hourly DataFrame, totals dict, end_state dict)."""
+    Returns (hourly DataFrame, totals dict, end_state dict, batches DataFrame)."""
+    from engine import fan as FAN
     cfg = cfg or load_config()
     lr = cfg["live_run"]
+    sun = lr.get("sun_factor", 1.0) if sun_factor is None else sun_factor
+    weather = weather.copy()
+    weather["ghi"] = weather["ghi"] * sun
+    loading = loading or lr["loading"]
     crop = load_crops()[crop_key or cfg["product"]["default_crop"]]
     des = lr["designs"][design]
     grid_only = mode == "grid_only"
@@ -93,24 +121,32 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     assist = lr.get("grid_assist_during_loading", True)
     load_steps = int(lr.get("loading_window_h", 3) * 3600 / DT)
 
-    # ---- produce: one 200 kg node, swapped daily
-    m_b, cp = lr["produce_kg"], cfg["product"]["cp_kJ_kgK"]
-    UA_b = m_b * cp * math.log(8.0) / (cfg["product"]["pulldown_hours"] * 3600.0)   # same 7/8-in-4-h rate as before
+    # ---- produce: one node per loading event (masses add up to the 150 kg always inside)
+    cp = cfg["product"]["cp_kJ_kgK"]
+    tau = cfg["product"]["pulldown_hours"] * 3600.0 / math.log(8.0)     # same 7/8-in-4-h rate as before
+    masses = [float(ev["kg"]) for ev in loading]
+    m_b = sum(masses)
     r_ref, Q10, T_ref = crop.get("respiration_W_per_kg_at_ref", 0.0), crop["Q10"], crop["T_ref_C"]
 
     # ---- wax
     pc = cfg["pcm"]
     m_p = 0.0 if grid_only else float(des["pcm_kg"])
     L, cps, cpl, Tm = pc["latent_kJ_kg"], pc["cp_solid_kJ_kgK"], pc["cp_liquid_kJ_kgK"], pc["T_melt_C"]
+    nf = lr["night_fan"]
+    fan_enabled = nf["enabled"] if fan_on is None else fan_on
+    fan_info = None
     if m_p > 0:
         A = pc["slab_area_m2"]
         thick = m_p / (pc["density_kg_m3"] * A)
         half = thick / 2 / pc["k_W_mK"]
-        UA_fan = A / (1 / pc["air_side_h_W_m2K"] + half) / 1000.0
-        UA_nat = A / (1 / lr["natural_convection_h_W_m2K"] + half) / 1000.0
         UA_ch = A / (half + cfg["simulation"]["pcm_charge_coil_R_m2K_W"]) / 1000.0
+        T_night = float(_hottest_night(weather))
+        fan_info = FAN.size_fan(cfg, T_night, m_p, nf["design_room_max_C"], nf["margin"])
+        speeds, G_fan_tab, dTs, G_nat_tab, v_max = FAN.conductance_tables(cfg, m_p, fan_info["fan"])
+        G_fan_tab, G_nat_tab = G_fan_tab / 1000.0, G_nat_tab / 1000.0          # kW/K
+        fan_rated_kW = fan_info["fan"]["total_W"] / 1000.0
     else:
-        UA_fan = UA_nat = UA_ch = 0.0
+        UA_ch = 0.0
     h_min = cps * (cfg["simulation"]["pcm_charge_stop_C"] - Tm)
     T_evap = cfg["refrigeration"]["T_evap_C"]
     T_pcm_of = lambda h: Tm + h / cps if h < 0 else (Tm + (h - L) / cpl if h > L else Tm)
@@ -119,44 +155,57 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     door = np.zeros(n)
     hrs = (t0 + pd.to_timedelta(np.arange(n) * DT, unit="s"))
     hod, minute, day = hrs.hour.values, hrs.minute.values, ((hrs - t0.normalize()).days).values
-    for (hh, mm) in lr["door_openings"]:
+    for (hh, mm) in door_times(loading):
         door[(hod == hh) & (minute == (mm // 5) * 5)] += lr["door_seconds"]
-    swap = (hod == lr["swap_hour"]) & (minute == 0)
+    event_at = np.full(n, -1)
+    for k, ev in enumerate(loading):
+        event_at[(hod == ev["hour"]) & (minute == 0)] = k
 
     # ---- state
     st = init or {}
     T_r = st.get("T_room", Tset)
-    T_b = st.get("T_batch", Tset)
+    T_n = list(st.get("T_nodes", [Tset] * len(masses)))
     h = st.get("pcm_h", 0.0) if m_p > 0 else 0.0
     grid_mode = st.get("grid_mode", False)
-    E0 = C_room * T_r + m_b * cp * T_b + m_p * h
+    E0 = C_room * T_r + sum(m * cp * t for m, t in zip(masses, T_n)) + m_p * h
 
     out = {k: np.zeros(n) for k in ("T_room", "T_batch", "pcm_pct", "Q_wall", "Q_door", "Q_batch", "Q_resp", "Q_int",
                                     "Q_air", "Q_ch", "Q_pcm_room", "P_comp", "P_pv", "P_solar_used", "P_grid", "grid_on",
-                                    "running", "door_s", "solar_ok")}
+                                    "running", "door_s", "solar_ok", "fan_speed", "fan_W", "G_wax", "batt12_W")}
     acc = dict(in_=0.0, out=0.0, prod_in=0.0, prod_out=0.0)
-    batches = []        # (swap step, T_in, steps to cool or None)
-    cool_from = None
+    batches = []        # [step, event k, T_in, steps to cool or None, T after 4 h]
+    last_event = None
+    last_k = 0
+    since = [None] * len(masses)
+    batt_base_kW = sum(lr["battery_12V"]["loads_W"].values()) / 1000.0
+    s4 = int(4 * 3600 / DT)
 
     for i in range(n):
-        if swap[i]:
-            acc["prod_out"] += m_b * cp * T_b
-            T_b = T_out[i]
-            acc["prod_in"] += m_b * cp * T_b
-            if cool_from is not None and batches[-1][2] is None:
-                pass
-            batches.append([i, T_b, None])
-            cool_from = i
-        if cool_from is not None and batches[-1][2] is None and T_b <= Tset + lr["cooled_within_K"]:
-            batches[-1][2] = i - cool_from
+        k = event_at[i]
+        if k >= 0:                                    # loading event k: that share goes out, fresh in
+            acc["prod_out"] += masses[k] * cp * T_n[k]
+            T_n[k] = T_out[i]
+            acc["prod_in"] += masses[k] * cp * T_n[k]
+            batches.append([i, k, T_n[k], None, None])
+            since[k] = len(batches) - 1
+            last_event = i
+            last_k = k
+        for kk, bi in enumerate(since):
+            if bi is None:
+                continue
+            b = batches[bi]
+            if b[3] is None and T_n[kk] <= Tset + lr["cooled_within_K"]:
+                b[3] = i - b[0]
+            if b[4] is None and i - b[0] >= s4:
+                b[4] = T_n[kk]
 
         T_p = T_pcm_of(h) if m_p > 0 else T_r
         pct = 100.0 * (1 - min(1.0, max(0.0, h / L))) if m_p > 0 else 0.0
 
         # power available. 'hot' = room above the protection limit; during the loading window the
         # rule can be switched off (grid_assist_during_loading=false): then only the fresh batch is warm.
-        loading = cool_from is not None and i - cool_from < load_steps
-        hot = T_r > protect and (assist or not loading)
+        loading_now = last_event is not None and i - last_event < load_steps
+        hot = T_r > protect and (assist or not loading_now)
         if grid_only:
             Q_sun, solar_ok, grid_mode = 0.0, False, True
         else:
@@ -177,25 +226,41 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
             Q_door = inf["Q_kW"] * Dt
         else:
             Q_door = 0.0
-        Q_resp = m_b * r_ref * Q10 ** ((T_b - T_ref) / 10.0) / 1000.0
-        Q_b = UA_b * (T_b - T_r)
+        Q_resp = sum(m * r_ref * Q10 ** ((t - T_ref) / 10.0) for m, t in zip(masses, T_n)) / 1000.0
+        Q_bs = [m * cp / tau * (t - T_r) for m, t in zip(masses, T_n)]
+        Q_b = sum(Q_bs)
 
-        # cooling needed to hold the set-point (decide with the fan on)
-        Q_pa_fan = UA_fan * (T_r - T_p) if m_p > 0 else 0.0
+        # wax channel with the fan OFF (natural draft): conductance depends on the temperature difference
+        dTw = T_r - T_p if m_p > 0 else 0.0
+        G_nat = float(np.interp(max(dTw, 0.0), dTs, G_nat_tab)) if m_p > 0 else 0.0
+        Q_pa_nat = G_nat * dTw if dTw > 0 else (G_nat_tab[1] * dTw if m_p > 0 else 0.0)
         lights = il["lights_W"] / 1000.0 * max(il["lights_on_fraction"], Dt)
         base = Q_wall + Q_door + Q_resp + Q_b + lights + ctrl_kW
-        Q_req = base + fan_kW - Q_pa_fan + C_room * (T_r - Tset) / DT
+        Q_req = base + fan_kW - Q_pa_nat + C_room * (T_r - Tset) / DT
         Q_air = min(max(Q_req, 0.0), Q_avail)
         Q_ch = 0.0
         if m_p > 0 and solar_ok and not grid_mode and Q_avail - Q_air > 0:
             Q_ch = max(0.0, min(Q_avail - Q_air, UA_ch * (T_p - T_evap), m_p * (h - h_min) / DT))
         running = (Q_air + Q_ch) > 1e-9
-        # the fan only runs with the compressor (no battery for cooling)
+        # the evaporator fan only runs with the compressor (no battery for cooling)
         Q_fan = fan_kW if running else 0.0
-        Q_pa = (UA_fan if running else UA_nat) * (T_r - T_p) if m_p > 0 else 0.0
         if not running:
             Q_air = 0.0
-        Q_int = lights + ctrl_kW + Q_fan
+        # NIGHT WAX FAN: only when the compressor is off and the room is above 5 C; lowest speed
+        # that holds the fan target (about 6 C). Its power is heat in the room (counted in Q_int).
+        spd, P_nf, G_w = 0.0, 0.0, G_nat
+        if m_p > 0 and fan_enabled and not running and T_r > nf["on_above_C"] and dTw > 0.05:
+            need = (base - Q_pa_nat * 0 + C_room * (T_r - nf["target_C"]) / 1800.0)
+            for _ in range(2):                                # fan heat is part of what it must remove
+                G_need = (need + P_nf) / dTw
+                if G_need <= G_nat:
+                    spd, P_nf = 0.0, 0.0
+                    break
+                spd = float(np.interp(G_need, G_fan_tab, speeds)) if G_need < G_fan_tab[-1] else 1.0
+                P_nf = fan_rated_kW * spd ** 3
+            G_w = max(G_nat, float(np.interp(spd, speeds, G_fan_tab))) if spd > 0 else G_nat
+        Q_pa = G_w * dTw if m_p > 0 else 0.0
+        Q_int = lights + ctrl_kW + Q_fan + P_nf
         net = Q_wall + Q_door + Q_resp + Q_b + Q_int - Q_pa
 
         P_comp = (Q_air + Q_ch) / cop[i] + Q_fan if running else 0.0
@@ -206,7 +271,9 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
             P_sol, P_grid = P_comp, 0.0
 
         T_r += (net - Q_air) * DT / C_room
-        T_b -= Q_b * DT / (m_b * cp)
+        for kk in range(len(masses)):
+            T_n[kk] -= Q_bs[kk] * DT / (masses[kk] * cp)
+        T_b = T_n[last_k]                              # the most recently loaded produce
         if m_p > 0:
             h += (Q_pa - Q_ch) * DT / m_p
 
@@ -216,10 +283,11 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                          ("Q_batch", Q_b), ("Q_resp", Q_resp), ("Q_int", Q_int), ("Q_air", Q_air), ("Q_ch", Q_ch),
                          ("Q_pcm_room", Q_pa), ("P_comp", P_comp), ("P_pv", P_pv[i]), ("P_solar_used", P_sol),
                          ("P_grid", P_grid), ("grid_on", float(grid_mode)), ("running", float(running)),
-                         ("door_s", door[i]), ("solar_ok", float(solar_ok))):
+                         ("door_s", door[i]), ("solar_ok", float(solar_ok)), ("fan_speed", spd), ("fan_W", P_nf * 1000),
+                         ("G_wax", G_w * 1000), ("batt12_W", (batt_base_kW + P_nf) * 1000)):
             out[key][i] = val
 
-    E1 = C_room * T_r + m_b * cp * T_b + m_p * h
+    E1 = C_room * T_r + sum(m * cp * t for m, t in zip(masses, T_n)) + m_p * h
     heat_in = acc["in_"] + acc["prod_in"]
     heat_out = acc["out"] + acc["prod_out"]
     bal = heat_in - heat_out - (E1 - E0)
@@ -244,12 +312,15 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     H.loc[H["running_h"] == 0, ["COP", "P_evap_bar", "P_cond_bar", "T_cond_C", "T_discharge_C"]] = np.nan
     H["Q_load"] = H["Q_wall"] + H["Q_door"] + H["Q_batch"] + H["Q_resp"] + H["Q_int"]
 
-    bt = pd.DataFrame(batches, columns=["step", "T_in_C", "cool_steps"])
+    bt = pd.DataFrame(batches, columns=["step", "event", "T_in_C", "cool_steps", "T_after_4h_C"])
     bt["date"] = (t0 + pd.to_timedelta(bt["step"] * DT, unit="s")).dt.date.astype(str)
-    bt["cool_h"] = bt["cool_steps"] * DT / 3600.0
+    bt["cool_h"] = bt["cool_steps"].astype(float) * DT / 3600.0
+    bt["kg"] = [masses[e] for e in bt["event"]]
     totals = {"design": design, "mode": mode, "pcm_kg": m_p, "pv_kWp": kWp, "hours": nH,
               "energy_in_kWh": heat_in / 3600, "energy_out_kWh": heat_out / 3600,
               "stored_change_kWh": (E1 - E0) / 3600, "energy_balance_error_kWh": bal / 3600,
-              "energy_balance_error_pct": 100 * abs(bal) / heat_out if heat_out else 0.0}
-    end_state = {"T_room": T_r, "T_batch": T_b, "pcm_h": h, "grid_mode": grid_mode}
-    return H, totals, end_state, bt[["date", "T_in_C", "cool_h"]]
+              "energy_balance_error_pct": 100 * abs(bal) / heat_out if heat_out else 0.0,
+              "sun_factor": sun, "fan_enabled": bool(fan_enabled and m_p > 0), "fan_sizing": fan_info,
+              "loading": loading, "produce_kg": m_b}
+    end_state = {"T_room": T_r, "T_nodes": T_n, "pcm_h": h, "grid_mode": grid_mode}
+    return H, totals, end_state, bt[["date", "event", "kg", "T_in_C", "cool_h", "T_after_4h_C"]]
