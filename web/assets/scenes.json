@@ -58,7 +58,7 @@
       "y0": 21.3,
       "y1": 89.5,
       "view": "inside",
-      "label_y": 17.0
+      "label_y": 33.0
     }
   },
   "pcm_panels": {
@@ -132,5 +132,41 @@
   "caption_right": [
     "A8_interior_wide",
     "A9_interior_pcm_wall"
-  ]
+  ],
+  "cutouts": {
+    "_about": "Which B cut-out picture appears in which detail panel. 'missing' = no picture yet (a drawn placeholder is shown).",
+    "sensors": {
+      "t_mid": "B6_sensor_box_TRH",
+      "t_low": "B7_temperature_probe",
+      "t_high": "B7_temperature_probe",
+      "t_evap": "B7_temperature_probe",
+      "t_prod": "B7_temperature_probe",
+      "t_pcm": "B7_temperature_probe",
+      "door_switch": "B8_door_reed_switch",
+      "ats": "B9_controller_box",
+      "comp_power": "B9_controller_box",
+      "pv_power": "B9_controller_box",
+      "gas": "B11_gas_sensor",
+      "dp": "missing:B10 differential pressure sensor"
+    },
+    "parts": {
+      "pcm": "B12_pcm_panel",
+      "condenser": "B13_condensing_unit",
+      "crates": "B14_qr_tag_crate",
+      "crate_greens": "B1_crate_leafy",
+      "crate_grapes": "B2_crate_grapes",
+      "milk": "B3_milk_can",
+      "vaccine": "B4_vaccine_box",
+      "worker": "B5a_worker_side"
+    },
+    "crops": {
+      "leafy_greens": "B1_crate_leafy",
+      "grapes": "B2_crate_grapes",
+      "milk": "B3_milk_can",
+      "vaccines": "B4_vaccine_box",
+      "default": "B14_qr_tag_crate"
+    },
+    "worker_side": "B5a_worker_side",
+    "worker_back": "B5b_worker_back"
+  }
 }

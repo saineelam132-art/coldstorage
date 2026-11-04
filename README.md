@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Phase 1 – check the engine
 
-Run all tests (should say `86 passed`):
+Run all tests (should say `87 passed`):
 
 ```
 python -m pytest -q
@@ -104,6 +104,8 @@ address printed in the window.
 - Press **F** to show the performance readout (frames per second). Below 30 fps, tick Low graphics.
 
 New pictures: put them in `web/assets/images/` (names starting A, B or C) and run
+(B pictures get their white background removed with `rembg`; install once with
+`pip install "rembg[cpu]"` – it downloads its 176 MB model the first time, then works offline)
 
 ```
 python tools/prepare_images.py

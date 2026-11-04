@@ -134,15 +134,20 @@ export class PhotoView {
   goByName(name) { const i = this.story.indexOf(name); if (i >= 0) this.go(i, true); }
 
   // a glowing "NEW" crate marker on the inside picture for a new batch
-  addBatchSpot(id, [x, y]) {
+  addBatchSpot(id, [x, y], img) {
     const el = this.layers.A8_interior_wide;
     if (!el) return;
     const hots = el.querySelector('.hots');
-    hots.querySelectorAll('.newtag').forEach(n => n.remove());
+    hots.querySelectorAll('.newtag,.crate-cut,.hot[aria-label^="batch:"]').forEach(n => n.remove());
+    if (img) {                                    // the B cut-out crate, put down in the aisle
+      const c = document.createElement('img'); c.className = 'crate-cut'; c.src = img;
+      c.style.left = `${x}%`; c.style.top = `${y}%`; c.style.width = '15%';
+      hots.appendChild(c);
+    }
     const b = document.createElement('button');
-    b.className = 'hot part'; b.style.left = `${x}%`; b.style.top = `${y}%`; b.setAttribute('aria-label', 'batch:' + id);
+    b.className = 'hot part'; b.style.left = `${x}%`; b.style.top = `${y - 6}%`; b.setAttribute('aria-label', 'batch:' + id);
     b.onclick = () => document.dispatchEvent(new CustomEvent('openbatch', { detail: id }));
-    const tag = document.createElement('div'); tag.className = 'newtag'; tag.style.left = `${x}%`; tag.style.top = `${y}%`;
+    const tag = document.createElement('div'); tag.className = 'newtag'; tag.style.left = `${x}%`; tag.style.top = `${y - 14}%`;
     tag.textContent = `NEW · ${id}`;
     hots.append(b, tag);
   }

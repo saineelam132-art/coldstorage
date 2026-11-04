@@ -14,8 +14,8 @@ const WORKER_SVG = `<svg viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg"
   <ellipse cx="30" cy="40" rx="18" ry="5" fill="#3f9a3a"/>
 </svg>`;
 
-// Where a new crate of each crop appears in the inside picture (A8), in % of the picture
-const SPOT = { leafy_greens: [15, 55.2], grapes: [85.8, 57.5], milk: [30, 71.6], vaccines: [80, 40], default: [22, 84] };
+// The new crate is put down on the floor of the aisle in the inside picture (A8), in % of the picture
+const SPOT = [50, 86];
 
 export class Batches {
   constructor({ cfg, manifest, photo, getModel, clock, feed, ledgerUI }) {
@@ -28,8 +28,11 @@ export class Batches {
     $('batchForm').onsubmit = e => { e.preventDefault(); this.create(new FormData(e.target)); };
     $('cardModal').onclick = e => { if (e.target.id === 'cardModal') $('cardModal').classList.remove('on'); };
     document.addEventListener('openbatch', e => this.showCard(e.detail));
-    const w = Object.entries(manifest.B || {}).find(([k]) => /worker/i.test(k));
-    this.workerHTML = w ? `<img src="${w[1].src}" alt="worker">` : WORKER_SVG;     // B cut-out when available
+    const cut = this.cut = n => (n && manifest.B?.[n]?.src) || null;
+    const sc = photo.scenes.cutouts || {};
+    this.side = cut(sc.worker_side); this.back = cut(sc.worker_back);           // B5a / B5b cut-outs
+    this.cropImg = crop => cut(sc.crops?.[crop]) || cut(sc.crops?.default);
+    this.workerHTML = this.side ? `<img src="${this.side}" alt="worker" style="transform:scaleX(-1)">` : WORKER_SVG;
   }
 
   buyerURL(id) {
@@ -60,25 +63,31 @@ export class Batches {
     const el = P.layers.A2_front;
     const r = el.getBoundingClientRect();
     const W = $('walker'); W.innerHTML = this.workerHTML; W.classList.add('on');
-    const h = r.height * 0.44, w = h * 0.5;
+    const h = r.height * 0.46, w = h * (this.side ? 507 / 900 : 0.5);
     W.style.width = `${w}px`; W.style.height = `${h}px`;
-    const x0 = r.left + r.width * 0.12, x1 = r.left + r.width * 0.47, yFeet = r.top + r.height * 0.86;
-    const t0 = performance.now(), dur = 2600;
-    await new Promise(res => {
+    const x0 = r.left + r.width * 0.10, x1 = r.left + r.width * 0.44, yFeet = r.top + r.height * 0.88;
+    const walk = (xa, xb, ms, scaleTo = 1, fade = false) => new Promise(res => {
+      const t0 = performance.now();
       const step = now => {
-        const k = Math.min(1, (now - t0) / dur);
-        const x = x0 + (x1 - x0) * k, bob = Math.abs(Math.sin(k * Math.PI * 7)) * h * 0.025;
-        W.style.left = `${x - w / 2}px`; W.style.top = `${yFeet - h - bob}px`;
-        W.style.opacity = k > 0.85 ? (1 - k) / 0.15 : 1;
+        const k = Math.min(1, (now - t0) / ms);
+        const sc = 1 + (scaleTo - 1) * k, x = xa + (xb - xa) * k, bob = Math.abs(Math.sin(k * Math.PI * ms / 380)) * h * 0.018;
+        W.style.width = `${w * sc}px`; W.style.height = `${h * sc}px`;
+        W.style.left = `${x - w * sc / 2}px`; W.style.top = `${yFeet - h * sc - bob - (1 - sc) * h * 0.35}px`;
+        W.style.opacity = fade ? 1 - k : 1;
         k < 1 ? requestAnimationFrame(step) : res();
       };
       requestAnimationFrame(step);
     });
+    await walk(x0, x1, 2600);                                        // side view, walking to the door
+    if (this.back) W.innerHTML = `<img src="${this.back}" alt="worker from behind">`;   // turns: back view
+    const xd = r.left + r.width * 0.496;
+    await walk(x1, xd, 600);
+    await walk(xd, xd, 900, 0.82, true);                             // steps into the door, smaller and fading
     W.classList.remove('on');
     P.goByName('A6_door_worker');
     await wait(3500);
     P.goByName('A8_interior_wide');
-    P.addBatchSpot(b.id, SPOT[b.crop] || SPOT.default);
+    P.addBatchSpot(b.id, SPOT, this.cropImg(b.crop));
     await wait(1600);
   }
 
@@ -89,6 +98,7 @@ export class Batches {
     $('cardBody').innerHTML = `
       <div class="bc"><div>
         <div class="note">${fresh ? 'New batch created' : 'Batch card'}</div>
+        ${this.cropImg(b.crop) ? `<img class="cropimg" src="${this.cropImg(b.crop)}" alt="${b.crop_label}">` : ''}
         <div class="id">${b.id}</div>
         <div class="kv" style="display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-top:8px;font-size:14px">
           <span>Farmer</span><b>${b.farmer}</b><span>Crop</span><b>${b.crop_label}</b>

@@ -18,6 +18,20 @@ They are illustrations, not photographs of the real system.
 | A7_doorway_from_inside | A | photographic scene |
 | A8_interior_wide | A | photographic scene |
 | A9_interior_pcm_wall | A | photographic scene |
+| B11_gas_sensor | B | cut-out object (background removed) |
+| B12_pcm_panel | B | cut-out object (background removed) |
+| B13_condensing_unit | B | cut-out object (background removed) |
+| B14_qr_tag_crate | B | cut-out object (background removed) |
+| B1_crate_leafy | B | cut-out object (background removed) |
+| B2_crate_grapes | B | cut-out object (background removed) |
+| B3_milk_can | B | cut-out object (background removed) |
+| B4_vaccine_box | B | cut-out object (background removed) |
+| B5a_worker_side | B | cut-out object (background removed) |
+| B5b_worker_back | B | cut-out object (background removed) |
+| B6_sensor_box_TRH | B | cut-out object (background removed) |
+| B7_temperature_probe | B | cut-out object (background removed) |
+| B8_door_reed_switch | B | cut-out object (background removed) |
+| B9_controller_box | B | cut-out object (background removed) |
 
 ## Software
 

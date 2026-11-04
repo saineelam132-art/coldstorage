@@ -17,6 +17,21 @@ function closeupImg(key) {
   return a ? `<img class="closeup" src="${a.small}" alt="${key} close-up">` : '';
 }
 
+// B cut-out picture for a sensor / part (assets/scenes.json -> cutouts). Placeholder if not made yet.
+export function cutoutSrc(name) { return name && MANIFEST?.B?.[name]?.src; }
+function cutoutImg(kind, id) {
+  const name = SCENES?.cutouts?.[kind]?.[id];
+  if (!name) return '';
+  if (name.startsWith('missing:')) {
+    const what = name.slice(8);
+    return `<div class="cutph"><svg viewBox="0 0 80 50" width="80" height="50"><rect x="8" y="8" width="64" height="34" rx="5" fill="#e3ecf3" stroke="#93a8bb"/>
+      <circle cx="26" cy="25" r="7" fill="none" stroke="#93a8bb" stroke-width="2"/><circle cx="54" cy="25" r="7" fill="none" stroke="#93a8bb" stroke-width="2"/>
+      <path d="M33 25h14" stroke="#93a8bb" stroke-width="2"/></svg><span>Picture coming: ${what}</span></div>`;
+  }
+  const src = cutoutSrc(name);
+  return src ? `<img class="cutout" src="${src}" alt="${id}">` : '';
+}
+
 // ------------------------------------------------------------- tooltips
 export function sensorTip(id) {
   const s = SENSORS[id], st = getState();
@@ -38,6 +53,7 @@ export function openSensor(id) {
   const render = () => {
     const st = getState();
     return `<h2>${s.name}</h2><div class="sub">${tagChip(s.tag)} ${sourceBadge(st)}</div>
+      ${cutoutImg('sensors', s.id)}
       <div class="big" data-live="v">${sensorValue(s, st)}</div>
       ${s.tag === 'C' ? `<div class="note">In the twin this value is <b>calculated</b> from the door physics (ASHRAE Gosney–Olama). With the real sensor fitted it becomes a measurement (M) that checks the formula.</div>` : ''}
       ${extraFor(s, st)}
@@ -150,6 +166,7 @@ export function openPart(id) {
   const el = openPanel(() => {
     const st = getState();
     return `<h2>${p.name}</h2><div class="sub">${sourceBadge(st)}</div>
+      ${cutoutImg('parts', id)}
       <div class="big" data-live="head">${st ? p.headline(st.values) : '—'}</div>
       ${st ? p.body(st.values, CFG) : ''}<div class="note">${st?.label || ''}</div>`;
   });

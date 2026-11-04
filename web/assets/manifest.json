@@ -73,6 +73,91 @@
       "h": 1072
     }
   },
-  "B": {},
+  "B": {
+    "B11_gas_sensor": {
+      "src": "assets/cutouts/B11_gas_sensor.webp",
+      "w": 587,
+      "h": 564,
+      "method": "rembg u2net"
+    },
+    "B12_pcm_panel": {
+      "src": "assets/cutouts/B12_pcm_panel.webp",
+      "w": 776,
+      "h": 897,
+      "method": "rembg u2net"
+    },
+    "B13_condensing_unit": {
+      "src": "assets/cutouts/B13_condensing_unit.webp",
+      "w": 828,
+      "h": 840,
+      "method": "rembg u2net"
+    },
+    "B14_qr_tag_crate": {
+      "src": "assets/cutouts/B14_qr_tag_crate.webp",
+      "w": 890,
+      "h": 683,
+      "method": "rembg u2net"
+    },
+    "B1_crate_leafy": {
+      "src": "assets/cutouts/B1_crate_leafy.webp",
+      "w": 892,
+      "h": 840,
+      "method": "rembg u2net"
+    },
+    "B2_crate_grapes": {
+      "src": "assets/cutouts/B2_crate_grapes.webp",
+      "w": 900,
+      "h": 788,
+      "method": "rembg u2net"
+    },
+    "B3_milk_can": {
+      "src": "assets/cutouts/B3_milk_can.webp",
+      "w": 493,
+      "h": 888,
+      "method": "rembg u2net"
+    },
+    "B4_vaccine_box": {
+      "src": "assets/cutouts/B4_vaccine_box.webp",
+      "w": 840,
+      "h": 799,
+      "method": "rembg u2net"
+    },
+    "B5a_worker_side": {
+      "src": "assets/cutouts/B5a_worker_side.webp",
+      "w": 507,
+      "h": 900,
+      "method": "rembg u2net"
+    },
+    "B5b_worker_back": {
+      "src": "assets/cutouts/B5b_worker_back.webp",
+      "w": 409,
+      "h": 900,
+      "method": "rembg u2net"
+    },
+    "B6_sensor_box_TRH": {
+      "src": "assets/cutouts/B6_sensor_box_TRH.webp",
+      "w": 442,
+      "h": 837,
+      "method": "rembg u2net"
+    },
+    "B7_temperature_probe": {
+      "src": "assets/cutouts/B7_temperature_probe.webp",
+      "w": 866,
+      "h": 408,
+      "method": "rembg u2net"
+    },
+    "B8_door_reed_switch": {
+      "src": "assets/cutouts/B8_door_reed_switch.webp",
+      "w": 900,
+      "h": 756,
+      "method": "rembg u2net"
+    },
+    "B9_controller_box": {
+      "src": "assets/cutouts/B9_controller_box.webp",
+      "w": 880,
+      "h": 900,
+      "method": "rembg u2net"
+    }
+  },
   "C": {}
 }

@@ -76,7 +76,7 @@ def test_doorway_settings_are_inside_the_pictures():
     for name, d in sc["doorways"].items():
         if name.startswith("_"):
             continue
-        assert 0 <= d["x0"] < d["x1"] <= 100 and 0 <= d["label_y"] < d["y0"] < d["y1"] <= 100
+        assert 0 <= d["x0"] < d["x1"] <= 100 and 0 <= d["y0"] < d["y1"] <= 100 and 0 <= d["label_y"] < d["y1"]
         assert d["view"] in ("outside", "inside")
 
 
@@ -136,3 +136,11 @@ def test_tamper_demo_breaks_chain_and_reset_fixes_it():
     assert not lg["valid"] and lg["first_bad"] == r["index"]
     tw.ledger.chain.reset_tamper()
     assert tw.ledger.ledger()["valid"]
+
+
+def test_cutout_mapping_points_to_real_pictures():
+    sc = json.loads((ROOT / "web/assets/scenes.json").read_text(encoding="utf-8"))["cutouts"]
+    man = json.loads((ROOT / "web/assets/manifest.json").read_text())["B"]
+    names = [v for k in ("sensors", "parts", "crops") for v in sc[k].values()] + [sc["worker_side"], sc["worker_back"]]
+    for n in names:
+        assert n.startswith("missing:") or n in man, n

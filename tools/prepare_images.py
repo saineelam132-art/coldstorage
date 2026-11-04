@@ -32,21 +32,53 @@ def fit_width(im, w):
     return im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
 
 
+_SESSION = None
+
+
+def _clear_dark_ringed_holes(rgba, tol=22, dark=90):
+    """Make white 'holes' transparent when a DARK object surrounds them (e.g. the middle of a
+    coiled black cable). White areas on white objects are bordered by light grey, so they stay."""
+    import numpy as np
+    from scipy import ndimage
+    a = np.asarray(rgba).copy()
+    rgb = a[..., :3].astype(int)
+    white = ((255 - rgb).max(axis=2) <= tol) & (a[..., 3] > 0)
+    lab, n = ndimage.label(white)
+    lum = rgb.mean(axis=2)
+    for k in range(1, n + 1):
+        comp = lab == k
+        if comp.sum() < 400:
+            continue
+        ring = ndimage.binary_dilation(comp, iterations=3) & ~comp
+        if lum[ring].mean() < dark:
+            a[comp, 3] = 0
+    return Image.fromarray(a)
+
+
 def remove_white_bg(im):
+    """Background removal: rembg (AI cut-out, keeps white objects and thin cables), then hole
+    clean-up. Fallback without rembg: flood-fill the white from the picture edges."""
+    global _SESSION
     try:
-        from rembg import remove          # noqa: WPS433
-        return remove(im), "rembg"
-    except Exception:  # noqa: BLE001 - fall back to a white-key
-        rgba = im.convert("RGBA")
-        px = rgba.load()
-        for y in range(rgba.height):
-            for x in range(rgba.width):
-                r, g, b, a = px[x, y]
-                if r > 238 and g > 238 and b > 238:
-                    px[x, y] = (r, g, b, 0)
-        alpha = rgba.getchannel("A").filter(ImageFilter.GaussianBlur(0.8))
-        rgba.putalpha(alpha)
-        return rgba, "white-key fallback"
+        from rembg import new_session, remove
+        if _SESSION is None:
+            _SESSION = new_session("u2net")
+        cut = remove(im, session=_SESSION)
+        try:
+            cut = _clear_dark_ringed_holes(cut)
+        except ImportError:
+            pass
+        return cut, "rembg u2net"
+    except ImportError:
+        import numpy as np
+        from scipy import ndimage
+        a = np.asarray(im.convert("RGB")).astype(int)
+        lab, _ = ndimage.label((255 - a).max(axis=2) <= 18)
+        edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
+        alpha = np.where(np.isin(lab, list(edge)), 0, 255).astype(np.uint8)
+        out = im.convert("RGBA")
+        out.putalpha(Image.fromarray(alpha).filter(ImageFilter.GaussianBlur(0.8)))
+        return out, "edge flood-fill fallback"
 
 
 def main():
@@ -69,6 +101,7 @@ def main():
             bbox = cut.getchannel("A").getbbox()
             if bbox:
                 cut = cut.crop(bbox)
+            cut.thumbnail((900, 900))
             cut.save(OUT_B / f"{f.stem}.webp", "WEBP", quality=85, method=6)
             man["B"][f.stem] = {"src": f"assets/cutouts/{f.stem}.webp", "w": cut.width, "h": cut.height,
                                 "method": how}

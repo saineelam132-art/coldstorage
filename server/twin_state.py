@@ -233,6 +233,8 @@ class TwinState:
 
     def series(self, quantity, t, hours=24.0, step_min=15):
         """History of one quantity (for the small graph in a sensor panel)."""
+        if quantity == "T_room_sensor":          # the room sensor reads the twin's room air (+ any injected fault)
+            quantity = "T_room"
         if quantity not in self.cols:
             return {"quantity": quantity, "t": [], "v": []}
         i1 = self.index(t)

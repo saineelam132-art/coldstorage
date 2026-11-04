@@ -14,6 +14,10 @@ To regenerate:
   day/night/monsoon cross-fade looks like the same photo changing light.
 
 
+## Pictures still missing
+- B10 differential pressure sensor (a drawn placeholder is shown in its panel).
+- C1–C7 textures for the 3D model (code-drawn textures are used until then).
+
 ## Phase 3 – website
 Sai will share two HTML demos made by a junior. Reuse their good ideas, but replace their
 physics with our `engine/` and `twin/`:
