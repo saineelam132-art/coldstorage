@@ -18,7 +18,7 @@ R = FAN.wax_resistance(CFG, CFG["live_run"]["designs"]["current"]["pcm_kg"])
 
 
 def test_final_design_is_finned_passive_with_40Ah_battery():
-    assert HX["kind"] == "fins" and HX["b"] == 0.04 and HX["S"] == 0.023 and HX["L"] == 1.6
+    assert HX["kind"] == "fins" and HX["b"] == 0.04 and HX["S"] == 0.023 and HX["L"] == 1.7
     assert HX["optional_fans"]["installed"] == 0
     assert CFG["live_run"]["night_fan"]["enabled"] is False
     assert CFG["live_run"]["battery_12V"]["capacity_Ah"] == 40

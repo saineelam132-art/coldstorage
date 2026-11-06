@@ -14,16 +14,17 @@ No battery for cooling – only a small 12 V 40 Ah battery for the controller an
 
 **0:40 – How we improved it (30 s)** – *Live 2026 → Design choices, or figure final_00*
 "Plain wax panels could not pass the heat fast enough: only 42 days a year on solar + wax.
-A baffle with 5 fans fixed that – 290 days – but added moving parts and an 80 Ah battery.
+A baffle with 5 fans fixed that – 294 days – but added moving parts and an 80 Ah battery.
 Our final design uses **aluminium fins**: 4.3 times more surface, natural convection only, **zero
-watts, nothing that moves**, and the battery is halved. 291 days on solar + wax."
+watts, nothing that moves**, and the battery is halved – 291 days, almost the same."
 
 **1:10 – The results (30 s)** – *Live 2026 → Year so far*
 "In 2026 so far: **290 of 309 days fully on solar + wax**, about 165 grid hours a year,
 3.0 kWh of electricity a day. The room never left 2–8 °C except for about 1.6 hours each morning
 while a fresh warm batch cools – and then only fresh produce is inside. That saves about
 ₹10,600 a year against a grid-only room, ₹26,500 against grid + diesel, and about
-0.9–1.2 tonnes of CO₂."
+0.9–1.2 tonnes of CO₂. Rough payback (prices are guesses): about 5–6 years against a diesel-backed
+room, 3 years with a 35 % subsidy."
 
 **1:40 – Trust (15 s)** – *click Ledger, or scan a crate QR code*
 "Every batch gets a QR code, and every hour the readings are sealed in a hash chain. If someone
@@ -39,6 +40,8 @@ changes one old reading, the chain turns red and the buyer's page shows 'Record 
 - *Are the fins proven?* Two published fin-array correlations; we use the lower one and ignore
   radiation. If the real fins are 25 % weaker the room still stays in 2–8 °C; grid hours rise and we
   can add the 2 optional 12 V fans (mounting points and cable are already in).
+- *Payback against a grid-only room?* Long – about 18 years, 12 with the subsidy – because grid power is
+  cheap when it is there. The case is strongest where the grid fails and people use diesel.
 - *Water on the fins?* Yes – they are below the dew point. A sloped drip tray with a drain and trap.
 - *Tomorrow?* The Live page runs the Open-Meteo forecast through the same physics – a PREDICTION, not AI.
 - *Weather credit:* Weather data by Open-Meteo.com.

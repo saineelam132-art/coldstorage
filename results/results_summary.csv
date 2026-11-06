@@ -153,35 +153,37 @@ Power-cut night,with PCM: highest room temperature during the cut,5.849,C,"grid 
 Power-cut night,without PCM: highest room temperature during the cut,8.238,C,"grid off 09 Jun 18:00 to 10 Jun 06:00, no sun; light room = 200 kg stored instead of 600 kg"
 Power-cut night,"with PCM, light room: highest room temperature during the cut",6.221,C,"grid off 09 Jun 18:00 to 10 Jun 06:00, no sun; light room = 200 kg stored instead of 600 kg"
 Power-cut night,"without PCM, light room: highest room temperature during the cut",10.97,C,"grid off 09 Jun 18:00 to 10 Jun 06:00, no sun; light room = 200 kg stored instead of 600 kg"
-Final design (2026),Design,"115 kg wax (PCM) with 40 mm aluminium fins (23 mm gap, 1.6 m panels), 1.8 kWp PV, 1.5 kW R290 compressor, no wax fan, no baffle",-,config/design.json -> live_run
+Final design (2026),Design,"115 kg wax (PCM) with 40 mm aluminium fins (23 mm gap, 1.7 m panels), 1.8 kWp PV, 1.5 kW R290 compressor, no wax fan, no baffle",-,config/design.json -> live_run
 Final design (2026),Weather period,2026-01-01 to 2026-11-05 (309 days),-,"Open-Meteo archive (ERA5) + forecast; simulated on real 2026 Vizag weather, conservative sun (x0.88)"
 Final design (2026),Produce loading,150 kg at 6:00 every day,-,chosen from 4 loading options
 Final design (2026),"Compressor electricity, average",3.0,kWh/day,sum of P_comp x 5 min / days
 Final design (2026),"Compressor electricity, worst day",4.78 (2026-06-08),kWh/day,max of daily sums
 Final design (2026),Days fully on solar + wax,290 of 309,days,days with 0 grid hours
-Final design (2026),Grid backup hours,139.6,h,sum of hours with ATS on grid
-Final design (2026),Grid backup hours per year,165,h/yr,grid_h x 365 / days
-Final design (2026),Room air above 8 C during loading,1.58,h/day,only while a fresh warm batch cools (no stored product inside)
+Final design (2026),Grid backup hours,138.8,h,sum of hours with ATS on grid
+Final design (2026),Grid backup hours per year,164,h/yr,grid_h x 365 / days
+Final design (2026),Room air above 8 C during loading,1.6,h/day,only while a fresh warm batch cools (no stored product inside)
 Final design (2026),Hours outside 2-8 C at all other times,0,h,count of hours with T_room <2 or >8 outside the 3 h loading window
 Final design (2026),Produce in (average),25.4,C,outside air at loading time (average produce temperature)
-Final design (2026),Produce average after 2 h,15.5,C,lumped produce node; core measured in Phase 4
+Final design (2026),Produce average after 2 h,15.6,C,lumped produce node; core measured in Phase 4
 Final design (2026),Produce average after 4 h,8.8,C,lumped produce node
 Final design (2026),"Time to cool batch to 5.5 C, average / worst",7.8 / 13.2,h,first time produce node <= setpoint + 0.5 K
 Final design (2026),Wax frozen at sunrise / sunset (average),74 / 97,%,pcm_pct at 05:00 and 18:00
 Final design (2026),Fins: area multiplier / fin efficiency,4.33 / 0.993,-,"(A_base + A_fins)/A; eta = tanh(m Lc)/(m Lc), m = sqrt(2h/(k_al t))"
-Final design (2026),Fins: h (Bar-Cohen & Rohsenow / Van de Pol & Tierney -> used),1.56 / 1.24 -> 1.24,W/m2K,"lower of the two natural-convection fin-array correlations, dT 3 K"
-Final design (2026),"Wax-room UA, finned / plain panel",55.3 / 24.6,W/K,UA = 1/[1/(h(A_base + eta A_fin)) + R_wax/A]
-Final design (2026),Heat removed at 3 K vs needed on hottest night,166 vs 149,W,"Q = UA x 3 K; load = walls + respiration + controller at room 7 C, 31.9 C outside night"
+Final design (2026),Fins: h (Bar-Cohen & Rohsenow / Van de Pol & Tierney -> used),1.52 / 1.20 -> 1.20,W/m2K,"lower of the two natural-convection fin-array correlations, dT 3 K"
+Final design (2026),"Wax-room UA, finned / plain panel",53.8 / 24.5,W/K,UA = 1/[1/(h(A_base + eta A_fin)) + R_wax/A]
+Final design (2026),Heat removed at 3 K vs needed on hottest night,161 vs 149,W,"Q = UA x 3 K; load = walls + respiration + controller at room 7 C, 31.9 C outside night"
 Final design (2026),Aluminium fins,54,kg,N x b x t x L x 2700 kg/m3
 Final design (2026),Fan electricity / moving parts in the wax heat exchanger,0 / 0,-,passive natural convection
 Final design (2026),Usable floor after fins + 10 cm keep-clear,2.86 of 4.0,m2,150 kg = 8 crates in 2 stacks of 4 + 60 cm aisle -> fits
-Final design (2026),Wall length needed vs available,7.50 vs 7.20,m,12 m2 / 1.6 m tall panels vs room perimeter minus door; 0.3 m short -> 1.7 m panels or panel above the door
+Final design (2026),Wall length needed vs available,7.06 vs 7.20,m,12 m2 / 1.7 m tall panels vs room perimeter minus the door -> fits
 Final design (2026),12 V battery,40 Ah LiFePO4 (0.51 kWh),-,(worst night 130 Wh + reserve day 240 Wh) / 0.8 / 12.8 V = 36 Ah
 Final design (2026),Money saved vs grid-only room,10626,INR/yr,grid tariff x (grid-only kWh - our grid kWh) x 365/days; prices: check locally
 Final design (2026),Money saved vs grid + diesel in power cuts,26503,INR/yr,diesel 0.5 L/kWh 10:00-18:00; prices: check locally
 Final design (2026),CO2 saved vs grid-only,943,kg/yr,0.71 kg/kWh grid
 Final design (2026),CO2 saved vs grid + diesel,1203,kg/yr,"0.71 kg/kWh grid, 2.68 kg/L diesel"
 Final design (2026),Energy balance error,0.000,%,(cold in - cold out - stored change) / cold in
-Final design (2026),Design journey: days fully on solar + wax (plain -> baffle+fans -> fins),42 -> 290 -> 291,days,"same 2026 run, 310 days"
-Final design (2026),Design journey: grid hours per year,3257 -> 156 -> 164,h/yr,
-Final design (2026),"Check: fins 25 % weaker / + 2 optional fans, grid h/yr",377 / 173,h/yr,room stays in 2-8 C in both; optional fans hold 6.5 C at night
+Final design (2026),Payback ESTIMATE vs a plain grid-only cold room,18.0 (with 35 % subsidy 11.7),years,"extra cost Rs 190,800 / saving Rs 10,626 per year; prices GUESS"
+Final design (2026),"Payback ESTIMATE vs a grid + diesel cold room (it needs a genset, we do not)",5.5 (with 35 % subsidy 3.0),years,"extra cost Rs 145,800 / saving Rs 26,503 per year; prices GUESS"
+Final design (2026),Design journey: days fully on solar + wax (plain -> baffle+fans -> fins),42 -> 294 -> 291,days,"same 2026 run, 310 days"
+Final design (2026),Design journey: grid hours per year,3265 -> 122 -> 163,h/yr,
+Final design (2026),"Check: fins 25 % weaker / + 2 optional fans, grid h/yr",445 / 208,h/yr,room stays in 2-8 C in both; optional fans hold 6.5 C at night

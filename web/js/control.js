@@ -7,7 +7,7 @@ const FINAL = [
   ['final_00_design_journey', 'Design journey: plain → baffle + fans → fins'], ['final_01_fins_hottest_night', 'Hottest night: plain vs finned panels'],
   ['final_02_fin_calculation', 'Fin calculation: depth, gap, UA'], ['final_07_fin_panel_drawing', 'Finned panel + drip tray (drawing)'],
   ['final_03_loading_options', 'When should the 150 kg come in?'], ['final_04_wax_115_vs_172', '115 kg vs 172 kg wax'],
-  ['final_05_monthly_energy_2026', 'Monthly energy 2026'], ['final_06_money_co2', 'Money and CO₂ saved'],
+  ['final_05_monthly_energy_2026', 'Monthly energy 2026'], ['final_06_money_co2', 'Money and CO₂ saved'], ['final_08_payback', 'Payback estimate (prices GUESS)'],
 ];
 const FIGS = [
   ['11_heatmap_wax_solar', 'Wax × solar: grid backup hours per year'], ['14_current_vs_recommended', 'Current vs recommended design'],

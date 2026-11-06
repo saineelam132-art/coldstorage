@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-11-06T09:49:18.478319</dc:date>
+    <dc:date>2026-11-06T10:03:53.708188</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -201,7 +201,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_15">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="675.45" y="129.836961" transform="rotate(-0 675.45 129.836961)">219</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="675.45" y="129.836961" transform="rotate(-0 675.45 129.836961)">218</text>
     </g>
     <g id="patch_17">
      <path d="M 717.3 138.249656 
@@ -223,7 +223,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_17">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="842.85" y="129.836961" transform="rotate(-0 842.85 129.836961)">3.27</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="842.85" y="129.836961" transform="rotate(-0 842.85 129.836961)">3.26</text>
     </g>
     <g id="patch_19">
      <path d="M 884.7 138.249656 
@@ -267,7 +267,7 @@ z
 " style="fill: #eaf2fc; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_21">
-     <text style="font-weight: 700; font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="424.35" y="152.636961" transform="rotate(-0 424.35 152.636961)">15.5</text>
+     <text style="font-weight: 700; font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="424.35" y="152.636961" transform="rotate(-0 424.35 152.636961)">15.6</text>
     </g>
     <g id="patch_23">
      <path d="M 466.2 161.049656 
@@ -300,7 +300,7 @@ z
 " style="fill: #eaf2fc; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_24">
-     <text style="font-weight: 700; font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="675.45" y="152.636961" transform="rotate(-0 675.45 152.636961)">164</text>
+     <text style="font-weight: 700; font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="675.45" y="152.636961" transform="rotate(-0 675.45 152.636961)">163</text>
     </g>
     <g id="patch_26">
      <path d="M 717.3 161.049656 
@@ -366,7 +366,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_30">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="424.35" y="175.436961" transform="rotate(-0 424.35 175.436961)">16.8</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="424.35" y="175.436961" transform="rotate(-0 424.35 175.436961)">16.9</text>
     </g>
     <g id="patch_32">
      <path d="M 466.2 183.849656 
@@ -377,7 +377,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_31">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="508.05" y="175.436961" transform="rotate(-0 508.05 175.436961)">10.7</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="508.05" y="175.436961" transform="rotate(-0 508.05 175.436961)">10.8</text>
     </g>
     <g id="patch_33">
      <path d="M 549.9 183.849656 
@@ -388,7 +388,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_32">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="591.75" y="175.436961" transform="rotate(-0 591.75 175.436961)">8.6 / 16.9</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="591.75" y="175.436961" transform="rotate(-0 591.75 175.436961)">8.6 / 17.4</text>
     </g>
     <g id="patch_34">
      <path d="M 633.6 183.849656 
@@ -410,7 +410,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_34">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="759.15" y="175.436961" transform="rotate(-0 759.15 175.436961)">21 / 310</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="759.15" y="175.436961" transform="rotate(-0 759.15 175.436961)">18 / 310</text>
     </g>
     <g id="patch_36">
      <path d="M 801 183.849656 
@@ -432,7 +432,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_36">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="926.55" y="175.436961" transform="rotate(-0 926.55 175.436961)">10,238</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="926.55" y="175.436961" transform="rotate(-0 926.55 175.436961)">10,236</text>
     </g>
     <g id="patch_38">
      <path d="M 131.4 206.649656 
@@ -520,7 +520,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_44">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="842.85" y="198.236961" transform="rotate(-0 842.85 198.236961)">3.54</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="842.85" y="198.236961" transform="rotate(-0 842.85 198.236961)">3.53</text>
     </g>
     <g id="patch_46">
      <path d="M 884.7 206.649656 
@@ -531,7 +531,7 @@ z
 " style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
     </g>
     <g id="text_45">
-     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="926.55" y="198.236961" transform="rotate(-0 926.55 198.236961)">6,801</text>
+     <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle" x="926.55" y="198.236961" transform="rotate(-0 926.55 198.236961)">6,782</text>
     </g>
    </g>
    <g id="text_46">

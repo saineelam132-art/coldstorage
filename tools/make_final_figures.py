@@ -264,21 +264,26 @@ def fig_panel(cfg):
         ax.axis("off")
     # side view (cm)
     a1.add_patch(Rectangle((0, 0), 10, 220, color="#c9c7c1"))
-    a1.add_patch(Rectangle((10, 30), 1.5, 160, color="#86b6ef", ec="#184f95"))
-    a1.add_patch(Rectangle((11.5, 30), hx["b"] * 100, 160, color="#d9e1e8", ec="#8795a3"))
-    a1.add_patch(plt.Polygon([[8, 26], [26, 22], [26, 18], [8, 22]], color="#8795a3"))
-    a1.plot([25, 25, 32], [20, 8, 8], color="#52514e", lw=2)
+    y0, Lc = hx["panel_bottom_m"] * 100, hx["L"] * 100
+    a1.add_patch(Rectangle((10, y0), 1.5, Lc, color="#86b6ef", ec="#184f95"))
+    a1.add_patch(Rectangle((11.5, y0), hx["b"] * 100, Lc, color="#d9e1e8", ec="#8795a3"))
+    a1.add_patch(plt.Polygon([[8, y0 - 4], [26, y0 - 8], [26, y0 - 12], [8, y0 - 8]], color="#8795a3"))
+    a1.plot([25, 25, 32], [y0 - 10, 8, 8], color="#52514e", lw=2)
+    a1.plot([-3, 60], [220, 220], color=INK2, lw=1)
+    a1.text(45, 222, "ceiling 2.2 m", fontsize=9, color=INK2)
+    a1.text(45, y0 + Lc - 6, f"top {(y0 + Lc) / 100:.2f} m", fontsize=9, color=INK2)
+    a1.text(45, y0 + 2, f"bottom {y0 / 100:.2f} m", fontsize=9, color=INK2)
     a1.add_patch(Rectangle((11.5 + hx["b"] * 100, 0), hx["keep_clear_m"] * 100, 220, fill=False, ec=MUTED, ls="--"))
     a1.add_patch(Rectangle((11.5 + hx["b"] * 100 + hx["keep_clear_m"] * 100, 0), 3, 8, color="#52514e"))
-    a1.annotate("", xy=(14, 40), xytext=(14, 180), arrowprops=dict(arrowstyle="-|>", color=BLUE, lw=2.5, mutation_scale=22))
-    a1.text(5, 226, "wall", ha="center", fontsize=10, color=INK2)
-    a1.text(30, 175, "warm room air\nin at the top", fontsize=10, color=ORANGE)
+    a1.annotate("", xy=(14, y0 + 10), xytext=(14, y0 + Lc - 10), arrowprops=dict(arrowstyle="-|>", color=BLUE, lw=2.5, mutation_scale=22))
+    a1.text(5, 228, "wall", ha="center", fontsize=10, color=INK2)
+    a1.text(30, y0 + Lc - 25, "warm room air\nin at the top", fontsize=10, color=ORANGE)
     a1.text(30, 110, f"{hx['b'] * 100:.0f} cm fins:\ncooled air falls\nbetween them\nby itself", fontsize=10, color=BLUE)
-    a1.text(33, 20, "drip tray → drain + trap", fontsize=10, color=INK2, va="center")
-    a1.text(21, 226, f"{hx['keep_clear_m'] * 100:.0f} cm keep clear", fontsize=9, color=MUTED, ha="left")
+    a1.text(33, y0 - 12, "drip tray → drain + trap", fontsize=10, color=INK2, va="center")
+    a1.text(21, 212, f"{hx['keep_clear_m'] * 100:.0f} cm keep clear", fontsize=9, color=MUTED, ha="left")
     a1.text(33, 3, "floor stopper for crates", fontsize=9, color=INK2, va="center")
     a1.set_xlim(-5, 70)
-    a1.set_ylim(-5, 235)
+    a1.set_ylim(-5, 238)
     a1.set_title(f"Side view – panel {hx['L']} m tall (cm)", fontsize=13)
     # top view of a fin section (mm)
     a2.add_patch(Rectangle((0, 0), 600, 14, color="#86b6ef", ec="#184f95"))
@@ -317,6 +322,7 @@ def summary_rows(cfg):
     f = st["wax_compare"][lr["designs"]["current"]["label"]]
     w, b, fl, J = st["wax_hx"], st["battery"], st["floor"], st["journey"]
     c3, hx = w["calc_3K"], lr["wax_hx"]
+    pb = json.loads((ROOT / "results" / "payback.json").read_text())
     yr = 365.0 / T["days"]
     lab = "simulated on real 2026 Vizag weather, conservative sun (x0.88)"
     R = [
@@ -351,7 +357,7 @@ def summary_rows(cfg):
         ("Usable floor after fins + 10 cm keep-clear", f"{fl['usable_floor_m2']:.2f} of {fl['floor_m2']:.1f}", "m2",
          f"150 kg = {fl['crates']} crates in {fl['stacks_of_4']} stacks of 4 + 60 cm aisle -> fits"),
         ("Wall length needed vs available", f"{fl['panel_length_needed_m']:.2f} vs {fl['wall_length_available_m']:.2f}", "m",
-         "12 m2 / 1.6 m tall panels vs room perimeter minus door; 0.3 m short -> 1.7 m panels or panel above the door"),
+         f"12 m2 / {hx['L']} m tall panels vs room perimeter minus the door -> fits"),
         ("12 V battery", f"{b['chosen_Ah']} Ah LiFePO4 ({b['chosen_kWh']:.2f} kWh)", "-",
          f"(worst night {b['worst_night_Wh']:.0f} Wh + reserve day {b['worst_day_Wh']:.0f} Wh) / 0.8 / 12.8 V = {b['needed_Ah']:.0f} Ah"),
         ("Money saved vs grid-only room", round(f["saved_vs_grid_INR_yr"]), "INR/yr", "grid tariff x (grid-only kWh - our grid kWh) x 365/days; prices: check locally"),
@@ -359,6 +365,9 @@ def summary_rows(cfg):
         ("CO2 saved vs grid-only", round(f["co2_saved_vs_grid_kg_yr"]), "kg/yr", "0.71 kg/kWh grid"),
         ("CO2 saved vs grid + diesel", round(f["co2_saved_vs_diesel_kg_yr"]), "kg/yr", "0.71 kg/kWh grid, 2.68 kg/L diesel"),
         ("Energy balance error", f"{T['energy_balance_error_pct']:.3f}", "%", "(cold in - cold out - stored change) / cold in"),
+        *[(f"Payback ESTIMATE {c['label']}", f"{c['payback_years']:.1f} (with {pb['subsidy_pct']} % subsidy {c['payback_years_with_subsidy']:.1f})",
+           "years", f"extra cost Rs {c['extra_cost_INR']:,.0f} / saving Rs {c['saving_INR_yr']:,.0f} per year; prices GUESS")
+          for c in pb["cases"].values()],
         ("Design journey: days fully on solar + wax (plain -> baffle+fans -> fins)",
          " -> ".join(str(J[k]["days_full_solar_wax"]) for k in J if not k.startswith("check")), "days", "same 2026 run, 310 days"),
         ("Design journey: grid hours per year", " -> ".join(f"{J[k]['grid_h_per_year']:.0f}" for k in J if not k.startswith("check")), "h/yr", ""),
@@ -367,6 +376,25 @@ def summary_rows(cfg):
          "room stays in 2-8 C in both; optional fans hold 6.5 C at night"),
     ]
     return [(SECTION, *r) for r in R]
+
+
+def fig_payback():
+    pb = json.loads((ROOT / "results" / "payback.json").read_text())
+    c = pb["cases"]
+    fig, ax = plt.subplots(figsize=(11, 5))
+    x = np.arange(2)
+    labs = ["vs plain grid-only\ncold room", "vs grid + diesel\ncold room"]
+    b1 = ax.bar(x - 0.2, [c["grid"]["payback_years"], c["diesel"]["payback_years"]], 0.4, color=MUTED, label="no subsidy")
+    b2 = ax.bar(x + 0.2, [c["grid"]["payback_years_with_subsidy"], c["diesel"]["payback_years_with_subsidy"]], 0.4, color=BLUE,
+                label=f"with {pb['subsidy_pct']} % subsidy")
+    P.bar_labels(ax, b1, "{:.1f} yr")
+    P.bar_labels(ax, b2, "{:.1f} yr")
+    ax.set_xticks(x, labs)
+    ax.set_ylabel("simple payback (years)")
+    ax.legend(loc="upper right")
+    ax.set_title(f"Payback ESTIMATE: extra cost ₹{pb['extra_cost_INR']:,.0f} (solar + wax + fins + IoT) ÷ ₹ saved per year", fontsize=13.5)
+    P.save(fig, "final_08_payback", "ESTIMATE – all prices GUESS (get quotations); no interest, maintenance or replacements; "
+           f"diesel room needs a genset (₹{pb['diesel_genset_INR']:,.0f} GUESS); subsidy on our extra cost.\n" + NOTE)
 
 
 def write_summary(cfg):
@@ -389,6 +417,7 @@ def main():
     fig_monthly()
     fig_money()
     fig_panel(cfg)
+    fig_payback()
 
 
 if __name__ == "__main__":

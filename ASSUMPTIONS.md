@@ -235,27 +235,36 @@ All design values live in `config/design.json` — change them there.
 71. **Tomorrow** is a PREDICTION: the Open-Meteo forecast run through our physics twin, starting
     from the twin's state at the end of today. It is not measured and not AI.
 72. **Finned wax panels (final wax heat exchanger).** Vertical aluminium fins on the room side of
-    the wax panels: 40 mm deep, 23 mm gap, 1 mm thick, panels 1.6 m tall (12 m² over 7.5 m of wall).
+    the wax panels: 40 mm deep, 23 mm gap, 1 mm thick, panels 1.7 m tall (12 m² over 7.06 m of wall), from 0.25 m to 1.95 m above
+    the floor of the 2.2 m high room (25 cm free above for warm air to enter, drip tray below).
     No baffle, no fan. h from the LOWER of Bar-Cohen & Rohsenow (parallel plates) and Van de Pol &
     Tierney (U-channel fin arrays) at the actual room−wax difference; fin efficiency
     η = tanh(mLc)/(mLc); UA = 1/[1/(h(A_base + ηA_fin)) + R_wax/A] with R_wax = half the 12 mm slab.
-    Result at 3 K: area × 4.33, η 0.993, h 1.24 W/m²K, UA 55.3 W/K (plain panel 24.6) → 166 W vs
+    Result at 3 K: area × 4.33, η 0.993, h 1.20 W/m²K, UA 53.8 W/K (plain panel 24.5) → 161 W vs
     149 W needed on the hottest 2026 night. Radiation to the panels is ignored (conservative).
     The correlations are for free-standing arrays; crates too close to the fins would lower h →
     10 cm keep-clear zone with floor stoppers. Checked: with h 25 % lower the room still stays in
-    2–8 °C, grid hours rise to about 377 h/yr; 2 optional 12 V fans (hold 6.5 °C at night) bring
-    that back to about 173 h/yr (then a 50 Ah battery). The Phase 4 test decides.
-73. **Design journey (same 2026 run):** plain panels 42 days fully on solar + wax and 3,257 grid
-    h/yr → baffle + 5 night fans 290 days / 156 h (5 moving parts, 80 Ah battery) → fins 291 days /
-    164 h (no moving parts, 40 Ah battery).
+    2–8 °C, grid hours rise to about 445 h/yr; 2 optional 12 V fans (hold 6.5 °C at night) bring
+    that back to about 208 h/yr (then a 50 Ah battery). The Phase 4 test decides.
+73. **Design journey (same 2026 run, 1.7 m panels):** plain panels 42 days fully on solar + wax and
+    3,265 grid h/yr → baffle + 5 night fans 294 days / 122 h (5 moving parts, 0.11 kWh/day fan heat,
+    80 Ah battery) → fins 291 days / 163 h (no moving parts, 0 W, 40 Ah battery). The fans are a
+    little better on grid hours; we chose fins for simplicity, no moving parts and half the battery.
 74. **Condensation:** fins at about 4–5 °C are below the dew point of the room air (5.5 °C at 7 °C,
     90 % RH) → sloped drip tray with drain and water trap. Latent heat of the moisture is already in
     the door/produce loads. Wax never below 3 °C → no frost on the fins. Clean the removable 0.6 m
     fin sections monthly.
 75. **Floor space:** panel + fins + 10 cm keep-clear take 15.5 cm along the walls → 2.86 m² usable
     of 4.0 m². 150 kg = 8 crates (600 × 400 × 300 mm, about 20 kg each – ASSUMPTION) in 2 stacks of
-    4 = 0.48 m², plus a 60 cm aisle → fits with 1.36 m² spare. **Wall length:** 12 m² of 1.6 m
-    panels needs 7.5 m; the walls give 7.2 m beside the 0.8 m door → 0.3 m short: use 1.7 m tall
-    panels (7.06 m, UA 53.8 W/K) or put the rest on the door wall above the door.
+    4 = 0.48 m², plus a 60 cm aisle → fits with 1.36 m² spare. **Wall length:** 12 m² of 1.7 m
+    panels needs 7.06 m; the walls give 7.2 m beside the 0.8 m door → fits.
 76. **Sunlight factor 0.88:** Open-Meteo (ERA5) sunlight × 0.88 = NASA POWER level for Jan–Aug
     2026 (conservative). "Uncorrected" results are shown only for comparison.
+77. **Payback – ESTIMATE, prices GUESS:** simple payback = extra capital cost ÷ yearly running-cost
+    saving; no interest, maintenance or replacements. Extra cost of our system = solar PV + canopy +
+    wax + charging coil + fins + drip tray + floor stoppers + optional-fan provision + 12 V battery +
+    ATS + IoT sensors and meters (results/bom_final.csv, column in_extra_cost_vs_grid_room). Room,
+    door, curtain, evaporator, compressor, refrigerant, pad and labour are taken as the same in all
+    rooms. A grid + diesel room needs a diesel genset (about 3 kVA, ₹45,000 GUESS) that ours does not.
+    Government subsidy (35 %, editable; e.g. MIDH/NHB – check the current scheme) is applied to the
+    extra cost of our system. Results in results/payback.json.

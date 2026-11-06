@@ -192,6 +192,9 @@ def run(fetch=False, now=None):
     study = RES / "design_study_2026.json"
     if study.exists():
         out["design_study"] = json.loads(study.read_text())
+    pb = ROOT / "results" / "payback.json"
+    if pb.exists():
+        out["payback"] = json.loads(pb.read_text())
     Hg, totg, _, btg = simulate_live(W, "current", mode="grid_only", cfg=cfg)
     out["grid_only"] = {"totals": {k: (r(v) if isinstance(v, float) else v) for k, v in totals(daily(Hg, btg, cfg, now), totg).items()}}
     out["money"] = money_inputs(Hg, D_all, cfg)

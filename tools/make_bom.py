@@ -22,6 +22,7 @@ from engine.config import load_config, with_overrides  # noqa: E402
 
 def main():
     write(final_cfg(), "bom_final.csv", final=True)
+    payback(final_cfg(), ROOT / "results" / "bom_final.csv")
     cfg = load_config()
     rec = json.loads((ROOT / "results" / "recommended_overrides.json").read_text())
     write(with_overrides(cfg, rec), "bom_recommended.csv", final=False)
@@ -34,6 +35,48 @@ def final_cfg():
     d = lr["designs"]["current"]
     return with_overrides(cfg, {"pcm": {"mass_kg": d["pcm_kg"]}, "pv": {"rated_kWp": d["pv_kWp"]},
                                 "refrigeration": {"design_capacity_kW": lr["compressor_max_kW"]}})
+
+
+# Lines that a plain grid-only cold room of the same size would NOT have = the extra cost of our system
+# (solar + wax + fins + IoT). Room, door, curtain, evaporator, compressor, refrigerant, pad and labour
+# are the same in both (ASSUMPTION: a grid AC compressor unit costs about the same as the DC unit).
+EXTRA_KEYS = ("Wax (PCM)", "Solar PV", "Copper charging coil", "canopy", "ATS", "Aluminium fins", "drip tray",
+              "Floor stoppers", "Provision for", "LiFePO4", "ESP32", "Power meters")
+
+
+def is_extra(item):
+    return any(k.lower() in item.lower() for k in EXTRA_KEYS)
+
+
+def payback(cfg, bom_csv):
+    """Simple payback = extra capital cost / yearly running-cost saving. No interest, no maintenance,
+    no replacements. ESTIMATE - all prices are GUESSES."""
+    import csv as _csv
+    pb = cfg["live_run"]["payback"]
+    with open(bom_csv, encoding="utf-8") as f:
+        rows = [r for r in _csv.DictReader(f) if r.get("in_extra_cost_vs_grid_room") == "yes" and r["quantity"] != ""]
+    extra = sum(float(r["line_total_INR"]) for r in rows)
+    st = json.loads((ROOT / "results" / "live" / "design_study_2026.json").read_text())
+    fin = st["wax_compare"][cfg["live_run"]["designs"]["current"]["label"]]
+    sv = {"grid": fin["saved_vs_grid_INR_yr"], "diesel": fin["saved_vs_diesel_INR_yr"]}
+    gen = pb["diesel_genset_INR"]
+    sub = pb["subsidy_pct"] / 100.0
+    cases = {}
+    for key, label, base_extra in (("grid", "vs a plain grid-only cold room", extra),
+                                   ("diesel", "vs a grid + diesel cold room (it needs a genset, we do not)", extra - gen)):
+        net_sub = base_extra - sub * extra
+        cases[key] = {"label": label, "extra_cost_INR": base_extra, "saving_INR_yr": sv[key],
+                      "payback_years": base_extra / sv[key],
+                      "extra_cost_with_subsidy_INR": net_sub, "payback_years_with_subsidy": net_sub / sv[key]}
+    out = {"extra_items": [{"item": r["item"], "INR": float(r["line_total_INR"])} for r in rows], "extra_cost_INR": extra,
+           "diesel_genset_INR": gen, "subsidy_pct": pb["subsidy_pct"], "cases": cases,
+           "note": "ESTIMATE - all prices are GUESSES (get quotations). Simple payback = extra cost / yearly running-cost saving; "
+                   "no interest, maintenance or replacements. Subsidy applied to the extra cost of our system (editable %)."}
+    (ROOT / "results" / "payback.json").write_text(json.dumps(out, indent=1))
+    for k, c in cases.items():
+        print(f"  payback {k}: extra Rs {c['extra_cost_INR']:,.0f} / Rs {c['saving_INR_yr']:,.0f} per year = {c['payback_years']:.1f} years; "
+              f"with {pb['subsidy_pct']} % subsidy {c['payback_years_with_subsidy']:.1f} years")
+    return out
 
 
 def write(cfg, name, final):
@@ -91,14 +134,20 @@ def write(cfg, name, final):
     total = rule_total = 0.0
     with open(out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["item", "quantity", "unit", "unit_price_INR", "price_status", "line_total_INR", "used_in_design_choice_rule", "note"])
+        w.writerow(["item", "quantity", "unit", "unit_price_INR", "price_status", "line_total_INR", "used_in_design_choice_rule",
+                    "in_extra_cost_vs_grid_room", "note"])
+        extra = 0.0
         for item, qty, unit, price, rule, note in rows:
             line = qty * price
             total += line
             rule_total += line if rule == "yes" else 0
-            w.writerow([item, qty, unit, price, "GUESS - get a quotation", round(line), rule, note])
-        w.writerow(["TOTAL (all lines)", "", "", "", "GUESS", round(total), "", ""])
-        w.writerow(["Subtotal used by the design-choice rule (wax + PV + compressor)", "", "", "", "GUESS", round(rule_total), "yes", ""])
+            ex = "yes" if is_extra(item) else "no"
+            extra += line if ex == "yes" else 0
+            w.writerow([item, qty, unit, price, "GUESS - get a quotation", round(line), rule, ex, note])
+        w.writerow(["TOTAL (all lines)", "", "", "", "GUESS", round(total), "", "", ""])
+        w.writerow(["Subtotal used by the design-choice rule (wax + PV + compressor)", "", "", "", "GUESS", round(rule_total), "yes", "", ""])
+        w.writerow(["Extra cost of our system vs a plain grid-only room (solar + wax + fins + IoT)", "", "", "", "GUESS", round(extra), "",
+                    "yes", "used for the payback estimate"])
     print(f"Saved {out}: total Rs {total:,.0f} (rule subtotal Rs {rule_total:,.0f}) - ALL PRICES ARE GUESSES")
 
 

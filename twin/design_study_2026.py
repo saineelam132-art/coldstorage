@@ -110,7 +110,7 @@ def battery(H, cfg):
 
 def floor_check(cfg):
     """Floor space left after wax panels + fins + 10 cm keep-clear zone, and whether 150 kg of crates fits.
-    Panels: 12 m2 at 1.6 m tall = 7.5 m of wall. Crate: standard 600 x 400 x 300 mm plastic crate, about
+    Panels: 12 m2 at the configured height (1.7 m tall = 7.06 m of wall). Crate: standard 600 x 400 x 300 mm plastic crate, about
     20 kg of produce each (ASSUMPTION - check with the crop), stacked at most 4 high (1.2 m)."""
     lr, hx, pc = cfg["live_run"], cfg["live_run"]["wax_hx"], cfg["pcm"]
     ch = cfg["chamber"]
@@ -129,12 +129,9 @@ def floor_check(cfg):
     stacks = math.ceil(n / per_stack)
     foot = stacks * crate["L"] * crate["W"]
     aisle = 0.6 * (L - 2 * band)                     # 60 cm walking aisle from the door
-    from engine import fins as FINS
-    from engine import fan as FAN
-    R = FAN.wax_resistance(cfg, lr["designs"]["current"]["pcm_kg"])
-    ua = {f"{h:.1f} m": FINS.array(pc["slab_area_m2"], h, hx["S"], hx["b"], hx["t"], R, 3.0)["UA"] for h in (1.6, 1.7)}
     return {"wall_length_available_m": wall_len, "panel_length_needed_m": need_len,
-            "panel_length_needed_at_1.7m_m": pc["slab_area_m2"] / 1.7, "UA_3K_by_panel_height_W_K": ua,
+            "panel_bottom_m": hx.get("panel_bottom_m", 0.25), "panel_top_m": hx.get("panel_bottom_m", 0.25) + hx["L"],
+            "room_height_m": Hh, "top_gap_m": Hh - hx.get("panel_bottom_m", 0.25) - hx["L"],
             "panels_fit_on_walls": need_len <= wall_len, "wax_thickness_mm": wax_t * 1000,
             "band_from_wall_m": band, "floor_m2": W * L, "usable_floor_m2": usable, "crates": n, "stacks_of_4": stacks,
             "crate_footprint_m2": foot, "aisle_m2": aisle, "free_after_crates_and_aisle_m2": usable - foot - aisle,

@@ -122,7 +122,7 @@ through our physics twin), Design year (ISHRAE) vs 2026, Money, **Design choices
 journey plain → baffle + fans → fins, the fin calculation, floor space, loading options, wax
 size), Fixed inputs.
 
-**Final design:** 115 kg wax (PCM) with 40 mm aluminium fins (23 mm gap, 1.6 m panels, no fan,
+**Final design:** 115 kg wax (PCM) with 40 mm aluminium fins (23 mm gap, 1.7 m panels, no fan,
 no baffle), 1.8 kWp PV, 1.5 kW R290 compressor, 150 kg produce loaded at 6 am, 12 V 40 Ah battery
 for controller/sensors/IoT only. Studies and poster figures:
 
@@ -131,7 +131,7 @@ python -m twin.design_study_2026      (loading options, design journey, wax size
 python -m twin.fin_study_2026         (fins vs baffle + fans, options A/B/C)
 python -m twin.live_run               (the 2026 run shown on the pages)
 python tools/make_final_figures.py    (figures/final_*.png + .svg, 300 dpi; results_summary "Final design (2026)")
-python tools/make_bom.py
+python tools/make_bom.py             (cost tables + payback ESTIMATE -> results/payback.json)
 ```
 
 Phase 2 figures (`figures/01…14`) are labelled "How we chose the size (NASA POWER 2025 study)".

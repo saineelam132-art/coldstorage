@@ -1,0 +1,74 @@
+{
+ "extra_items": [
+  {
+   "item": "Wax (PCM) paraffin, Tm = 4 \u00b0C, filled in aluminium panels",
+   "INR": 34500.0
+  },
+  {
+   "item": "Solar PV, 8 \u00d7 225 W, with MPPT/DC drive and wiring",
+   "INR": 72000.0
+  },
+  {
+   "item": "Copper charging coil for the wax panels + fittings",
+   "INR": 6000.0
+  },
+  {
+   "item": "Galvanised steel canopy, 17\u00b0 tilt",
+   "INR": 20000.0
+  },
+  {
+   "item": "ATS (grid backup switch), breakers, control box",
+   "INR": 8000.0
+  },
+  {
+   "item": "Aluminium fins: extruded heat-sink profile 40 mm deep, 1 mm, 23 mm gap, anodised, riveted with thermal paste, removable 0.6 m sections",
+   "INR": 27000.0
+  },
+  {
+   "item": "Sloped stainless drip tray under the wax panels + drain pipe + water trap",
+   "INR": 3000.0
+  },
+  {
+   "item": "Floor stoppers for crates (10 cm keep-clear zone in front of the fins)",
+   "INR": 1000.0
+  },
+  {
+   "item": "Provision for 2 optional 12 V fans: mounting brackets + 12 V cable (fans NOT fitted)",
+   "INR": 800.0
+  },
+  {
+   "item": "12 V 40 Ah LiFePO4 battery (512 Wh) + charge controller",
+   "INR": 8000.0
+  },
+  {
+   "item": "ESP32 + T/RH (SHT31 \u00d72) + DS18B20 \u00d74 + thermocouple + reed switch + encoder",
+   "INR": 4500.0
+  },
+  {
+   "item": "Power meters (PV DC + compressor AC) and wind/RH mast",
+   "INR": 6000.0
+  }
+ ],
+ "extra_cost_INR": 190800.0,
+ "diesel_genset_INR": 45000,
+ "subsidy_pct": 35,
+ "cases": {
+  "grid": {
+   "label": "vs a plain grid-only cold room",
+   "extra_cost_INR": 190800.0,
+   "saving_INR_yr": 10625.734558721482,
+   "payback_years": 17.9564056438238,
+   "extra_cost_with_subsidy_INR": 124020.0,
+   "payback_years_with_subsidy": 11.671663668485468
+  },
+  "diesel": {
+   "label": "vs a grid + diesel cold room (it needs a genset, we do not)",
+   "extra_cost_INR": 145800.0,
+   "saving_INR_yr": 26502.60672690575,
+   "payback_years": 5.501345641294303,
+   "extra_cost_with_subsidy_INR": 79020.0,
+   "payback_years_with_subsidy": 2.9815935018866653
+  }
+ },
+ "note": "ESTIMATE - all prices are GUESSES (get quotations). Simple payback = extra cost / yearly running-cost saving; no interest, maintenance or replacements. Subsidy applied to the extra cost of our system (editable %)."
+}

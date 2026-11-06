@@ -22,7 +22,7 @@ from twin.live_sim import simulate_live
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results" / "live" / "fin_study_2026.json"
-L_PANEL = 1.6            # panel height [m] (first run of this study used 1.2 m; owner chose 1.6 m)
+L_PANEL = 1.7            # panel height [m] (first run used 1.2 m, then 1.6 m; final 1.7 m so 12 m2 fits the walls)
 T_FIN = 0.001
 PRICE_AL_FIN = 500       # Rs/kg, aluminium fin stock + cutting + bonding to the panel - GUESS
 PRICE_TRAY = 3000        # Rs, condensate drip tray + drain under the panels - GUESS

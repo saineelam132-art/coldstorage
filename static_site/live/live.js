@@ -260,15 +260,29 @@
   // ------------------------------------------------------------------ money
   function money() {
     const M = S.money, dflt = M.defaults;
-    let p = { ...dflt, cut0: dflt.power_cut_hours[0], cut1: dflt.power_cut_hours[1] };
+    const PB = S.payback;
+    let p = { ...dflt, cut0: dflt.power_cut_hours[0], cut1: dflt.power_cut_hours[1], subsidy_pct: PB ? PB.subsidy_pct : 35, genset: PB ? PB.diesel_genset_INR : 45000 };
     try { p = { ...p, ...JSON.parse(localStorage.getItem('live-money') || '{}') }; } catch (e) { /* ignore */ }
     const field = (k, label, step) => `<label>${label}<input type="number" step="${step}" data-k="${k}" value="${p[k]}"></label>`;
     main.innerHTML = `<h2>Money and CO₂ (running cost only)</h2>
-      <p class="lead"><span class="check">All prices are guesses – check locally.</span> The 10:00–18:00 power cut is an assumption. Equipment cost is not included.</p>
+      <p class="lead"><span class="check">All prices are guesses – check locally.</span> The 10:00–18:00 power cut is an assumption. Equipment cost only in the payback ESTIMATE at the bottom.</p>
       <div class="card"><div class="form">${field('grid_tariff_INR_kWh', 'Grid tariff (₹/kWh)', 0.5)}${field('diesel_INR_L', 'Diesel price (₹/L)', 1)}
         ${field('diesel_L_per_kWh', 'Diesel use (L per kWh)', 0.05)}${field('cut0', 'Power cut starts (hour)', 1)}${field('cut1', 'Power cut ends (hour)', 1)}
-        ${field('grid_kg_CO2_kWh', 'Grid CO₂ (kg/kWh)', 0.01)}${field('diesel_kg_CO2_L', 'Diesel CO₂ (kg/L)', 0.01)}</div>
+        ${field('grid_kg_CO2_kWh', 'Grid CO₂ (kg/kWh)', 0.01)}${field('diesel_kg_CO2_L', 'Diesel CO₂ (kg/L)', 0.01)}
+        ${field('subsidy_pct', 'Government subsidy (%)', 5)}${field('genset', 'Diesel genset price (₹, GUESS)', 1000)}</div>
         <p><button class="btn ghost" id="mReset">Back to default values</button></p></div><div id="mOut"></div>`;
+    const payCard = (svG, svD) => {
+      const ex = PB.extra_cost_INR, sub = p.subsidy_pct / 100, exD = ex - p.genset;
+      const yrs = (c, sv) => (sv > 0 ? `${fmt(c / sv, 1)} years` : 'no saving');
+      return `<div class="card"><h4>Payback – ESTIMATE (all prices GUESS – get quotations)</h4>
+        <table class="t"><tr><th></th><th>vs a plain grid-only cold room</th><th>vs a grid + diesel cold room</th></tr>
+        <tr><td>Extra cost of our system (solar + wax + fins + IoT)</td><td>${inr(ex)}</td><td>${inr(exD)} (${inr(ex)} − ${inr(p.genset)} genset it needs and we do not)</td></tr>
+        <tr><td>Saving per year (running cost, above)</td><td>${inr(svG)}</td><td>${inr(svD)}</td></tr>
+        <tr><td><b>Simple payback</b></td><td><b>${yrs(ex, svG)}</b></td><td><b>${yrs(exD, svD)}</b></td></tr>
+        <tr><td>With ${fmt(p.subsidy_pct, 0)} % government subsidy on our extra cost</td><td><b>${yrs(ex * (1 - sub), svG)}</b></td><td><b>${yrs(exD - sub * ex, svD)}</b></td></tr></table>
+        <details><summary>What is in the extra cost</summary><table class="t">${PB.extra_items.map(i => `<tr><td>${i.item}</td><td>${inr(i.INR)}</td></tr>`).join('')}</table></details>
+        <p class="note">${PB.note} Same room, door, curtain, evaporator, compressor and labour in all three rooms (assumption). Change the subsidy % and genset price above.</p></div>`;
+    };
     const calc = () => {
       main.querySelectorAll('input[data-k]').forEach(i => (p[i.dataset.k] = +i.value));
       try { localStorage.setItem('live-money', JSON.stringify(p)); } catch (e) { /* ignore */ }
@@ -289,7 +303,8 @@
         <div class="card"><h4>Running cost so far in 2026 (₹)</h4><div class="chartbox short"><canvas id="m1"></canvas></div>
         <p class="note">Grid-only room: the same room, loads and fixed inputs, with no wax and no solar; the grid holds 5 °C all the time (twin run).
         Diesel-backed: the same energy, but during the power cut a diesel generator supplies it. Our system: only the grid backup the twin actually used.
-        "Per year" = so far × 365 / ${n} days. Fans and controller are included in the grid-only and diesel rooms; in our system they run on solar (fan) and the small 12 V battery (controller).</p></div>`;
+        "Per year" = so far × 365 / ${n} days. Fans and controller are included in the grid-only and diesel rooms; in our system they run on solar (fan) and the small 12 V battery (controller).</p></div>
+        ${PB ? payCard((cost.grid - cost.ours) * yr, (cost.diesel - cost.ours) * yr) : ''}`;
       killCharts();
       chart('m1', 'bar', ['Grid-only', 'Diesel-backed', 'Our system'], [{ label: '₹', data: [cost.grid, cost.diesel, cost.ours], backgroundColor: [C.grey, C.s2, C.s3], color: C.s1 }], { unit: '₹', legend: false });
     };
@@ -372,8 +387,8 @@
     main.innerHTML = `<h2>Design choices (2026 weather, sunlight × ${st.sun_factor}, ${st.period[0]} → ${st.period[1]})</h2>
       <div class="card"><h4>How we improved the wax heat exchanger</h4><div class="journey">${jcard}</div>
         <p class="note">Plain panels have too little surface: at night the wax cannot take the room's heat fast enough, so the grid runs almost every night.
-        A baffle + 5 fans fixed that but added moving parts, 0.11 kWh/day of fan heat and an 80 Ah battery. Fins give the same result with
-        <b>nothing that moves and no power</b>, and halve the battery.</p>
+        A baffle + 5 fans fixed that but added moving parts, 0.11 kWh/day of fan heat and an 80 Ah battery. Fins give almost the same result
+        (the fans save a few more grid hours) with <b>nothing that moves and no power</b>, and halve the battery.</p>
         ${tbl(Object.fromEntries(Object.entries(J).filter(([k]) => k.startsWith('check'))), [['night_room_max_C', 'Night room max (°C)', 2], ['h_outside_2_8_other', 'Hours outside 2–8 °C (not loading)', 0], ['days_full_solar_wax', 'Days fully on solar + wax', 0], ['grid_h_per_year', 'Grid hours per year', 0], ['battery_Ah', '12 V battery (Ah)', 0]])}
         <p class="note">Safety check: if the real fins are 25 % weaker than calculated, the room still stays in 2–8 °C but grid hours rise; then fit the 2 optional fans
         (rule: compressor off → hold 6.5 °C) and a 50 Ah battery. The Phase 4 test decides.</p></div>
@@ -400,7 +415,8 @@
         <p class="note">Condensation: the fins (about 4–5 °C) are below the room's dew point (5.5 °C at 7 °C, 90 % RH) → sloped drip tray with drain and trap; the wax never goes below 3 °C, so no frost. Clean the fin sections monthly.</p></div>
       <div class="card"><h4>Floor space with the keep-clear zone</h4><table class="t">
           <tr><td>Wall length for ${fmt(S.pcm.slab_area_m2, 0)} m² of ${hx.L} m tall panels</td><td>${fmt(fl.panel_length_needed_m, 2)} m needed · ${fmt(fl.wall_length_available_m, 2)} m of wall beside the door
-            ${fl.panels_fit_on_walls ? '✓' : `<b class="warnc">⚠ ${fmt(fl.panel_length_needed_m - fl.wall_length_available_m, 2)} m short</b> – use ${fmt(fl['panel_length_needed_at_1.7m_m'], 2)} m of 1.7 m tall panels (UA ${fmt(fl.UA_3K_by_panel_height_W_K['1.7 m'], 1)} W/K instead of ${fmt(fl.UA_3K_by_panel_height_W_K['1.6 m'], 1)}) or put the rest on the door wall above the door`}</td></tr>
+            ${fl.panels_fit_on_walls ? '✓ fits' : '⚠ does not fit'}</td></tr>
+          <tr><td>Panel height in the ${fmt(fl.room_height_m, 1)} m high room</td><td>from ${fmt(fl.panel_bottom_m, 2)} m to ${fmt(fl.panel_top_m, 2)} m above the floor; drip tray below; ${fmt(fl.top_gap_m * 100, 0)} cm free above for warm air to enter</td></tr>
           <tr><td>Band taken from the floor along the walls</td><td>${fmt(fl.band_from_wall_m * 100, 1)} cm (panel + ${hx.b * 100} cm fins + ${hx.keep_clear_m * 100} cm keep-clear)</td></tr>
           <tr><td>Usable floor</td><td>${fmt(fl.usable_floor_m2, 2)} m² of ${fmt(fl.floor_m2, 1)} m²</td></tr>
           <tr><td>150 kg of produce</td><td>${fl.crates} crates (600 × 400 × 300 mm, ~20 kg each – assumption) in ${fl.stacks_of_4} stacks of 4 → ${fmt(fl.crate_footprint_m2, 2)} m²</td></tr>
