@@ -11,12 +11,14 @@ Copper charging coil for the wax panels + fittings,1,lot,6000,GUESS - get a quot
 "Galvanised steel canopy, 17° tilt",1,lot,20000,GUESS - get a quotation,20000,no,
 Concrete pad 3.7 × 3.6 × 0.15 m,2.0,m³,7500,GUESS - get a quotation,15000,no,
 "ATS (grid backup switch), breakers, control box",1,lot,8000,GUESS - get a quotation,8000,no,
-"Night wax fans: 120 mm 12 V DC, 3 W each, with PWM speed control",5,no.,600,GUESS - get a quotation,3000,no,5 x 3 W = 15 W rated; mounted at the TOP of the channel blowing DOWN
-Baffle sheet (thin aluminium / GI) + spacers for a 2 cm channel in front of the wax panels,1,lot,4000,GUESS - get a quotation,4000,no,open at top and bottom; fan hood at the top
-12 V 80 Ah LiFePO4 battery (1024 Wh) + charge controller,1,set,16000,GUESS - get a quotation,16000,no,"controller, sensors, IoT gateway and night fans only – NO battery for cooling"
+"Aluminium fins: extruded heat-sink profile 40 mm deep, 1 mm, 23 mm gap, anodised, riveted with thermal paste, removable 0.6 m sections",54.0,kg,500,GUESS - get a quotation,27000,no,"price per kg includes cutting, anodising, rivets and thermal paste"
+Sloped stainless drip tray under the wax panels + drain pipe + water trap,1,lot,3000,GUESS - get a quotation,3000,no,fins are below the dew point -> condensate
+Floor stoppers for crates (10 cm keep-clear zone in front of the fins),1,lot,1000,GUESS - get a quotation,1000,no,
+Provision for 2 optional 12 V fans: mounting brackets + 12 V cable (fans NOT fitted),1,lot,800,GUESS - get a quotation,800,no,add the fans (about Rs 600 each) only if the Phase 4 test shows the fins >25 % weaker
+12 V 40 Ah LiFePO4 battery (512 Wh) + charge controller,1,set,8000,GUESS - get a quotation,8000,no,"controller, sensors and IoT gateway only – NO battery for cooling"
 ESP32 + T/RH (SHT31 ×2) + DS18B20 ×4 + thermocouple + reed switch + encoder,1,set,4500,GUESS - get a quotation,4500,no,Phase 4 sensor kit
 Doorway hot-wire anemometers ×3 + differential pressure sensor,1,set,25000,GUESS - get a quotation,25000,no,research sensors – optional for a farm unit
 Power meters (PV DC + compressor AC) and wind/RH mast,1,set,6000,GUESS - get a quotation,6000,no,
 Installation labour,1,lot,20000,GUESS - get a quotation,20000,no,
-TOTAL (all lines),,,,GUESS,375760,,
+TOTAL (all lines),,,,GUESS,392560,,
 Subtotal used by the design-choice rule (wax + PV + compressor),,,,GUESS,136500,yes,

@@ -71,7 +71,8 @@ Main outputs in `results/`:
 | `parametric.csv` | All 72 cases (PCM × PV × compressor) |
 | `comparisons.csv` | With/without PCM, curtain/no curtain, normal/forecast charging |
 | `weather_monthly.csv`, `day_counts.csv` | Weather check and sunny/cloudy/rainy days |
-| `bom_recommended.csv` | Cost table for the recommended design – **all prices are guesses** (`python tools/make_bom.py`) |
+| `bom_final.csv` | Cost table for the **final design** (115 kg wax with aluminium fins, 1.8 kWp, drip tray, 40 Ah battery) – **all prices are guesses** (`python tools/make_bom.py`) |
+| `bom_recommended.csv` | Cost table for the 2025 sizing-study design (kept for reference) |
 | `power_cut_night.csv` | Room temperature on the power-cut night |
 | `year_*_hourly.csv` | Hour-by-hour simulation results for the year |
 
@@ -117,7 +118,24 @@ Hotspot positions (in % of each picture) are in `web/assets/hotspots.json` – e
 
 Open **📅 Live 2026** in the top bar (or `live.html`). Tabs: Year so far, Calendar (click a
 day for hour-by-hour graphs), Today, Tomorrow (a **prediction**: the Open-Meteo forecast run
-through our physics twin), Design year (ISHRAE) vs 2026, Money, Fixed inputs.
+through our physics twin), Design year (ISHRAE) vs 2026, Money, **Design choices** (the design
+journey plain → baffle + fans → fins, the fin calculation, floor space, loading options, wax
+size), Fixed inputs.
+
+**Final design:** 115 kg wax (PCM) with 40 mm aluminium fins (23 mm gap, 1.6 m panels, no fan,
+no baffle), 1.8 kWp PV, 1.5 kW R290 compressor, 150 kg produce loaded at 6 am, 12 V 40 Ah battery
+for controller/sensors/IoT only. Studies and poster figures:
+
+```
+python -m twin.design_study_2026      (loading options, design journey, wax size, fin table, floor check)
+python -m twin.fin_study_2026         (fins vs baffle + fans, options A/B/C)
+python -m twin.live_run               (the 2026 run shown on the pages)
+python tools/make_final_figures.py    (figures/final_*.png + .svg, 300 dpi; results_summary "Final design (2026)")
+python tools/make_bom.py
+```
+
+Phase 2 figures (`figures/01…14`) are labelled "How we chose the size (NASA POWER 2025 study)".
+The presenter note for the 2-minute talk is `docs/PRESENTER_NOTE.md`.
 
 Update it by hand (needs internet; otherwise it uses the last saved data):
 
@@ -125,7 +143,8 @@ Update it by hand (needs internet; otherwise it uses the last saved data):
 python -m twin.live_run --fetch
 ```
 
-**Every day at 06:00 IST** GitHub runs `.github/workflows/daily-live.yml`: it downloads the
+**Every day at 06:00 IST** (GitHub often starts scheduled jobs late – on 5 and 6 Nov it ran at
+about 12:35 IST) GitHub runs `.github/workflows/daily-live.yml`: it downloads the
 weather, runs the twin, rebuilds `static_site/` and commits. To check it ran:
 1. GitHub → your repository → **Actions** tab → "Daily Live Year Run": a green tick for today.
 2. The commit list shows "Daily Live Year Run <date>".

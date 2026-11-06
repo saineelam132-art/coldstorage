@@ -142,31 +142,45 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         half = thick / 2 / pc["k_W_mK"]
         UA_ch = A / (half + cfg["simulation"]["pcm_charge_coil_R_m2K_W"]) / 1000.0
         T_night = float(_hottest_night(weather))
-        fan_info = FAN.size_fan(cfg, T_night, m_p, nf["design_room_max_C"], nf["margin"])
-        if nf.get("fan"):                       # the chosen fan is fixed in design.json (stable results)
-            f = nf["fan"]
-            geo = FAN.geometry(cfg)
-            dp = FAN.channel_pressure(fan_info["v_needed_m_s"], geo)
-            eff = f["flow_m3h"] * max(0.1, 1 - dp / f["pressure_Pa"])
-            fan_info["fan"] = {**f, "total_W": f["count"] * f["watts"], "total_flow_m3h": f["count"] * eff}
-        speeds, G_fan_tab, dTs, G_nat_tab, v_max = FAN.conductance_tables(cfg, m_p, fan_info["fan"])
-        G_fan_tab, G_nat_tab = G_fan_tab / 1000.0, G_nat_tab / 1000.0          # kW/K
-        fan_rated_kW = fan_info["fan"]["total_W"] / 1000.0
-        if hx and hx.get("kind") == "fins":     # finned panels, no baffle (study option, engine/fins.py)
+        hx = dict(lr.get("wax_hx") or {"kind": "baffle"}) if hx is None else dict(hx)
+        kind = hx.get("kind", "baffle")
+        if kind == "baffle":                    # plain panels + baffle channel + night fans (engine/fan.py)
+            fan_info = FAN.size_fan(cfg, T_night, m_p, nf["design_room_max_C"], nf["margin"])
+            fan_info["kind"] = "baffle"
+            if nf.get("fan"):                   # the chosen fan is fixed in design.json (stable results)
+                f = nf["fan"]
+                geo = FAN.geometry(cfg)
+                dp = FAN.channel_pressure(fan_info["v_needed_m_s"], geo)
+                eff = f["flow_m3h"] * max(0.1, 1 - dp / f["pressure_Pa"])
+                fan_info["fan"] = {**f, "total_W": f["count"] * f["watts"], "total_flow_m3h": f["count"] * eff}
+            speeds, G_fan_tab, dTs, G_nat_tab, v_max = FAN.conductance_tables(cfg, m_p, fan_info["fan"])
+            G_fan_tab, G_nat_tab = G_fan_tab / 1000.0, G_nat_tab / 1000.0          # kW/K
+            fan_rated_kW = fan_info["fan"]["total_W"] / 1000.0
+        else:                                   # 'fins' (final design) or 'plain' panels, no baffle (engine/fins.py)
             from engine import fins as FINS
-            fan_info = {"kind": "fins", **{k: v for k, v in hx.items() if k != "fan"}, "fan": hx.get("fan")}
-            fsp = hx.get("fan")
-            if fsp:
-                fsp = {**fsp, "total_W": fsp["count"] * fsp["watts"],
-                       "total_flow_m3h": fsp["count"] * fsp["flow_m3h"] * hx.get("flow_fraction", 0.7)}
-                fan_info["fan"] = fsp
-            speeds, G_fan_tab, dTs, G_nat_tab, v_max = FINS.conductance_tables(
-                A, hx["L"], hx["S"], hx["b"], hx["t"], half, fsp, hx.get("cover_m", 1.0))
+            Lp = hx.get("L", nf["panel_height_m"])
+            load_W, parts = FAN.design_night_load(cfg, T_night, 7.0)
+            if kind == "plain":
+                dTs = np.linspace(0, 15, 61)
+                G_nat_tab = np.array([FINS.plain(A, Lp, half, max(d, 1e-3))["UA"] for d in dTs])
+                speeds, G_fan_tab, fsp = np.linspace(0, 1, 51), np.full(51, G_nat_tab[12]), None
+                calc = FINS.plain(A, Lp, half, 3.0)
+            else:
+                fsp = hx.get("fan")
+                if fsp:
+                    fsp = {**fsp, "total_W": fsp["count"] * fsp["watts"],
+                           "total_flow_m3h": fsp["count"] * fsp["flow_m3h"] * hx.get("flow_fraction", 0.7)}
+                speeds, G_fan_tab, dTs, G_nat_tab, v_max = FINS.conductance_tables(
+                    A, Lp, hx["S"], hx["b"], hx["t"], half, fsp, hx.get("cover_m", 1.0))
+                calc = FINS.array(A, Lp, hx["S"], hx["b"], hx["t"], half, 3.0)
             k = hx.get("h_scale", 1.0)               # sensitivity: correlation uncertainty
             G_fan_tab, G_nat_tab = k * G_fan_tab / 1000.0, k * G_nat_tab / 1000.0
             fan_rated_kW = fsp["total_W"] / 1000.0 if fsp else 0.0
             if not fsp:
                 fan_enabled = False
+            fan_info = {"kind": kind, "L_m": Lp, "A_m2": A, "R_wax_m2K_W": half, "dT_K": 3.0, "T_out_design_night_C": T_night,
+                        "load_W": load_W, "load_parts_W": parts, "calc_3K": calc, "fan": fsp,
+                        **{k_: v for k_, v in hx.items() if k_ in ("S", "b", "t", "h_scale")}}
     else:
         UA_ch = 0.0
     h_min = cps * (cfg["simulation"]["pcm_charge_stop_C"] - Tm)
@@ -359,7 +373,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
               "energy_in_kWh": heat_in / 3600, "energy_out_kWh": heat_out / 3600,
               "stored_change_kWh": (E1 - E0) / 3600, "energy_balance_error_kWh": bal / 3600,
               "energy_balance_error_pct": 100 * abs(bal) / heat_out if heat_out else 0.0,
-              "sun_factor": sun, "fan_enabled": bool(fan_enabled and m_p > 0), "fan_sizing": fan_info,
+              "sun_factor": sun, "fan_enabled": bool(fan_enabled and m_p > 0), "wax_hx": fan_info,
               "loading": loading, "produce_kg": m_b}
     end_state = {"T_room": T_r, "T_nodes": T_n, "pcm_h": h, "grid_mode": grid_mode}
     if steps:

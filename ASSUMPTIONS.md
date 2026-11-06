@@ -212,18 +212,19 @@ All design values live in `config/design.json` — change them there.
     whole UTC hours). Each hour's sunlight is set to the average of that hour and the one before.
 64. **Design year:** ISHRAE 2014 typical year, Visakhapatnam (WMO 431500), from
     climate.onebuilding.org. Licence: single machine, no redistribution → never committed.
-65. **Fixed inputs:** room 2.0 × 2.0 × 2.2 m inside, 100 mm PUF, curtain on; compressor max 1.5 kW;
-    200 kg always inside; at 8:00 the whole 200 kg is swapped and the fresh produce enters at that
-    hour's outside temperature; door 4 × 15 s (8:00, 8:10, 12:00, 17:00).
+65. **Fixed inputs:** room 2.0 × 2.0 m floor × 2.2 m high inside, 100 mm PUF, curtain on; compressor
+    max 1.5 kW; rated capacity **150 kg** always inside; at **6:00** the whole 150 kg is swapped and
+    the fresh produce enters at that hour's outside temperature; door 4 × 15 s (6:00, 6:10, 12:00,
+    17:00). 6 am was chosen from four loading options (8 am, 6 am, 4 am, 75 + 75 kg).
 66. **"Cooled"** = the batch is within 0.5 K of the 5 °C set-point (5.5 °C). Fresh produce cools at
     the same rate as before (7/8 of the way in 4 h with the room at 5 °C) – slower when the
     compressor is at its limit.
 67. **No battery for cooling.** Compressor and 40 W evaporator fan run only on solar or grid. With
-    them off, the wax panels cool the room by natural convection (h = 4 W/m²K instead of 15).
-    A 12 V 50 Ah LiFePO4 battery (0.6 kWh) runs only controller 5 W + sensors 2 W + IoT gateway 3 W
-    = 10 W = 0.24 kWh/day (about 2 days without sun at 80 % depth of discharge).
+    them off, the **finned wax panels** cool the room by natural convection only (item 72).
+    A **12 V 40 Ah LiFePO4** battery (0.51 kWh) runs only controller 5 W + sensors 2 W + IoT gateway
+    3 W = 10 W. Sized for the worst 2026 night + one reserve day at 80 % usable (36 Ah → 40 Ah).
 68. **Grid during morning loading:** by default the grid does NOT help while the fresh batch cools
-    (8–11 am); the room air is then warm for about an hour (shown separately as "warm air while a
+    (6–9 am); the room air is then warm for about 1.6 h (shown separately as "warm air while a
     fresh batch cools"). Switch: `live_run.grid_assist_during_loading`.
 69. **PCM effectiveness** = cold given by the wax to the room ÷ cold stored by the charging coil.
     The model has no other path for the wax to lose cold, so it is ~100 %; the share given when
@@ -233,3 +234,28 @@ All design values live in `config/design.json` — change them there.
     diesel. Grid-only room = same room and inputs, no wax, no solar, grid always (twin run).
 71. **Tomorrow** is a PREDICTION: the Open-Meteo forecast run through our physics twin, starting
     from the twin's state at the end of today. It is not measured and not AI.
+72. **Finned wax panels (final wax heat exchanger).** Vertical aluminium fins on the room side of
+    the wax panels: 40 mm deep, 23 mm gap, 1 mm thick, panels 1.6 m tall (12 m² over 7.5 m of wall).
+    No baffle, no fan. h from the LOWER of Bar-Cohen & Rohsenow (parallel plates) and Van de Pol &
+    Tierney (U-channel fin arrays) at the actual room−wax difference; fin efficiency
+    η = tanh(mLc)/(mLc); UA = 1/[1/(h(A_base + ηA_fin)) + R_wax/A] with R_wax = half the 12 mm slab.
+    Result at 3 K: area × 4.33, η 0.993, h 1.24 W/m²K, UA 55.3 W/K (plain panel 24.6) → 166 W vs
+    149 W needed on the hottest 2026 night. Radiation to the panels is ignored (conservative).
+    The correlations are for free-standing arrays; crates too close to the fins would lower h →
+    10 cm keep-clear zone with floor stoppers. Checked: with h 25 % lower the room still stays in
+    2–8 °C, grid hours rise to about 377 h/yr; 2 optional 12 V fans (hold 6.5 °C at night) bring
+    that back to about 173 h/yr (then a 50 Ah battery). The Phase 4 test decides.
+73. **Design journey (same 2026 run):** plain panels 42 days fully on solar + wax and 3,257 grid
+    h/yr → baffle + 5 night fans 290 days / 156 h (5 moving parts, 80 Ah battery) → fins 291 days /
+    164 h (no moving parts, 40 Ah battery).
+74. **Condensation:** fins at about 4–5 °C are below the dew point of the room air (5.5 °C at 7 °C,
+    90 % RH) → sloped drip tray with drain and water trap. Latent heat of the moisture is already in
+    the door/produce loads. Wax never below 3 °C → no frost on the fins. Clean the removable 0.6 m
+    fin sections monthly.
+75. **Floor space:** panel + fins + 10 cm keep-clear take 15.5 cm along the walls → 2.86 m² usable
+    of 4.0 m². 150 kg = 8 crates (600 × 400 × 300 mm, about 20 kg each – ASSUMPTION) in 2 stacks of
+    4 = 0.48 m², plus a 60 cm aisle → fits with 1.36 m² spare. **Wall length:** 12 m² of 1.6 m
+    panels needs 7.5 m; the walls give 7.2 m beside the 0.8 m door → 0.3 m short: use 1.7 m tall
+    panels (7.06 m, UA 53.8 W/K) or put the rest on the door wall above the door.
+76. **Sunlight factor 0.88:** Open-Meteo (ERA5) sunlight × 0.88 = NASA POWER level for Jan–Aug
+    2026 (conservative). "Uncorrected" results are shown only for comparison.

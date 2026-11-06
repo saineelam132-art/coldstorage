@@ -56,3 +56,14 @@ table.t th{background:#eaf3fb;font-weight:700;position:sticky;top:0}
 .sunlabel{display:inline-block;background:#e0f2fe;color:#075985;border-radius:6px;padding:2px 8px;font-size:12.5px;font-weight:600;margin-left:6px}
 .sunlabel.raw{background:#fee2e2;color:#991b1b}
 .chan{width:100%;max-width:520px;height:auto;display:block;margin:6px auto}
+/* design journey */
+.journey{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+.jstep{flex:1 1 200px;border:1px solid var(--line,#d8dee4);border-radius:10px;padding:10px}
+.jstep.final{border:2px solid #2a78d6;background:rgba(42,120,214,.06)}
+.jstep h5{margin:0 0 6px;font-size:14px}
+.jrow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13px;margin:4px 0}
+.jrow .jbar{grid-column:1 / -1;height:6px;background:rgba(127,127,127,.15);border-radius:3px;overflow:hidden}
+.jbar i{display:block;height:100%}
+.jarrow{align-self:center;font-size:22px;color:#8a8984}
+.warnc{color:#b45309}
+@media (max-width:700px){.jarrow{display:none}}

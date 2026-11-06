@@ -53,12 +53,26 @@ def geometry(cfg):
     }
 
 
+def wax_hx_info(tot):
+    """What the pages show about the wax heat exchanger (finned panels): the calculation at 3 K."""
+    w = tot.get("wax_hx") or {}
+    c = w.get("calc_3K") or {}
+    out = {k: w.get(k) for k in ("kind", "L_m", "A_m2", "load_W", "T_out_design_night_C", "dT_K")}
+    out.update({k: c.get(k) for k in ("S_mm", "b_mm", "t_mm", "N_fins", "area_mult", "eta", "h", "h_bar_cohen", "h_van_de_pol",
+                                      "UA_air", "UA", "Q_W", "al_kg")})
+    if w.get("L_m") and w.get("A_m2"):
+        from engine import fins as FINS
+        p = FINS.plain(w["A_m2"], w["L_m"], w["R_wax_m2K_W"], 3.0)
+        out["plain"] = {"h": p["h"], "UA": p["UA"], "Q_W": p["Q_W"]}
+    return out
+
+
 class TwinState:
     def __init__(self, cfg=None):
         self.cfg = cfg or load_config()
         self.crops = load_crops()
         # The main site replays the FINAL DESIGN on real 2026 weather (1 Jan 2026 -> end of tomorrow):
-        # 115 kg wax, 1.8 kWp, night wax fan, 150 kg loaded at 6 am, sunlight corrected to NASA level.
+        # 115 kg wax, 1.8 kWp, finned wax panels (passive), 150 kg loaded at 6 am, sunlight corrected to NASA level.
         from twin.live_sim import simulate_live
         from twin.live_weather import load_actual
         W = load_actual()
@@ -71,10 +85,10 @@ class TwinState:
         hourly = S[["poa", "T_out"]].resample("h").mean()
         self.weather = pd.DataFrame({"time_ist": hourly.index, "poa": hourly["poa"].values, "T_out": hourly["T_out"].values})
         self.summary = self._summary(S, self.final_H, ftot)
-        # the SAME room WITHOUT the night fan, for the two-rooms comparison
-        H0, t0_, _, _ = simulate_live(W, "current", cfg=self.cfg, steps=True, fan_on=False)
+        # the SAME room with PLAIN wax panels (no fins), for the two-rooms comparison
+        H0, t0_, _, _ = simulate_live(W, "current", cfg=self.cfg, steps=True, hx={"kind": "plain"})
         S0 = t0_.pop("steps")
-        self.nofan_summary = self._summary(S0, H0, t0_)
+        self.plain_summary = self._summary(S0, H0, t0_)
         self.smart = {"T_room": S["T_room"].values, "pcm_pct": S["pcm_pct"].values, "grid_on": S["grid_on"].values}
         self.base = {"T_room": S0["T_room"].values, "pcm_pct": S0["pcm_pct"].values, "grid_on": (S0["grid_on"] > 0.5).values}
         self.dt = 300.0
@@ -116,7 +130,7 @@ class TwinState:
                 "load_product_kWh": kWh("Q_batch"), "load_resp_kWh": kWh("Q_resp"), "load_internal_kWh": kWh("Q_int"),
                 "fan_kWh": float(Sr["fan_W"].sum() * 300 / 3600 / 1000), "compressor_kWh_e": float(Hr.P_comp.sum()),
                 "energy_balance_error_pct": tot["energy_balance_error_pct"], "produce_kg": tot["produce_kg"],
-                "design": "Final design: 115 kg wax, 1.8 kWp, night wax fan, 150 kg loaded at 6 am (2026 weather, conservative sun)"}
+                "design": "Final design: 115 kg wax, 1.8 kWp, finned wax panels (no fan), 150 kg loaded at 6 am (2026 weather, conservative sun)"}
 
     # --------------------------------------------------------------- helpers
     def index(self, t):
@@ -199,7 +213,7 @@ class TwinState:
             "comp_speed_pct": 100.0 * float(c["Q_coil_air"][i] + c["Q_coil_pcm"][i]) / cfg["refrigeration"]["design_capacity_kW"],
             "cop": float(c["cop"][i]),
             "fan_W": float(c["fan_W"][i]), "fan_speed_pct": 100.0 * float(c["fan_speed"][i]),
-            "G_wax_W_K": float(c["G_wax"][i]),
+            "G_wax_W_K": float(c["G_wax"][i]), "Q_pcm_room": float(c["Q_pcm_room"][i]),
             "Q_total": Q_total, **Q,
             "backup_h": None if math.isinf(backup) else backup,
             "door_open": open_now, "door_angle": 90.0 if open_now else 0.0,
@@ -222,10 +236,10 @@ class TwinState:
                            "grid_on": bool(self.base["grid_on"][i]), "grid_h_so_far": float(self.grid_h_cum["normal"][i])},
                 "smart": {"T_room": float(self.smart["T_room"][i]), "pcm_pct": float(self.smart["pcm_pct"][i]),
                           "grid_on": bool(self.smart["grid_on"][i]), "grid_h_so_far": float(self.grid_h_cum["smart"][i])},
-                "year": {"normal_grid_h": self.nofan_summary["grid_hours"], "smart_grid_h": self.summary["grid_hours"],
-                         "normal_days_pct": self.nofan_summary["pct_days_full_solar_pcm"],
+                "year": {"normal_grid_h": self.plain_summary["grid_hours"], "smart_grid_h": self.summary["grid_hours"],
+                         "normal_days_pct": self.plain_summary["pct_days_full_solar_pcm"],
                          "smart_days_pct": self.summary["pct_days_full_solar_pcm"],
-                         "labels": ["Without night fan", "With night fan (final design)"]}},
+                         "labels": ["Plain wax panels", "Finned wax panels (final design)"]}},
             "ledger": {"length": len(self.ledger.chain.blocks), "valid": self.ledger.chain.verify()["valid"],
                        "batches": len(self.ledger.batches)},
         }

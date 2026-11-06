@@ -33,3 +33,10 @@ physics with our `engine/` and `twin/`:
 - Build a small lumped model of that box (box U·A from thermocol k and thickness, gel/PCM
   latent + sensible heat, ambient from a sensor) and draw **model vs measured**, giving the
   % difference (e.g. RMSE and mean absolute error as % of the temperature swing).
+
+## Phase 4 – fin test (decides the optional fans)
+Measure on 3–5 quiet nights (door shut, compressor off): room air, wax/fin base temperature
+(DS18B20 on the panel face) and the wax % from the charging energy. UA_measured = heat taken by the
+wax ÷ (T_room − T_wax). Calculated: 55 W/K at 3 K. If UA_measured is more than 25 % lower
+(below about 41 W/K), fit the 2 optional 12 V fans (mounting points and cable are already in;
+rule: compressor off → hold 6.5 °C) and use a 50 Ah battery.

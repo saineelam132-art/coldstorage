@@ -285,13 +285,8 @@ body.touring .storynav,body.touring .caption,body.touring .enterbtn{display:none
 .walker img{object-fit:contain}
 .acts a.act{text-decoration:none;display:inline-flex;align-items:center}
 
-/* night wax fans + baffle (inside pictures) */
-.baffle{position:absolute;pointer-events:none;border-left:3px solid rgba(220,235,245,.85);border-right:3px solid rgba(220,235,245,.85);
-  background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,0) 30%,rgba(255,255,255,0) 70%,rgba(255,255,255,.10))}
-.nfan{position:absolute;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
-.nfan svg{width:100%;display:block}
-.nfan .blades{transform-origin:0 0;animation:fanspin2 1s linear infinite;animation-play-state:paused}
-.nfan.on .blades{animation-play-state:running}
-@keyframes fanspin2{to{transform:rotate(360deg)}}
-.nfan span{position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:11px;color:#fff;background:rgba(8,24,40,.8);padding:0 5px;border-radius:4px;white-space:nowrap}
-.nfan.on span{background:#0f766e}
+/* finned wax panels + drip tray (inside pictures) */
+.finpack{position:absolute;pointer-events:none;border:1px solid rgba(220,235,245,.7);
+  background:repeating-linear-gradient(90deg,rgba(235,242,248,.55) 0 2px,rgba(235,242,248,0) 2px 9px)}
+.driptray{position:absolute;pointer-events:none;background:linear-gradient(180deg,rgba(190,200,210,.9),rgba(120,135,150,.9));
+  border-radius:0 0 4px 4px;box-shadow:0 2px 4px rgba(0,0,0,.4);clip-path:polygon(0 0,100% 0,100% 100%,0 70%)}

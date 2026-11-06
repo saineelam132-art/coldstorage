@@ -54,7 +54,7 @@ def test_geometry_follows_design(tw):
 
 def test_hotspots_point_to_real_sensors_and_parts():
     sensors = {s["id"] for s in json.loads((ROOT / "config/sensors.json").read_text(encoding="utf-8"))["sensors"]}
-    parts = {"solar", "condenser", "door", "crates", "worker", "evaporator", "pcm", "crate_greens", "crate_grapes", "milk", "vaccine"}
+    parts = {"solar", "condenser", "door", "crates", "worker", "evaporator", "pcm", "crate_greens", "crate_grapes", "milk", "vaccine", "fins", "driptray"}
     hs = json.loads((ROOT / "web/assets/hotspots.json").read_text(encoding="utf-8"))
     for img, spots in hs.items():
         if img.startswith("_"):

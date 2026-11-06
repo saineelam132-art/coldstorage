@@ -24,10 +24,10 @@ from twin.live_sim import simulate_live
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "web" / "live" / "data"
 RES = ROOT / "results" / "live"
-DESIGNS = ("current", "recommended")          # current = FINAL design (115 kg + 1.8 kWp + night fan)
+DESIGNS = ("current", "recommended")          # current = FINAL design (115 kg + 1.8 kWp + finned wax panels)
 VARIANTS = {"current": {}, "recommended": {},
             "current_uncorrected": {"design": "current", "sun_factor": 1.0},     # comparison only
-            "current_nofan": {"design": "current", "fan_on": False}}             # fan with vs without
+            "current_plain": {"design": "current", "hx": {"kind": "plain"}}}     # plain panels vs fins
 HOURLY_FIELDS = ["T_out", "RH_out", "ghi", "wind", "T_room", "T_batch", "pcm_pct", "Q_wall", "Q_door", "Q_batch", "Q_resp",
                  "Q_int", "Q_load", "Q_cool", "Q_ch", "Q_pcm_room", "comp_speed_pct", "P_comp", "COP", "P_evap_bar",
                  "P_cond_bar", "T_cond_C", "T_discharge_C", "P_pv", "P_solar_used", "P_grid", "grid_on", "door_s", "running_h",
@@ -145,7 +145,7 @@ def money_inputs(Hg, D_designs, cfg):
     piv = a.pivot_table(index="date", columns="hod", values="P_comp", aggfunc="sum").fillna(0.0)
     days = [d for d in piv.index if D_designs["current"].loc[d, "status"] == "actual"] if len(piv) else []
     return {"days": days, "gridonly_kWh_by_hour": [[r(x, 4) for x in piv.loc[d].reindex(range(24), fill_value=0).values] for d in days],
-            "ours_grid_kWh": {k: [r(D.loc[d, "grid_kWh"], 4) for d in days] for k, D in D_designs.items() if not k.endswith("nofan")},
+            "ours_grid_kWh": {k: [r(D.loc[d, "grid_kWh"], 4) for d in days] for k, D in D_designs.items() if not k.endswith("plain")},
             "defaults": cfg["live_run"]["money"]}
 
 
@@ -167,9 +167,10 @@ def run(fetch=False, now=None):
     D_all, H_all = {}, {}
     for key, v in VARIANTS.items():
         des = v.get("design", key)
-        H, tot, end, bt = simulate_live(W, des, cfg=cfg, sun_factor=v.get("sun_factor"), fan_on=v.get("fan_on"))
+        H, tot, end, bt = simulate_live(W, des, cfg=cfg, sun_factor=v.get("sun_factor"), fan_on=v.get("fan_on"),
+                                      hx=v.get("hx"))
         if key == "current":
-            out["fan_sizing"] = tot["fan_sizing"]
+            out["wax_hx"] = tot["wax_hx"]
             from twin.design_study_2026 import battery
             out["battery"] = battery(H[~H.is_forecast] if "is_forecast" in H else H, cfg)
         H.attrs["pcm_kg"] = cfg["live_run"]["designs"][des]["pcm_kg"]
@@ -177,7 +178,7 @@ def run(fetch=False, now=None):
         M = monthly(D)
         D_all[key], H_all[key] = D, H
         label = cfg["live_run"]["designs"][des]["label"] + {"current_uncorrected": " – UNcorrected Open-Meteo sun (comparison only)",
-                                                              "current_nofan": " – WITHOUT the night fan (comparison only)"}.get(key, "")
+                                                              "current_plain": " – PLAIN wax panels, no fins (comparison only)"}.get(key, "")
         t = totals(D, tot)
         out["designs"][key] = {"label": label, "totals": {k: (r(v) if isinstance(v, float) else v) for k, v in t.items()},
                                "monthly": jsonable(M), "daily": jsonable(D),
@@ -246,7 +247,7 @@ def print_summary(out):
         print(f"     batch cooling to 5.5 C: avg {t['batch_cool_h_avg']:.1f} h, worst {t['batch_cool_h_max']:.1f} h ({t['batch_cool_h_max_date']}); "
               f"hours outside 2-8 C: loading {t['hot_load_h']:.0f}, other {t['hot_other_h']:.0f}; "
               f"PCM effectiveness {t['pcm_effectiveness_pct']:.1f} %, no-sun share {t['wax_useful_share_pct']:.0f} %; "
-              f"energy balance error {t['energy_balance_error_pct']:.1e} %; fan {t['fan_kWh_day']:.3f} kWh/day")
+              f"energy balance error {t['energy_balance_error_pct']:.1e} %")
         print("    ", out["designs"][des]["loading_statement"])
 
 

@@ -242,29 +242,43 @@ PARTS.pcm = {
   },
 };
 
-PARTS.nightfan = {
-  name: 'Night wax fan (12 V, in the baffle channel)',
-  headline: v => (v.fan_W > 0 ? `${fmt(v.fan_W, '')} W · ${fmt(v.fan_speed_pct, '%')} speed` : 'off'),
+const n = (x, d = 0) => (x === null || x === undefined || Number.isNaN(x) ? '—' : Number(x).toFixed(d));
+PARTS.fins = {
+  name: 'Finned wax panels (passive – no fan, no baffle)',
+  headline: v => `area × ${n((CFG?.wax_hx || {}).area_mult, 1)} · UA ${n(v.G_wax_W_K)} W/K · 0 W`,
   body: (v, c) => {
-    const f = c.night_fan || {}, fan = f.fan || {}, nf = c.design.live_run.night_fan, b = c.design.live_run.battery_12V;
-    const flowNow = (fan.total_flow_m3h || 0) * v.fan_speed_pct / 100;
-    return `<div class="kv" data-live="nf">
-        <span>Fan power now ${tagChip('M')}</span><b>${fmt(v.fan_W, '')} W</b>
-        <span>Speed (PWM) ${tagChip('C')}</span><b>${fmt(v.fan_speed_pct, '%')}</b>
-        <span>Airflow now ${tagChip('C')}</span><b>${fmt(flowNow, '')} m³/h</b>
-        <span>Heat added to the room ${tagChip('C')}</span><b>${fmt(v.fan_W / 1000, 'kW')}</b>
-        <span>Wax ↔ room conductance now ${tagChip('C')}</span><b>${fmt(v.G_wax_W_K, '')} W/K</b>
+    const f = c.wax_hx || {}, hx = c.design.live_run.wax_hx, b = c.design.live_run.battery_12V, p = f.plain || {};
+    const dT = v.T_room - (v.T_pcm ?? 4);
+    return `<div class="kv" data-live="fins">
+        <span>Heat into the wax now ${tagChip('C')}</span><b>${fmt(v.Q_pcm_room, 'kW')}</b>
+        <span>Wax ↔ room conductance now ${tagChip('C')}</span><b>${n(v.G_wax_W_K, 1)} W/K</b>
+        <span>Room − wax ${tagChip('C')}</span><b>${fmt(dT, 'K')}</b>
+        <span>Electricity used ${tagChip('E')}</span><b>0 W (no moving parts)</b>
         <span>Room temperature ${tagChip('M')}</span><b>${fmt(v.T_room, '°C')}</b></div>
-      <table><tr><td>Fans</td><td>${fan.count} × ${fan.name}, ${fan.total_W} W rated, about ${fmt(fan.total_flow_m3h, '')} m³/h ${tagChip('E')}</td></tr>
-      <tr><td>Channel</td><td>baffle ${nf.gap_m * 100} cm in front of the wax panels, open top and bottom; fans at the TOP blowing DOWN</td></tr>
-      <tr><td>Fan off (natural)</td><td>h = ${fmt(f.h_natural_W_m2K, '')} W/m²K → UA = ${fmt(f.UA_natural_W_K, '')} W/K</td></tr>
-      <tr><td>Fan on (design)</td><td>h = ${fmt(f.h_fan_W_m2K, '')} W/m²K → UA = ${fmt(f.UA_fan_W_K, '')} W/K at ${fmt(f.v_needed_m_s, '')} m/s</td></tr>
-      <tr><td>Sized for</td><td>hottest 2026 night (${fmt(f.T_out_design_night_C, '°C')} outside): ${fmt(f.load_W, '')} W at room 7 °C</td></tr>
-      <tr><td>Control</td><td>on when the compressor is off and the room is above ${nf.on_above_C} °C (to hold ${nf.target_C} °C); also flat out above ${nf.morning_assist_above_C} °C while a fresh batch cools</td></tr>
-      <tr><td>Powered by</td><td>12 V ${b.capacity_Ah} Ah ${b.chemistry} battery (with controller, sensors, IoT gateway) – NO battery for the compressor</td></tr></table>
-      <div class="formula">Q = ṁ·cp·(T_room − T_wax)·(1 − e^(−NTU)), NTU = U·A/(ṁ·cp)<br>U = 1/(1/h + R_wax), fan power ∝ speed³</div>
-      <div class="note">All fan power ends up as heat inside the room and is added to the heat load every 5 minutes.</div>`;
+      <table><tr><td>Fins</td><td>${n(f.b_mm)} mm deep, ${n(f.S_mm)} mm gap, ${n(f.t_mm)} mm thick aluminium, ${n(f.N_fins)} fins over ${n(f.A_m2 / f.L_m, 1)} m of wall, ${n(f.L_m, 1)} m tall ${tagChip('E')}</td></tr>
+      <tr><td>Surface area</td><td><b>× ${n(f.area_mult, 2)}</b> compared with a plain panel; fin efficiency ${n(f.eta, 3)}</td></tr>
+      <tr><td>Air film (natural convection)</td><td>h = ${n(f.h, 2)} W/m²K (lower of Bar-Cohen & Rohsenow ${n(f.h_bar_cohen, 2)} and Van de Pol & Tierney ${n(f.h_van_de_pol, 2)})</td></tr>
+      <tr><td>Conductance at 3 K</td><td>fins: UA = <b>${n(f.UA, 1)} W/K</b> → ${n(f.Q_W)} W · plain panel: UA = ${n(p.UA, 1)} W/K → ${n(p.Q_W)} W</td></tr>
+      <tr><td>Needed</td><td>hottest 2026 night (${n(f.T_out_design_night_C, 1)} °C outside): ${n(f.load_W)} W at room 7 °C</td></tr>
+      <tr><td>Build</td><td>${hx.material}; removable ${hx.section_length_m} m sections for cleaning; ${n(f.al_kg)} kg aluminium</td></tr>
+      <tr><td>Keep clear</td><td>${hx.keep_clear_m * 100} cm free zone in front of the fins, floor stoppers for the crates</td></tr>
+      <tr><td>Optional fans</td><td>mounting points + 12 V cable for ${hx.optional_fans.provision} × 120 mm fans – <b>optional</b>, add only if the Phase 4 test shows the fins &gt;25 % weaker</td></tr>
+      <tr><td>12 V battery</td><td>${b.capacity_Ah} Ah ${b.chemistry} for controller, sensors and IoT gateway only – NO battery for cooling</td></tr></table>
+      <div class="formula">El = Ra_S·S/L, Nu_S = [576/El² + 2.873/El^0.5]^−0.5 (Bar-Cohen & Rohsenow)<br>
+        η = tanh(m·Lc)/(m·Lc), m = √(2h/(k_al·t))<br>UA = 1 / [1/(h·(A_base + η·A_fins)) + R_wax/A]</div>
+      <div class="note">Cooled air falls between the fins by itself – nothing to switch on, nothing to break, nothing to power at night.</div>`;
   },
+};
+
+PARTS.driptray = {
+  name: 'Drip tray under the wax panels',
+  headline: () => 'sloped tray · drain + trap',
+  body: (v, c) => `<div class="kv"><span>Fin surface ${tagChip('C')}</span><b>about ${fmt((v.T_pcm ?? 4) + 0.5, '°C')}</b>
+      <span>Room air ${tagChip('M')}</span><b>${fmt(v.T_room, '°C')} / ${fmt(c.design.setpoint.rh_room_pct, '%')} RH</b></div>
+    <p>The fins sit at about 4–5 °C, below the dew point of the room air (about 5.5 °C at 7 °C and 90 % RH), so water condenses on them –
+    mostly moisture given off by the fresh produce. A sloped stainless tray under the panels collects it and a drain with a water trap
+    takes it out (the trap stops warm outside air coming in). The wax never goes below 3 °C, so the fins never frost.</p>
+    <div class="note">Clean the tray and the fin sections (removable, 0.6 m long) every month – wet surfaces in a food room must not grow mould.</div>`,
 };
 
 PARTS.evaporator = {

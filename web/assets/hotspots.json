@@ -366,14 +366,14 @@
    "y": 71.6
   },
   {
-   "part": "nightfan",
+   "part": "fins",
    "x": 35.6,
    "y": 26.5
   },
   {
-   "sensor": "fan_power",
    "x": 64.4,
-   "y": 26.5
+   "y": 80.5,
+   "part": "driptray"
   }
  ],
  "A9_interior_pcm_wall": [
@@ -394,7 +394,7 @@
    "label": "charging coil"
   },
   {
-   "part": "nightfan",
+   "part": "fins",
    "x": 66.5,
    "y": 11.5
   }

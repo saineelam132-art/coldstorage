@@ -321,20 +321,19 @@ export class Model3D {
     const panel = (w, h, x, y, z, ry) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.03), this.pcmMat); m.position.set(x, y0 + y, z); m.rotation.y = ry; add(m, 'pcm'); };
     panel(0.55, 1.2, -0.55, 0.95, z0 + 0.035, 0); panel(0.55, 1.2, 0.55, 0.95, z0 + 0.035, 0);
     panel(0.55, 0.35, x0 + 0.035, 1.92, z0 + 0.45, Math.PI / 2); panel(0.55, 0.35, -x0 - 0.035, 1.92, z0 + 0.45, -Math.PI / 2);
-    // baffle sheet 2 cm in front of the back-wall wax panels + night fans at the top (blowing down)
-    const baf = new THREE.MeshStandardMaterial({ color: 0xe8eef2, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+    // vertical aluminium fins (40 mm deep, 23 mm gap) on the room side of the back-wall wax panels + drip tray
+    const finMat = new THREE.MeshStandardMaterial({ color: 0xd9e1e8, metalness: .7, roughness: .35 });
+    const finGeo = new THREE.BoxGeometry(0.004, 1.2, 0.04);
     for (const x of [-0.55, 0.55]) {
-      const b = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 1.2), baf); b.position.set(x, y0 + 0.95, z0 + 0.035 + 0.035); add(b, 'nightfan');
+      for (let k = 0; k < 22; k++) {
+        const f = new THREE.Mesh(finGeo, finMat); f.position.set(x - 0.2625 + k * 0.025, y0 + 0.95, z0 + 0.035 + 0.015 + 0.02);
+        add(f, 'fins');
+      }
     }
-    this.nightFans = [];
-    const hub = new THREE.MeshStandardMaterial({ color: 0x1f2a33 }), blade = new THREE.MeshStandardMaterial({ color: 0xcfd8df });
-    [-0.75, -0.35, 0.0, 0.35, 0.75].forEach(x => {
-      const g = new THREE.Group();
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.008, 6, 20), hub); ring.rotation.x = Math.PI / 2; g.add(ring);
-      for (let k = 0; k < 3; k++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.004, 0.018), blade); bl.position.x = 0.024; const a = new THREE.Group(); a.add(bl); a.rotation.y = k * 2 * Math.PI / 3; g.add(a); }
-      g.position.set(x, y0 + 1.58, z0 + 0.06); g.userData.part = 'nightfan'; this.picks.push(ring); ring.userData.part = 'nightfan';
-      this.scene.add(g); this.nightFans.push(g);
-    });
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.04, 0.14), new THREE.MeshStandardMaterial({ color: 0xa9b6c2, metalness: .6, roughness: .4 }));
+    tray.position.set(0, y0 + 0.31, z0 + 0.09); tray.rotation.x = 0.06; add(tray, 'driptray');
+    const drain = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0x6b7a88 }));
+    drain.position.set(0.64, y0 + 0.16, z0 + 0.09); add(drain, 'driptray');
     // copper charging tube between the back panels
     const cop = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.55, 8), new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: .8, roughness: .3 }));
     cop.rotation.z = Math.PI / 2; cop.position.set(0, y0 + 0.95, z0 + 0.05); add(cop);
@@ -649,7 +648,6 @@ export class Model3D {
       this.doorPivot.rotation.y = -this.doorAngle;               // outward swing
       this.fan.rotation.x += dt * (v.comp_speed_pct / 100) * 25;
       this.evapFan.rotation.z += dt * (0.25 + v.comp_speed_pct / 100) * 18;   // evaporator fan always runs; faster with compressor
-      (this.nightFans || []).forEach(f => (f.rotation.y += dt * (v.fan_speed_pct || 0) / 100 * 30));
       this.cups.rotation.y += dt * (v.wind || 0) * 2.2;
     }
     const pulse = 1 + 0.25 * Math.sin(performance.now() / 300);

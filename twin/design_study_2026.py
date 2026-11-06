@@ -1,8 +1,10 @@
-"""Design study on real 2026 weather (sunlight corrected to NASA level):
-  1. night wax fan: with vs without
-  2. loading options for 150 kg (8 am, 6 am, 4 am, 75 kg 6 am + 75 kg 6 pm)
-  3. wax size with the fan: 115 kg + 1.8 kWp vs 172 kg + 2.1 kWp
-  4. 12 V battery size for controller + sensors + IoT gateway + night fan
+"""Design study on real 2026 weather (sunlight corrected to NASA level), final design = finned wax panels:
+  1. loading options for 150 kg (8 am, 6 am, 4 am, 75 kg 6 am + 75 kg 6 pm)
+  2. DESIGN JOURNEY: plain panels -> baffle + 5 night fans -> finned panels (+ checks: fins 25 % weaker,
+     with the 2 optional fans)
+  3. wax size: 115 kg + 1.8 kWp vs 172 kg + 2.1 kWp
+  4. 12 V battery size for controller + sensors + IoT gateway
+  5. floor space: keep-clear zone in front of the fins, does 150 kg of crates fit?
 
     python -m twin.design_study_2026        ->  results/live/design_study_2026.json + tables printed
 """
@@ -103,7 +105,41 @@ def battery(H, cfg):
     base = sum(cfg["live_run"]["battery_12V"]["loads_W"].values())
     return {"base_loads_W": base, "worst_night_Wh": worst_night_Wh, "worst_day_Wh": worst_day_Wh,
             "needed_Wh": need_Wh, "needed_Ah": Ah, "chosen_Ah": std, "chosen_kWh": std * 12.8 / 1000,
-            "note": "LiFePO4 12.8 V, 80 % usable: worst night + one reserve day of controller, sensors, IoT gateway and night fan."}
+            "note": "LiFePO4 12.8 V, 80 % usable: worst night + one reserve day of all 12 V loads (controller, sensors, IoT gateway; plus any wax fans)."}
+
+
+def floor_check(cfg):
+    """Floor space left after wax panels + fins + 10 cm keep-clear zone, and whether 150 kg of crates fits.
+    Panels: 12 m2 at 1.6 m tall = 7.5 m of wall. Crate: standard 600 x 400 x 300 mm plastic crate, about
+    20 kg of produce each (ASSUMPTION - check with the crop), stacked at most 4 high (1.2 m)."""
+    lr, hx, pc = cfg["live_run"], cfg["live_run"]["wax_hx"], cfg["pcm"]
+    ch = cfg["chamber"]
+    W, L, Hh = ch["width_m"], ch["length_m"], ch["height_m"]
+    door_w = cfg["door"]["width_m"] if "door" in cfg and "width_m" in cfg["door"] else 0.8
+    wall_len = 2 * (W + L) - door_w
+    need_len = pc["slab_area_m2"] / hx["L"]
+    wax_t = lr["designs"]["current"]["pcm_kg"] / (pc["density_kg_m3"] * pc["slab_area_m2"])
+    panel_t = wax_t + 0.003                          # wax + 1.5 mm aluminium skin each side
+    band = panel_t + hx["b"] + hx["keep_clear_m"]   # depth taken from the floor along the panel walls
+    # panels on the back wall and both side walls, the rest beside the door: keep-clear band on all 4 sides
+    usable = (W - 2 * band) * (L - 2 * band)
+    crate = {"L": 0.6, "W": 0.4, "H": 0.3, "kg": 20.0}
+    n = math.ceil(lr["produce_kg"] / crate["kg"])
+    per_stack = 4
+    stacks = math.ceil(n / per_stack)
+    foot = stacks * crate["L"] * crate["W"]
+    aisle = 0.6 * (L - 2 * band)                     # 60 cm walking aisle from the door
+    from engine import fins as FINS
+    from engine import fan as FAN
+    R = FAN.wax_resistance(cfg, lr["designs"]["current"]["pcm_kg"])
+    ua = {f"{h:.1f} m": FINS.array(pc["slab_area_m2"], h, hx["S"], hx["b"], hx["t"], R, 3.0)["UA"] for h in (1.6, 1.7)}
+    return {"wall_length_available_m": wall_len, "panel_length_needed_m": need_len,
+            "panel_length_needed_at_1.7m_m": pc["slab_area_m2"] / 1.7, "UA_3K_by_panel_height_W_K": ua,
+            "panels_fit_on_walls": need_len <= wall_len, "wax_thickness_mm": wax_t * 1000,
+            "band_from_wall_m": band, "floor_m2": W * L, "usable_floor_m2": usable, "crates": n, "stacks_of_4": stacks,
+            "crate_footprint_m2": foot, "aisle_m2": aisle, "free_after_crates_and_aisle_m2": usable - foot - aisle,
+            "fits_150kg": usable - foot - aisle >= 0,
+            "note": "Crate 600 x 400 x 300 mm with about 20 kg produce (ASSUMPTION), max 4 high; floor stoppers hold crates 10 cm off the fins."}
 
 
 def run():
@@ -120,47 +156,55 @@ def run():
         rows[name] = {**metrics(H, T, bt, ld), **money(H, Hg, m)}
     out["loading_options"] = rows
 
-    # ---- 2. fan with vs without (default loading)
+    # ---- 2. design journey (default loading)
     ld = cfg["live_run"]["loading"]
-    res = {}
-    for label, on in (("without fan", False), ("with fan", True)):
-        H, T, _, bt = simulate_live(w, "current", cfg=cfg, fan_on=on)
-        res[label] = metrics(H, T, bt, ld)
-        if on:
-            out["fan_sizing"] = T["fan_sizing"]
-            out["battery"] = battery(H, cfg)
-    out["fan_compare"] = res
+    hx = dict(cfg["live_run"]["wax_hx"])
+    fan2 = {"name": "120 mm 12 V DC", "d_mm": 120, "flow_m3h": 150, "watts": 3.0, "pressure_Pa": 30, "count": 2}
+    import copy as _c
+    c7 = _c.deepcopy(cfg)                                  # optional fans: compressor off -> hold 6.5 C at night
+    c7["live_run"]["night_fan"].update(cfg["live_run"]["wax_hx"]["optional_fans"]["rule"])
+    steps = {
+        "1) plain wax panels": (cfg, {"kind": "plain", "L": hx["L"]}, False, 0),
+        "2) baffle + 5 night fans": (cfg, {"kind": "baffle"}, True, 5),
+        "3) finned panels (final)": (cfg, hx, False, 0),
+        "check: fins 25 % weaker": (cfg, {**hx, "h_scale": 0.75}, False, 0),
+        "check: fins 25 % weaker + 2 optional fans": (c7, {**hx, "h_scale": 0.75, "fan": fan2}, True, 2),
+    }
+    Hg0 = simulate_live(w, "current", mode="grid_only", cfg=cfg)[0]
+    jr = {}
+    for label, (c, h_, on, nfans) in steps.items():
+        H, T, _, bt = simulate_live(w, "current", cfg=c, fan_on=on, hx=h_)
+        r = {**metrics(H, T, bt, ld), **money(H, Hg0, m)}
+        b_ = battery(H, c)
+        r.update({"battery_needed_Ah": b_["needed_Ah"], "battery_Ah": b_["chosen_Ah"], "moving_parts": nfans,
+                  "UA_3K_W_K": (T["wax_hx"].get("UA_fan_W_K") if h_["kind"] == "baffle"
+                                else T["wax_hx"]["calc_3K"]["UA"] * h_.get("h_scale", 1.0))})
+        jr[label] = r
+        if label.startswith("3)"):
+            out["wax_hx"] = T["wax_hx"]
+            out["battery"] = b_
+    out["journey"] = jr
 
-    # ---- 3. wax size with the fan (default loading)
+    # ---- 3. wax size (default loading, finned panels)
     wax = {}
     for des in ("current", "recommended"):
-        H, T, _, bt = simulate_live(w, des, cfg=cfg, fan_on=True)
+        H, T, _, bt = simulate_live(w, des, cfg=cfg)
         Hg, _, _, _ = simulate_live(w, des, mode="grid_only", cfg=cfg)
         wax[cfg["live_run"]["designs"][des]["label"]] = {**metrics(H, T, bt, ld), **money(H, Hg, m)}
     out["wax_compare"] = wax
 
-    # ---- 3b. morning assist on/off (final design)
-    import copy as _c
-    ma = {}
-    for lab, val in (("fan only when compressor off", None), ("morning assist above 7 C", 7.0)):
-        c = _c.deepcopy(cfg)
-        c["live_run"]["night_fan"]["morning_assist_above_C"] = val
-        H, T, _, bt = simulate_live(w, "current", cfg=c, fan_on=True)
-        ma[lab] = metrics(H, T, bt, ld)
-    out["morning_assist"] = ma
-
-    # ---- 4. channel gap (information): fan size for 5, 3, 2 cm
+    # ---- 4. fin depth / gap table (calculation at 3 K, hottest night)
+    from engine import fins as FINS
     from engine import fan as FAN
-    import copy
-    gaps = {}
-    for gap in (0.05, 0.03, 0.02):
-        c = copy.deepcopy(cfg)
-        c["live_run"]["night_fan"]["gap_m"] = gap
-        c["live_run"]["night_fan"]["fan"] = None
-        f = FAN.size_fan(c, out["fan_sizing"]["T_out_design_night_C"], cfg["live_run"]["designs"]["current"]["pcm_kg"])
-        gaps[f"{gap * 100:.0f} cm"] = {"fans": f"{f['fan']['count']} x {f['fan']['name']}", "rated_W": f["fan"]["total_W"],
-                                       "W_at_design": f["fan_W_at_design"], "flow_m3h": f["flow_needed_m3h"]}
-    out["gap_options"] = gaps
+    R = FAN.wax_resistance(cfg, cfg["live_run"]["designs"]["current"]["pcm_kg"])
+    A = cfg["pcm"]["slab_area_m2"]
+    ft = {"plain panel": FINS.plain(A, hx["L"], R, 3.0)}
+    for b in (0.02, 0.03, 0.04):
+        best = FINS.best_spacing(A, hx["L"], b, hx["t"], R, 3.0)[0]
+        ft[f"{b * 1000:.0f} mm deep, best gap"] = best
+    ft["40 mm deep, 23 mm gap (chosen)"] = FINS.array(A, hx["L"], hx["S"], hx["b"], hx["t"], R, 3.0)
+    out["fin_table"] = ft
+    out["floor"] = floor_check(cfg)
     RES.mkdir(parents=True, exist_ok=True)
     (RES / "design_study_2026.json").write_text(json.dumps(out, indent=1, default=float))
     return out
@@ -170,7 +214,7 @@ if __name__ == "__main__":
     o = run()
     pd.set_option("display.width", 250)
     print(pd.DataFrame(o["loading_options"]).round(2).to_string())
-    print(pd.DataFrame(o["fan_compare"]).round(3).to_string())
+    print(pd.DataFrame(o["journey"]).round(2).to_string())
     print(pd.DataFrame(o["wax_compare"]).round(2).to_string())
-    print(json.dumps(o["battery"], indent=1, default=float)); print(json.dumps(o["gap_options"], indent=1, default=float))
-    f = o["fan_sizing"]; print({k: f[k] for k in ("load_W", "v_needed_m_s", "flow_needed_m3h", "pressure_Pa", "h_fan_W_m2K", "UA_fan_W_K", "h_natural_W_m2K", "UA_natural_W_K", "Q_natural_W", "fan_W_at_design")}, f["fan"])
+    print(pd.DataFrame(o["fin_table"]).round(2).to_string())
+    print(json.dumps(o["battery"], indent=1, default=float)); print(json.dumps(o["floor"], indent=1, default=float))

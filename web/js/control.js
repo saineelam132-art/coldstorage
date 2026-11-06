@@ -3,6 +3,12 @@ import { getJSON } from './api.js';
 import { fmt, tagChip } from './ui.js';
 
 const $ = id => document.getElementById(id);
+const FINAL = [
+  ['final_00_design_journey', 'Design journey: plain → baffle + fans → fins'], ['final_01_fins_hottest_night', 'Hottest night: plain vs finned panels'],
+  ['final_02_fin_calculation', 'Fin calculation: depth, gap, UA'], ['final_07_fin_panel_drawing', 'Finned panel + drip tray (drawing)'],
+  ['final_03_loading_options', 'When should the 150 kg come in?'], ['final_04_wax_115_vs_172', '115 kg vs 172 kg wax'],
+  ['final_05_monthly_energy_2026', 'Monthly energy 2026'], ['final_06_money_co2', 'Money and CO₂ saved'],
+];
 const FIGS = [
   ['11_heatmap_wax_solar', 'Wax × solar: grid backup hours per year'], ['14_current_vs_recommended', 'Current vs recommended design'],
   ['05_power_cut_night', 'Power-cut night: with vs without wax'], ['12_curtain_vs_none', 'Strip curtain vs no curtain'],
@@ -54,9 +60,9 @@ export class Control {
   }
   bySource(s) {
     const y = this.cfg.year_summary, v = s.values;
-    const rows = [['Walls (U·A·ΔT)', v.Q_wall, y.load_wall_kWh], ['Night wax fan (heat)', (v.fan_W || 0) / 1000, y.fan_kWh || 0], ['Door – sensible', v.Q_door - (v.Q_door * (y.load_door_latent_kWh / y.load_door_kWh)), y.load_door_kWh - y.load_door_latent_kWh],
+    const rows = [['Walls (U·A·ΔT)', v.Q_wall, y.load_wall_kWh], ['Door – sensible', v.Q_door - (v.Q_door * (y.load_door_latent_kWh / y.load_door_kWh)), y.load_door_kWh - y.load_door_latent_kWh],
       ['Door – latent (moisture)', v.Q_door * (y.load_door_latent_kWh / y.load_door_kWh), y.load_door_latent_kWh],
-      ['Produce pull-down', v.Q_batch, y.load_product_kWh], ['Respiration', v.Q_resp, y.load_resp_kWh], ['Evaporator fan, lights, controller', v.Q_int - (v.fan_W || 0) / 1000, y.load_internal_kWh - (y.fan_kWh || 0)]];
+      ['Produce pull-down', v.Q_batch, y.load_product_kWh], ['Respiration', v.Q_resp, y.load_resp_kWh], ['Evaporator fan, lights, controller', v.Q_int, y.load_internal_kWh]];
     const tot = rows.reduce((a, r) => a + r[2], 0);
     return `<table class="calc"><tr class="grp"><td>Source</td><td class="num">Now (kW) ${tagChip('C')}</td><td class="num">2026 so far (kWh)</td><td class="num">Share of year</td></tr>
       ${rows.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1].toFixed(3)}</td><td class="num">${r[2].toFixed(0)}</td>
@@ -109,8 +115,9 @@ export class Control {
 
   // ---------------------------------------------------------------- two rooms
   roomsHTML() {
-    return `<p class="lead">The <b>same room, same 2026 weather, same 150 kg loading</b> – left WITHOUT the night wax fan,
-      right WITH it (final design). Without the fan, natural convection behind the baffle cannot carry the wax's cold into the room at night.</p>
+    return `<p class="lead">The <b>same room, same 2026 weather, same 150 kg loading</b> – left with PLAIN wax panels,
+      right with FINNED wax panels (final design). Plain panels have too little surface: at night the wax cannot take the room's heat fast enough
+      and the grid must help. The fins multiply the surface by 4.3 – no fan, no battery for cooling, nothing that moves.</p>
       <div class="rooms"><div class="room" id="rmN"></div><div class="room smart" id="rmS"></div></div><div id="rmY"></div>`;
   }
   roomCard(title, r, how) {
@@ -118,12 +125,15 @@ export class Control {
     return `<h3>${title}</h3><div class="rbig">${r.T_room.toFixed(1)} °C</div>
       <div class="tank"><i style="height:${pc}%"></i><span>${pc.toFixed(0)} %<br>wax</span></div>
       <div class="kv2"><span>Power now</span><b class="${r.grid_on ? 'g' : 's'}">${r.grid_on ? 'GRID (ATS)' : 'solar / wax'}</b>
-      <span>Grid hours so far in 2025</span><b>${r.grid_h_so_far.toFixed(0)} h</b></div><p class="small">${how}</p>`;
+      <span>Grid hours so far in 2026</span><b>${r.grid_h_so_far.toFixed(0)} h</b></div><p class="small">${how}</p>`;
   }
 
   // ---------------------------------------------------------------- year results
   yearHTML() {
-    return `<p class="lead">Full-year results from the digital twin (Phase 2). Click a graph to enlarge.</p><div class="figs">
+    const fig = ([f, t]) => `<figure><a href="figures/${f}.png" target="_blank"><img loading="lazy" src="figures/${f}.png" alt="${t}"></a><figcaption>${t}</figcaption></figure>`;
+    return `<p class="lead"><b>Final design on real 2026 weather</b> (simulated, conservative sun). Click a graph to enlarge.</p>
+      <div class="figs">${FINAL.map(fig).join('')}</div>
+      <p class="lead">How we chose the size (NASA POWER 2025 study, Phase 2):</p><div class="figs">
       ${FIGS.map(([f, t]) => `<figure><a href="figures/${f}.png" target="_blank"><img loading="lazy" src="figures/${f}.png" alt="${t}"></a><figcaption>${t}</figcaption></figure>`).join('')}</div>`;
   }
 
@@ -138,11 +148,11 @@ export class Control {
     if (this.tab === 'calc' && $('bySource')) $('bySource').innerHTML = this.bySource(s);
     if (this.tab === 'rooms' && $('rmN')) {
       const c = s.compare;
-      $('rmN').innerHTML = this.roomCard('Without night fan', c.normal, 'Wax panels behind the baffle, natural convection only.');
-      $('rmS').innerHTML = this.roomCard('With night fan (final design)', c.smart, '5 × 120 mm 12 V fans push room air down the wax channel when the compressor is off.');
+      $('rmN').innerHTML = this.roomCard('Plain wax panels', c.normal, 'Flat panel face, natural convection only.');
+      $('rmS').innerHTML = this.roomCard('Finned wax panels (final design)', c.smart, '40 mm aluminium fins, 23 mm gap: cooled air falls between the fins by itself.');
       $('rmY').innerHTML = `<div class="kv2 wide"><span>Whole year: grid backup hours</span><b>${c.year.normal_grid_h.toFixed(0)} h → ${c.year.smart_grid_h.toFixed(0)} h</b>
         <span>Days fully on solar + wax</span><b>${c.year.normal_days_pct.toFixed(1)} % → ${c.year.smart_days_pct.toFixed(1)} %</b></div>
-        <p class="small">${s.clock} · ${s.label}. Final design: 115 kg wax, 1.8 kWp, 150 kg produce loaded at 6 am.</p>`;
+        <p class="small">${s.clock} · ${s.label}. Final design: 115 kg wax with fins, 1.8 kWp, 150 kg produce loaded at 6 am.</p>`;
     }
     if (this.tab === 'sensors') document.querySelectorAll('#ccBody td[data-q]').forEach(td => {
       const v = s.values[td.dataset.q];

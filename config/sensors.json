@@ -361,25 +361,6 @@
     -0.95
    ],
    "used_in": "Ripening / spoilage trend only. NOT simulated – shows a value only when a real sensor is connected."
-  },
-  {
-   "id": "fan_power",
-   "name": "Night wax fan power",
-   "scene": "inside",
-   "tag": "M",
-   "quantity": "fan_W",
-   "unit": "W",
-   "type": "12 V DC current sensor (INA219) on the fan supply",
-   "range": "0 – 30 W",
-   "accuracy": "±1 %",
-   "protocol": "I²C → ESP32",
-   "location": "Fan header at the top of the wax-panel baffle channel",
-   "pos": [
-    0.0,
-    2.15,
-    -0.88
-   ],
-   "used_in": "Fan heat added to the room load; 12 V battery energy; fan speed control (PWM)"
   }
  ],
  "computed": [

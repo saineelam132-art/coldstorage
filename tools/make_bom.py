@@ -1,7 +1,7 @@
 """Cost tables (bill of materials).
 
-    python tools/make_bom.py        ->  results/bom_final.csv        (FINAL design: 115 kg wax, 1.8 kWp,
-                                                                       5 night fans, 2 cm baffle, 12 V 80 Ah battery)
+    python tools/make_bom.py        ->  results/bom_final.csv        (FINAL design: 115 kg wax with aluminium fins,
+                                                                       1.8 kWp, drip tray, 12 V 40 Ah battery)
                                         results/bom_recommended.csv  (2025 sizing-study design, kept for reference)
 
 EVERY PRICE HERE IS A GUESS (marked 'GUESS' in the CSV). Replace them with real quotations.
@@ -63,15 +63,21 @@ def write(cfg, name, final):
         ("ATS (grid backup switch), breakers, control box", 1, "lot", 8000, "no", ""),
     ]
     if final:
-        nf, b = cfg["live_run"]["night_fan"], cfg["live_run"]["battery_12V"]
-        f = nf["fan"]
+        hx, b = cfg["live_run"]["wax_hx"], cfg["live_run"]["battery_12V"]
+        from engine import fins as FINS
+        from engine import fan as FAN
+        al = FINS.array(pcm["slab_area_m2"], hx["L"], hx["S"], hx["b"], hx["t"], FAN.wax_resistance(cfg, pcm["mass_kg"]), 3.0)["al_kg"]
         rows += [
-            (f"Night wax fans: {f['d_mm']} mm 12 V DC, {f['watts']:g} W each, with PWM speed control", f["count"], "no.", 600, "no",
-             f"{f['count']} x {f['watts']:g} W = {f['count'] * f['watts']:g} W rated; mounted at the TOP of the channel blowing DOWN"),
-            (f"Baffle sheet (thin aluminium / GI) + spacers for a {nf['gap_m'] * 100:g} cm channel in front of the wax panels", 1, "lot", 4000,
-             "no", "open at top and bottom; fan hood at the top"),
-            (f"12 V {b['capacity_Ah']} Ah LiFePO4 battery ({b['capacity_Ah'] * b['voltage']:.0f} Wh) + charge controller", 1, "set", 16000, "no",
-             "controller, sensors, IoT gateway and night fans only – NO battery for cooling"),
+            (f"Aluminium fins: extruded heat-sink profile {hx['b'] * 1000:.0f} mm deep, {hx['t'] * 1000:.0f} mm, {hx['S'] * 1000:.0f} mm gap, "
+             f"anodised, riveted with thermal paste, removable {hx['section_length_m']} m sections", round(al, 1), "kg", 500, "no",
+             "price per kg includes cutting, anodising, rivets and thermal paste"),
+            ("Sloped stainless drip tray under the wax panels + drain pipe + water trap", 1, "lot", 3000, "no",
+             "fins are below the dew point -> condensate"),
+            (f"Floor stoppers for crates ({hx['keep_clear_m'] * 100:.0f} cm keep-clear zone in front of the fins)", 1, "lot", 1000, "no", ""),
+            (f"Provision for {hx['optional_fans']['provision']} optional 12 V fans: mounting brackets + 12 V cable (fans NOT fitted)", 1, "lot", 800,
+             "no", "add the fans (about Rs 600 each) only if the Phase 4 test shows the fins >25 % weaker"),
+            (f"12 V {b['capacity_Ah']} Ah LiFePO4 battery ({b['capacity_Ah'] * b['voltage']:.0f} Wh) + charge controller", 1, "set", 8000, "no",
+             "controller, sensors and IoT gateway only – NO battery for cooling"),
         ]
     else:
         rows += [("Small 12 V battery for controller and fans", 1, "no.", 5000, "no", "night-time power for fans and sensors")]

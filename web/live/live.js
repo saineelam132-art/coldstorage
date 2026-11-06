@@ -29,7 +29,7 @@
     return window.LIVE[key];
   }
   async function dayHours(des, date) {
-    if (des === 'current_uncorrected' || des === 'current_nofan') des = 'current';
+    if (des === 'current_uncorrected' || des === 'current_plain') des = 'current';
     const m = await month(des, date.slice(0, 7));
     const idx = m.t.map((t, i) => (t.startsWith(date) ? i : -1)).filter(i => i >= 0);
     const pick = f => idx.map(i => m[f][i]);
@@ -100,7 +100,7 @@
         ${tile('Wax: PCM effectiveness', `${fmt(t.pcm_effectiveness_pct, 0)} %`, `cold given ÷ cold stored · ${fmt(t.wax_cycles, 0)} full cycles`)}
         ${tile('Wax cold given with no sun', `${fmt(t.wax_useful_share_pct, 0)} %`, 'the real time-shift')}
         ${tile('Hours outside 2–8 °C (except loading)', `${fmt(t.hot_other_h, 0)} h`, `room air above 8 °C only while a fresh batch cools: ${fmt(t.hot_load_h_per_day, 1)} h/day`, t.hot_other_h > 0 ? 'bad' : 'good')}
-        ${tile('Night wax fan', `${fmt(t.fan_kWh_day, 3)} kWh/day`, `runs ${fmt(t.fan_run_h_day, 1)} h/day · all of it counted as heat in the room`)}
+        ${tile('Wax fins (passive)', `0 W · UA ${fmt(S.wax_hx && S.wax_hx.calc_3K ? S.wax_hx.calc_3K.UA : null, 0)} W/K`, `40 mm aluminium fins: area × ${fmt(S.wax_hx && S.wax_hx.calc_3K ? S.wax_hx.calc_3K.area_mult : null, 1)}, no fan, no moving parts`, 'good')}
         ${tile('Fresh produce (avg)', `${fmt(t.batch_T_in_avg, 1)} °C in`, `${fmt(t.batch_T_after_2h_avg, 1)} °C after 2 h · ${fmt(t.batch_T_after_4h_avg, 1)} °C after 4 h (average; core measured in Phase 4)`)}
         ${tile('Wax at sunrise / sunset', `${fmt(t.wax_sunrise_avg, 0)} / ${fmt(t.wax_sunset_avg, 0)} %`, 'average frozen fraction')}
       </div>
@@ -141,7 +141,6 @@
       <div><span>Wax lowest / end of day</span><b>${fmt(d.pcm_min, 0)} / ${fmt(d.pcm_end, 0)} %</b></div>
       <div><span>Fresh 150 kg in at ${S.inputs.loading[0].hour}:00</span><b>${fmt(d.batch_T_in, 1)} °C</b>, to 5.5 °C in ${d.batch_cool_h === null ? 'not yet' : fmt(d.batch_cool_h, 1) + ' h'}</div>
       <div><span>Door openings</span><b>${fmt(d.door_openings, 0)}</b></div>
-      <div><span>Night fan</span><b>${fmt(d.fan_kWh, 3)} kWh</b> (${fmt(d.fan_run_h, 1)} h, all heat into the room)</div>
       <div><span>Room air &gt; 8 °C while fresh produce cools</span><b>${fmt(d.hot_load_h, 1)} h</b> (other times ${fmt(d.hot_other_h, 0)} h)</div>
       <div><span>Day</span><b>${d.full_solar_wax ? 'fully solar + wax' : 'grid used'}</b></div></div>`;
   }
@@ -165,7 +164,7 @@
         <div class="card"><h4>Wax battery (% frozen)</h4><div class="chartbox"><canvas id="d10"></canvas></div></div>
         <div class="card"><h4>Door open (seconds per hour)</h4><div class="chartbox"><canvas id="d11"></canvas></div></div>
         <div class="card"><h4>Compressor power from grid (kW)</h4><div class="chartbox"><canvas id="d12"></canvas></div></div>
-        <div class="card"><h4>Night wax fan (W) – heat added to the room</h4><div class="chartbox"><canvas id="d13"></canvas></div></div>
+        <div class="card"><h4>Heat taken from the room by the finned wax panels (kW)</h4><div class="chartbox"><canvas id="d13"></canvas></div></div>
         <div class="card"><h4>Wax ↔ room conductance (W/K)</h4><div class="chartbox"><canvas id="d14"></canvas></div></div>
       </div>`;
     const L = h.hours, o = { pred: pred >= 0 ? pred : null, now: nowIdx };
@@ -182,8 +181,8 @@
     chart('d10', 'line', L, [{ label: 'Wax', data: h.pcm_pct, color: C.s1, fill: 'rgba(42,120,214,.15)' }], { unit: '%', yMin: 0, yMax: 100, ...o });
     chart('d11', 'bar', L, [{ label: 'Door open', data: h.door_s, color: C.s2 }], { unit: 's', ...o });
     chart('d12', 'bar', L, [{ label: 'Grid', data: h.P_grid, color: C.s8 }], { unit: 'kW', ...o });
-    if (h.fan_W) chart('d13', 'bar', L, [{ label: 'Night fan', data: h.fan_W, color: C.s7 }], { unit: 'W', yMin: 0, ...o });
-    if (h.G_wax) chart('d14', 'line', L, [{ label: 'UA wax channel', data: h.G_wax, color: C.s3 }], { unit: 'W/K', yMin: 0, ...o });
+    if (h.Q_pcm_room) chart('d13', 'bar', L, [{ label: 'Wax panels', data: h.Q_pcm_room, color: C.s1 }], { unit: 'kW', ...o });
+    if (h.G_wax) chart('d14', 'line', L, [{ label: 'UA finned panels', data: h.G_wax, color: C.s3 }], { unit: 'W/K', yMin: 0, ...o });
   }
 
   // ------------------------------------------------------------------ calendar
@@ -313,18 +312,18 @@
         ${row('Allowed band (°C)', I.band_C.join(' – '))}${row('Loading', I.loading.map(e => `${e.kg} kg at ${e.hour}:00`).join(' + ') + ' (at that hour’s outside temperature)')}
         ${row('Door openings per day', '4 × ' + I.door_seconds + ' s (2 at each loading, rest at 12:00 and 17:00)')}
         ${row('Sunlight', '× ' + I.sun_factor + ' (Open-Meteo corrected to NASA level, conservative)')}
-        ${row('Night wax fan', `${I.night_fan.fan.count} × ${I.night_fan.fan.name}, ${I.night_fan.fan.count * I.night_fan.fan.watts} W rated, ${I.night_fan.gap_m * 100} cm baffle channel`)}
+        ${row('Wax heat exchanger', `finned panels: ${I.wax_hx.b * 1000} mm aluminium fins, ${I.wax_hx.S * 1000} mm gap, ${I.wax_hx.t * 1000} mm thick, panels ${I.wax_hx.L} m tall – passive, no fan, no baffle`)}
         ${row('“Cooled” = within (K) of the set-point', I.cooled_within_K, 'cooled_within_K', 0.1)}
         ${row('Grid helps during morning loading', I.grid_assist_during_loading ? 'yes' : 'no (default)')}
-        ${row('Fan control', `on when the compressor is off and room > ${I.night_fan.on_above_C} °C (holds ${I.night_fan.target_C} °C); flat out above ${I.night_fan.morning_assist_above_C} °C while fresh produce cools`)}
+        ${row('Optional fans', `${I.wax_hx.optional_fans.provision} × 120 mm – mounting points + 12 V cable only; add only if the Phase 4 test shows the fins &gt;25 % weaker`)}
+        ${row('Keep-clear / drip tray', `${I.wax_hx.keep_clear_m * 100} cm free in front of the fins (floor stoppers); sloped drip tray with drain and trap`)}
         ${row('Designs', Object.values(I.designs).map(d => d.label).join(' / '))}</table>
         ${editable ? '<p><button class="btn" id="save">Save and re-run (about 15 s)</button> <span id="saveMsg"></span></p>' : '<p class="note">To change these, edit config/design.json → live_run, or open this page from the Python version (python run.py) to edit here.</p>'}</div>
       <div class="card"><h4>🔋 Power: no battery for cooling</h4>
         <p>The compressor <b>and the 40 W evaporator fan</b> run only on solar or, when needed, grid (automatic transfer switch). <b>The wax is the cold storage.</b>
-        The small night wax fans run from the 12 V battery.</p>
+        The wax panels need no power at all (fins, natural convection).</p>
         <p>A small <b>12 V ${b.capacity_Ah} Ah ${b.chemistry}</b> battery (${fmt(12 * b.capacity_Ah / 1000, 2)} kWh) runs only the controller, sensors and IoT gateway:
-        ${Object.entries(b.loads_W).map(([k, v]) => `${k.replace('_', ' ')} ${v} W`).join(', ')} = ${loadsW} W → ${fmt(loadsW * 24 / 1000, 2)} kWh/day,
-        plus the night wax fans (${fmt((S.designs.current.totals.fan_kWh_day || 0) * 1000, 0)} Wh/day on average).
+        ${Object.entries(b.loads_W).map(([k, v]) => `${k.replace('_', ' ')} ${v} W`).join(', ')} = ${loadsW} W → ${fmt(loadsW * 24 / 1000, 2)} kWh/day.
         Sized for the worst 2026 night (${fmt(S.battery ? S.battery.worst_night_Wh : null, 0)} Wh) plus one reserve day (${fmt(S.battery ? S.battery.worst_day_Wh : null, 0)} Wh) at 80 % usable → ${b.capacity_Ah} Ah. It is charged from the panels.</p>
         <p class="note">${b.note}</p>
         <h4>Assumptions added for the Live Year Run</h4><ul class="note">
@@ -332,7 +331,7 @@
           <li>Door: 2 openings at each loading (hh:00, hh:10), the rest at 12:00 and 17:00, ${I.door_seconds} s each (4 a day).</li>
           <li>The whole ${I.produce_kg} kg (rated capacity) is swapped every day at ${I.loading.map(e => e.hour + ':00').join(' and ')} at that hour's outside temperature.</li>
           <li>Fresh produce cools at the same rate as before (7/8 of the way in 4 h when the room is at 5 °C); slower if the compressor is at its limit.</li>
-          <li>The evaporator fan runs only with the compressor. The wax panels sit behind a ${I.night_fan.gap_m * 100} cm baffle: natural draft when the night fans are off, forced flow when they run (engine/fan.py).</li>
+          <li>The evaporator fan runs only with the compressor. With the compressor off, the finned wax panels cool the room by natural convection only (engine/fins.py, lower of two fin-array correlations; radiation ignored – conservative).</li>
           <li>Average produce temperature is reported (single-lump model); the core of a crate is warmer and is measured with the product probe in Phase 4.</li>
           <li>Sunlight time-stamps corrected by 30 min (India is UTC + 5:30); checked against the sun on clear days.</li>
           <li>Money: running cost only; power cut ${I.money.power_cut_hours[0]}:00–${I.money.power_cut_hours[1]}:00 assumed; CO₂ ${I.money.grid_kg_CO2_kWh} kg/kWh grid, ${I.money.diesel_kg_CO2_L} kg/L diesel.</li></ul></div></div>`;
@@ -346,46 +345,70 @@
   }
 
   function designTab() {
-    const st = S.design_study, f = S.fan_sizing || {}, b = S.battery || {};
+    const st = S.design_study, b = S.battery || {};
     if (!st) { main.innerHTML = '<div class="card">Design study not found – run python -m twin.design_study_2026.</div>'; return; }
+    const w = st.wax_hx || {}, c3 = w.calc_3K || {}, fl = st.floor || {}, hx = S.inputs.wax_hx;
     const tbl = (obj, rows) => { const cols = Object.keys(obj);
       return `<div class="scroll"><table class="t"><tr><th></th>${cols.map(c => `<th>${c}</th>`).join('')}</tr>${rows.map(([k, lab, d]) =>
-        `<tr><td>${lab}</td>${cols.map(c => `<td>${fmt(obj[c][k], d)}</td>`).join('')}</tr>`).join('')}</table></div>`; };
-    const common = [['produce_in_C', 'Produce temperature when loaded (°C)', 1], ['h_air_above_8C', 'Hours room air > 8 °C (all while fresh produce cools)', 0],
-      ['produce_avg_C_after_4h', 'Average produce temperature after 4 h (°C)', 1], ['cool_h_avg', 'Time to 5.5 °C – average (h)', 1], ['cool_h_worst', 'Time to 5.5 °C – worst (h)', 1],
+        `<tr><td>${lab}</td>${cols.map(c => `<td>${typeof obj[c][k] === 'string' ? obj[c][k] : fmt(obj[c][k], d)}</td>`).join('')}</tr>`).join('')}</table></div>`; };
+    const common = [['produce_in_C', 'Produce temperature when loaded (°C)', 1], ['h_air_above_8C_per_day', 'Room air > 8 °C, h/day (only while fresh produce cools)', 2],
+      ['produce_avg_C_after_2h', 'Average produce after 2 h (°C)', 1], ['produce_avg_C_after_4h', 'Average produce after 4 h (°C)', 1],
+      ['cool_h_avg', 'Time to 5.5 °C – average (h)', 1], ['cool_h_worst', 'Time to 5.5 °C – worst (h)', 1],
       ['grid_h_per_year', 'Grid hours per year', 0], ['days_full_solar_wax', 'Days fully on solar + wax', 0], ['comp_kWh_day', 'Compressor kWh/day', 2],
       ['saved_vs_grid_INR_yr', '₹ saved/year vs grid-only', 0], ['saved_vs_diesel_INR_yr', '₹ saved/year vs diesel-backed', 0]];
-    const fc = st.fan_compare, wo = fc['without fan'], w = fc['with fan'];
+    const J = st.journey, jk = Object.keys(J).filter(k => !k.startsWith('check'));
+    const bar = (v, max, col) => `<div class="jbar"><i style="width:${Math.max(2, 100 * v / max).toFixed(0)}%;background:${col}"></i></div>`;
+    const maxG = Math.max(...jk.map(k => J[k].grid_h_per_year));
+    const jcard = jk.map((k, i) => { const r = J[k]; const col = ['#8a8984', '#eb6834', '#2a78d6'][i];
+      return `<div class="jstep${i === jk.length - 1 ? ' final' : ''}"><h5>${k}</h5>
+        <div class="jrow"><span>Days fully on solar + wax</span><b>${r.days_full_solar_wax} / ${r.days}</b>${bar(r.days_full_solar_wax, r.days, col)}</div>
+        <div class="jrow"><span>Grid hours / year</span><b>${fmt(r.grid_h_per_year, 0)} h</b>${bar(r.grid_h_per_year, maxG, col)}</div>
+        <div class="jrow"><span>Moving parts</span><b>${r.moving_parts}</b></div>
+        <div class="jrow"><span>12 V battery</span><b>${r.battery_Ah} Ah</b></div>
+        <div class="jrow"><span>Wax ↔ room UA at 3 K</span><b>${fmt(r.UA_3K_W_K, 0)} W/K</b></div>
+        <div class="jrow"><span>Fan energy (= heat into room)</span><b>${fmt(r.fan_kWh_day, 3)} kWh/day</b></div></div>`; }).join('<div class="jarrow">→</div>');
+    const fins = [], N = 14;
+    for (let i = 0; i < N; i++) fins.push(`<rect x="${70 + i * 18}" y="150" width="3" height="40" fill="#b9c6d2"/>`);
     main.innerHTML = `<h2>Design choices (2026 weather, sunlight × ${st.sun_factor}, ${st.period[0]} → ${st.period[1]})</h2>
-      <div class="card"><h4>Night wax fan in a ${S.inputs.night_fan.gap_m * 100} cm baffle channel</h4>
-        <svg class="chan" viewBox="0 0 420 230" role="img" aria-label="Baffle channel drawing">
-          <rect x="40" y="20" width="26" height="190" fill="#c7d2dc"/><text x="20" y="225" font-size="11" fill="#41566b">insulated wall</text>
-          <rect x="66" y="40" width="40" height="150" fill="#9cc9f5" stroke="#2a78d6"/><text x="70" y="120" font-size="11" fill="#0d1b2a" transform="rotate(-90 86 115)">wax (PCM) panel</text>
-          <rect x="128" y="40" width="4" height="150" fill="#41566b"/><text x="138" y="200" font-size="11" fill="#41566b">baffle sheet</text>
-          <rect x="100" y="12" width="40" height="22" rx="4" fill="#1f2a33"/><text x="146" y="27" font-size="11" fill="#0d1b2a">12 V fan (top, blowing DOWN)</text>
-          <path d="M117 40 V185" stroke="#2a78d6" stroke-width="3" marker-end="url(#ar)"/><text x="150" y="110" font-size="11" fill="#2a78d6">room air cooled by the wax, ~1 m/s</text>
-          <path d="M200 30 Q170 20 140 22" stroke="#eb6834" stroke-width="2" fill="none" marker-end="url(#ar2)"/><text x="205" y="34" font-size="11" fill="#eb6834">warm room air in at the top</text>
-          <path d="M117 190 Q140 215 200 205" stroke="#2a78d6" stroke-width="2" fill="none" marker-end="url(#ar)"/><text x="205" y="208" font-size="11" fill="#2a78d6">cold air out at the bottom</text>
-          <text x="104" y="60" font-size="10" fill="#0d1b2a">${S.inputs.night_fan.gap_m * 100} cm</text>
-          <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8z" fill="#2a78d6"/></marker>
-          <marker id="ar2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8z" fill="#eb6834"/></marker></defs></svg>
-        <table class="t"><tr><th>Sizing on the hottest 2026 night</th><th>Value</th></tr>
-          <tr><td>Night heat entering the room (walls + respiration + controller + fan heat)</td><td>${fmt(f.load_W, 0)} W</td></tr>
-          <tr><td>Fan off – natural draft: h / UA / cooling at 3 K</td><td>${fmt(f.h_natural_W_m2K, 2)} W/m²K / ${fmt(f.UA_natural_W_K, 1)} W/K / ${fmt(f.Q_natural_W, 0)} W</td></tr>
-          <tr><td>Fan on – needed air speed / airflow / pressure</td><td>${fmt(f.v_needed_m_s, 2)} m/s / ${fmt(f.flow_needed_m3h, 0)} m³/h / ${fmt(f.pressure_Pa, 1)} Pa</td></tr>
-          <tr><td>Fan on – h / UA</td><td>${fmt(f.h_fan_W_m2K, 2)} W/m²K / ${fmt(f.UA_fan_W_K, 1)} W/K</td></tr>
-          <tr><td>Chosen fans</td><td>${f.fan ? `${f.fan.count} × ${f.fan.name}, ${f.fan.total_W} W rated, ${fmt(f.fan.total_flow_m3h, 0)} m³/h` : '—'}</td></tr>
-          <tr><td>12 V battery (worst night + reserve day, 80 % usable)</td><td>${fmt(b.needed_Ah, 0)} Ah needed → ${b.chosen_Ah} Ah LiFePO4 (${fmt(b.chosen_kWh, 2)} kWh)</td></tr></table>
-        <p class="note">Q = ṁ·cp·(T_room − T_wax)·(1 − e^(−NTU)); h from channel-flow correlations (laminar Graetz / Gnielinski); natural draft from buoyancy vs friction. Radiation ignored (conservative). Fan data are typical catalogue values – check the chosen model.</p>
-        <p><b>Headline:</b> the fans add ${fmt(w.fan_kWh_day, 2)} kWh of heat a day but let the wax deliver ${fmt(w.wax_cold_given_night_kWh_day - wo.wax_cold_given_night_kWh_day, 2)} kWh more cold every night
-          (${fmt((w.wax_cold_given_night_kWh_day - wo.wax_cold_given_night_kWh_day) / Math.max(1e-6, w.fan_kWh_day), 0)} × more cold than heat).</p>
-        ${tbl(fc, [['night_room_avg_C', 'Night room temperature – average (°C)', 2], ['night_room_max_C', 'Night room temperature – max (°C)', 2], ['h_outside_2_8_other', 'Hours outside 2–8 °C (not loading)', 0],
-          ['wax_cold_used_before_morning_pct', 'Wax cold used before morning (%)', 0], ['wax_cold_given_night_kWh_day', 'Cold given by the wax at night (kWh/day)', 2],
-          ['fan_kWh_day', 'Fan energy = heat added (kWh/day)', 3], ['days_full_solar_wax', 'Days fully on solar + wax', 0], ['grid_h_per_year', 'Grid hours per year', 0]])}</div>
-      <div class="card"><h4>Loading options for 150 kg (fan on, 115 kg wax, 1.8 kWp) – chosen: 6 am</h4>${tbl(st.loading_options, common)}
-        <p class="note">6 am: realistic dawn harvest, coolest produce, fewest grid hours. 4 am and 6 pm load warm produce when there is no sun, so the grid is needed every day.</p></div>
-      ${st.morning_assist ? `<div class="card"><h4>Morning assist: fans also run above 7 °C while a fresh batch cools (adopted)</h4>${tbl(st.morning_assist, [['h_air_above_8C', 'Hours room air > 8 °C', 0], ['produce_avg_C_after_2h', 'Average produce after 2 h (°C)', 1], ['produce_avg_C_after_4h', 'Average produce after 4 h (°C)', 1], ['cool_h_avg', 'Time to 5.5 °C – average (h)', 1], ['days_full_solar_wax', 'Days fully on solar + wax', 0], ['grid_h_per_year', 'Grid hours per year', 0], ['wax_pct_sunrise', 'Wax at sunrise (%)', 0], ['wax_pct_sunset', 'Wax at sunset (%)', 0]])}</div>` : ''}
-      <div class="card"><h4>Wax size with the fan</h4>${tbl(st.wax_compare, common)}
+      <div class="card"><h4>How we improved the wax heat exchanger</h4><div class="journey">${jcard}</div>
+        <p class="note">Plain panels have too little surface: at night the wax cannot take the room's heat fast enough, so the grid runs almost every night.
+        A baffle + 5 fans fixed that but added moving parts, 0.11 kWh/day of fan heat and an 80 Ah battery. Fins give the same result with
+        <b>nothing that moves and no power</b>, and halve the battery.</p>
+        ${tbl(Object.fromEntries(Object.entries(J).filter(([k]) => k.startsWith('check'))), [['night_room_max_C', 'Night room max (°C)', 2], ['h_outside_2_8_other', 'Hours outside 2–8 °C (not loading)', 0], ['days_full_solar_wax', 'Days fully on solar + wax', 0], ['grid_h_per_year', 'Grid hours per year', 0], ['battery_Ah', '12 V battery (Ah)', 0]])}
+        <p class="note">Safety check: if the real fins are 25 % weaker than calculated, the room still stays in 2–8 °C but grid hours rise; then fit the 2 optional fans
+        (rule: compressor off → hold 6.5 °C) and a 50 Ah battery. The Phase 4 test decides.</p></div>
+      <div class="card"><h4>Finned wax panel – ${hx.b * 1000} mm fins, ${hx.S * 1000} mm gap, ${hx.L} m tall</h4>
+        <svg class="chan" viewBox="0 0 420 240" role="img" aria-label="Finned wax panel drawing, seen from above and from the side">
+          <text x="200" y="146" font-size="11" fill="#41566b">seen from above</text>
+          <rect x="60" y="190" width="270" height="14" fill="#9cc9f5" stroke="#2a78d6"/><text x="64" y="225" font-size="11" fill="#0d1b2a">wax (PCM) panel on the wall</text>
+          ${fins.join('')}<text x="300" y="168" font-size="11" fill="#41566b">${hx.b * 1000} mm fins</text>
+          <text x="20" y="20" font-size="11" fill="#41566b">side view</text>
+          <rect x="30" y="30" width="10" height="90" fill="#9cc9f5" stroke="#2a78d6"/><rect x="40" y="30" width="16" height="90" fill="#d9e1e8"/>
+          <path d="M70 32 V112" stroke="#2a78d6" stroke-width="3" marker-end="url(#ar)"/><text x="78" y="70" font-size="11" fill="#2a78d6">cooled air falls between the fins by itself</text>
+          <path d="M20 124 h56 l-6 6 h-44 z" fill="#8795a3"/><text x="82" y="130" font-size="11" fill="#41566b">sloped drip tray → drain + trap</text>
+          <path d="M120 32 h70" stroke="#8a8984" stroke-dasharray="4 3"/><text x="196" y="36" font-size="11" fill="#41566b">${hx.keep_clear_m * 100} cm keep-clear zone · floor stoppers</text>
+          <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8z" fill="#2a78d6"/></marker></defs></svg>
+        <table class="t"><tr><th>Calculation at 3 K (room 7 °C, wax 4 °C)</th><th>Value</th></tr>
+          <tr><td>Fins</td><td>${fmt(c3.N_fins, 0)} fins × ${fmt(c3.b_mm, 0)} mm deep × ${fmt(c3.t_mm, 0)} mm thick, gap ${fmt(c3.S_mm, 0)} mm, over ${fmt(w.A_m2 / w.L_m, 1)} m of wall</td></tr>
+          <tr><td>Area multiplier / fin efficiency</td><td>× ${fmt(c3.area_mult, 2)} / ${fmt(c3.eta, 3)}</td></tr>
+          <tr><td>h (Bar-Cohen & Rohsenow / Van de Pol & Tierney → used, the lower)</td><td>${fmt(c3.h_bar_cohen, 2)} / ${fmt(c3.h_van_de_pol, 2)} → ${fmt(c3.h, 2)} W/m²K</td></tr>
+          <tr><td>UA air side / with the wax layer</td><td>${fmt(c3.UA_air, 1)} / <b>${fmt(c3.UA, 1)} W/K</b> (plain panel: ${fmt(st.fin_table['plain panel'].UA, 1)} W/K)</td></tr>
+          <tr><td>Heat removed at 3 K vs needed on the hottest night (${fmt(w.T_out_design_night_C, 1)} °C outside)</td><td><b>${fmt(c3.Q_W, 0)} W</b> vs ${fmt(w.load_W, 0)} W</td></tr>
+          <tr><td>Aluminium</td><td>${fmt(c3.al_kg, 0)} kg, ${hx.material}, removable ${hx.section_length_m} m sections</td></tr>
+          <tr><td>12 V battery (worst night + reserve day, 80 % usable)</td><td>${fmt(b.needed_Ah, 0)} Ah needed → ${b.chosen_Ah} Ah LiFePO4 (${fmt(b.chosen_kWh, 2)} kWh) – controller, sensors, IoT gateway only</td></tr></table>
+        ${tbl(st.fin_table, [['S_mm', 'Gap (mm)', 0], ['area_mult', 'Area ×', 2], ['eta', 'Fin efficiency', 3], ['h', 'h (W/m²K)', 2], ['UA', 'UA (W/K)', 1], ['Q_W', 'Heat at 3 K (W)', 0], ['al_kg', 'Aluminium (kg)', 0]])}
+        <p class="note">Condensation: the fins (about 4–5 °C) are below the room's dew point (5.5 °C at 7 °C, 90 % RH) → sloped drip tray with drain and trap; the wax never goes below 3 °C, so no frost. Clean the fin sections monthly.</p></div>
+      <div class="card"><h4>Floor space with the keep-clear zone</h4><table class="t">
+          <tr><td>Wall length for ${fmt(S.pcm.slab_area_m2, 0)} m² of ${hx.L} m tall panels</td><td>${fmt(fl.panel_length_needed_m, 2)} m needed · ${fmt(fl.wall_length_available_m, 2)} m of wall beside the door
+            ${fl.panels_fit_on_walls ? '✓' : `<b class="warnc">⚠ ${fmt(fl.panel_length_needed_m - fl.wall_length_available_m, 2)} m short</b> – use ${fmt(fl['panel_length_needed_at_1.7m_m'], 2)} m of 1.7 m tall panels (UA ${fmt(fl.UA_3K_by_panel_height_W_K['1.7 m'], 1)} W/K instead of ${fmt(fl.UA_3K_by_panel_height_W_K['1.6 m'], 1)}) or put the rest on the door wall above the door`}</td></tr>
+          <tr><td>Band taken from the floor along the walls</td><td>${fmt(fl.band_from_wall_m * 100, 1)} cm (panel + ${hx.b * 100} cm fins + ${hx.keep_clear_m * 100} cm keep-clear)</td></tr>
+          <tr><td>Usable floor</td><td>${fmt(fl.usable_floor_m2, 2)} m² of ${fmt(fl.floor_m2, 1)} m²</td></tr>
+          <tr><td>150 kg of produce</td><td>${fl.crates} crates (600 × 400 × 300 mm, ~20 kg each – assumption) in ${fl.stacks_of_4} stacks of 4 → ${fmt(fl.crate_footprint_m2, 2)} m²</td></tr>
+          <tr><td>Walking aisle from the door (60 cm)</td><td>${fmt(fl.aisle_m2, 2)} m²</td></tr>
+          <tr><td>Free after crates and aisle</td><td><b>${fmt(fl.free_after_crates_and_aisle_m2, 2)} m²</b> ${fl.fits_150kg ? '✓ 150 kg fits' : '⚠ does not fit'}</td></tr></table></div>
+      <div class="card"><h4>Loading options for 150 kg (finned panels, 115 kg wax, 1.8 kWp) – chosen: 6 am</h4>${tbl(st.loading_options, common)}
+        <p class="note">6 am: realistic dawn harvest, cool produce, fewest grid hours. 4 am and 6 pm load warm produce when there is no sun, so the grid is needed most days.</p></div>
+      <div class="card"><h4>Wax size (finned panels)</h4>${tbl(st.wax_compare, common)}
         <p class="note">The bigger option saves only about ₹${fmt(Object.values(st.wax_compare)[1].saved_vs_grid_INR_yr - Object.values(st.wax_compare)[0].saved_vs_grid_INR_yr, 0)} more a year but costs about ₹29,000 more (guess) → 115 kg + 1.8 kWp is the final design.</p></div>`;
   }
 

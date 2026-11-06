@@ -1,4 +1,4 @@
-"""Poster figures for the FINAL design (115 kg wax, 1.8 kWp, 5 night fans, 150 kg at 6 am).
+"""Poster figures for the FINAL design (115 kg wax with 40 mm aluminium fins, 1.8 kWp, 150 kg at 6 am).
 
     python -m twin.live_run              (first: makes results/live/)
     python -m twin.design_study_2026     (first: makes results/live/design_study_2026.json)
@@ -38,64 +38,118 @@ def summary():
     return json.loads((LIVE / "summary.json").read_text())
 
 
-# ---------------------------------------------------------------- 1. night fan with vs without
-def fig_fan(cfg):
+# ---------------------------------------------------------------- 0. design journey
+def fig_journey():
+    J = study()["journey"]
+    steps = [k for k in J if not k.startswith("check")]
+    labels = ["plain", "baffle\n+ 5 fans", "fins\n(final)"]
+    cols = [MUTED, ORANGE, BLUE]
+    rows = [("Days fully on\nsolar + wax", "of " + str(J[steps[0]]["days"]), "days_full_solar_wax", "{:.0f}"),
+            ("Grid hours\nper year", "h", "grid_h_per_year", "{:,.0f}"),
+            ("Moving parts", "fans", "moving_parts", "{:.0f}"),
+            ("12 V battery", "Ah", "battery_Ah", "{:.0f}"),
+            ("Wax ↔ room UA\nat 3 K", "W/K", "UA_3K_W_K", "{:.0f}")]
+    fig, axes = plt.subplots(1, len(rows), figsize=(17, 5.2))
+    for ax, (t, u, k, fmt) in zip(axes, rows):
+        vals = [J[s_][k] for s_ in steps]
+        bars = ax.bar(labels, vals, color=cols, width=0.62)
+        P.bar_labels(ax, bars, fmt)
+        ax.set_title(f"{t}\n({u})", fontsize=12.5)
+        ax.set_ylim(0, max(max(vals) * 1.2, 1))
+        ax.tick_params(axis="x", labelsize=9.5)
+    fig.suptitle("How we improved the wax heat exchanger: plain panels → baffle + fans → fins (same 115 kg wax, 1.8 kWp)",
+                 fontweight="bold")
+    fig.tight_layout()
+    P.save(fig, "final_00_design_journey", NOTE)
+
+
+# ---------------------------------------------------------------- 1. hottest night: plain vs finned panels
+def fig_fins_night(cfg):
     w = DS.actual_weather()
     night = w[(w.time_ist.dt.hour >= 19) | (w.time_ist.dt.hour < 6)]
     key = (night.time_ist - pd.Timedelta(hours=7)).dt.date
-    hot = night.groupby(key).T_out.mean().idxmax()                      # date of the hottest night
+    hot = night.groupby(key).T_out.mean().idxmax()
     t0 = pd.Timestamp(hot) - pd.Timedelta(days=4)
     t1 = pd.Timestamp(hot) + pd.Timedelta(days=1, hours=12)
     win = w[(w.time_ist >= t0) & (w.time_ist < t1)].reset_index(drop=True)
-    runs = {f: simulate_live(win, "current", fan_on=f, cfg=cfg)[0] for f in (False, True)}
+    runs = {"plain": simulate_live(win, "current", cfg=cfg, hx={"kind": "plain"})[0],
+            "fins": simulate_live(win, "current", cfg=cfg)[0]}
     a, b = pd.Timestamp(hot) + pd.Timedelta(hours=12), pd.Timestamp(hot) + pd.Timedelta(days=1, hours=12)
-
+    cut = lambda H: H[(H.time_ist >= a) & (H.time_ist <= b)]
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 7.5), sharex=True, gridspec_kw={"height_ratios": [3, 2]})
     ax1.axhspan(2, 8, color=P.BAND, zorder=0)
     ax1.text(a + pd.Timedelta(minutes=20), 7.7, "safe band 2–8 °C", color=INK2, fontsize=10, va="top")
-    for f, col, lab in ((False, ORANGE, "without night fan"), (True, BLUE, "with night fan (5 × 120 mm)")):
-        H = runs[f]
-        H = H[(H.time_ist >= a) & (H.time_ist <= b)]
+    for k, col, lab in (("plain", ORANGE, "plain wax panels"), ("fins", BLUE, "finned wax panels (final, no fan)")):
+        H = cut(runs[k])
         ax1.plot(H.time_ist, H.T_room, color=col, label=f"Room air – {lab}")
         ax2.plot(H.time_ist, H.P_grid * 1000, color=col, label=f"Grid power – {lab}")
-        if f:
-            ax2.plot(H.time_ist, H.fan_W, color=AQUA, ls="--", label="Night-fan power (12 V battery)")
-    ax1.set_ylabel("°C")
-    top = max(r[(r.time_ist >= a) & (r.time_ist <= b)].T_room.max() for r in runs.values())
+    top = max(cut(r).T_room.max() for r in runs.values())
     ax1.set_ylim(0, top * 1.12)
     ld = cfg["live_run"]["loading"][0]
     ax1.annotate(f"{ld['kg']} kg warm batch arrives {ld['hour']}:00\n(only fresh produce inside)",
                  (pd.Timestamp(hot) + pd.Timedelta(days=1, hours=ld["hour"]), top * 0.9), xytext=(-190, -10),
                  textcoords="offset points", fontsize=10, color=INK2, arrowprops=dict(arrowstyle="->", color=MUTED))
-    ax1.legend(loc="upper right", fontsize=10)
+    ax1.set_ylabel("°C")
+    ax1.legend(loc="upper left", fontsize=10)
     ax2.set_ylabel("W")
-    ax2.legend(loc="upper right", fontsize=10)
+    ax2.legend(loc="upper left", fontsize=10)
     ax2.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%H:%M"))
-    gn = runs[False][(runs[False].time_ist >= a) & (runs[False].time_ist <= b)].P_grid.sum()
-    gf = runs[True][(runs[True].time_ist >= a) & (runs[True].time_ist <= b)].P_grid.sum()
-    ax1.set_title(f"Hottest night of 2026 ({pd.Timestamp(hot):%d %b}): night grid use "
-                  f"{gn:.2f} kWh without fan → {gf:.2f} kWh with fan")
-    fig.text(0.01, -0.01, "With the fan the wax alone holds the room – a night power cut changes nothing. "
-             "Without it the baffle chokes natural air flow and the grid must run the compressor.",
-             fontsize=10, color=INK2)
+    gp, gf = cut(runs["plain"]).P_grid.sum(), cut(runs["fins"]).P_grid.sum()
+    ax1.set_title(f"Hottest night of 2026 ({pd.Timestamp(hot):%d %b}): grid {gp:.2f} kWh with plain panels → {gf:.2f} kWh with fins")
+    fig.text(0.01, -0.01, "With fins the wax alone holds the room at night – a night power cut changes nothing. "
+             "Plain panels have too little surface, so the grid must run the compressor.", fontsize=10, color=INK2)
     fig.tight_layout()
-    P.save(fig, "final_01_night_fan_hottest_night", NOTE)
+    P.save(fig, "final_01_fins_hottest_night", NOTE)
 
-    fc = study()["fan_compare"]
-    rows = [("Days fully on\nsolar + wax", "days", "days_full_solar_wax", "{:.0f}"),
-            ("Grid hours\nper year", "h", "grid_h_per_year", "{:.0f}"),
-            ("Electricity\nper day", "kWh", "comp_kWh_day", "{:.2f}"),
-            ("Wax cold used\nper day", "kWh", "wax_cold_given_kWh_day", "{:.2f}")]
-    fig, axes = plt.subplots(1, len(rows), figsize=(14, 4.6))
-    for ax, (t, u, k, fmt) in zip(axes, rows):
-        vals = [fc["without fan"][k], fc["with fan"][k]]
-        bars = ax.bar(["without\nfan", "with\nfan"], vals, color=[ORANGE, BLUE], width=0.6)
-        P.bar_labels(ax, bars, fmt)
-        ax.set_title(f"{t}\n({u})", fontsize=12.5)
-        ax.set_ylim(0, max(vals) * 1.18 + 1e-9)
-    fig.suptitle("Night wax fan: 0.11 kWh/day of fan heat buys back the whole wax battery", fontweight="bold")
+
+# ---------------------------------------------------------------- 2. fin calculation
+def fig_fin_calc(cfg):
+    from engine import fan as FAN
+    from engine import fins as F
+    hx = cfg["live_run"]["wax_hx"]
+    A = cfg["pcm"]["slab_area_m2"]
+    R = FAN.wax_resistance(cfg, cfg["live_run"]["designs"]["current"]["pcm_kg"])
+    st = study()
+    load = st["wax_hx"]["load_W"]
+    gaps = np.arange(0.008, 0.0601, 0.001)
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(15, 5.6), gridspec_kw={"width_ratios": [1.15, 1]})
+    for b, col in ((0.02, MUTED), (0.03, ORANGE), (0.04, BLUE)):
+        ua = [F.array(A, hx["L"], S_, b, hx["t"], R, 3.0)["UA"] for S_ in gaps]
+        a1.plot(gaps * 1000, ua, color=col, label=f"fins {b * 1000:.0f} mm deep")
+    pl = F.plain(A, hx["L"], R, 3.0)["UA"]
+    a1.axhline(pl, color=INK2, ls=":", lw=1.5)
+    a1.text(59, pl + 1, "plain panel", ha="right", fontsize=10, color=INK2)
+    a1.axhline(load / 3.0, color="#b45309", ls="--", lw=1.5)
+    a1.text(59, load / 3.0 - 3.5, f"needed on the hottest night ({load:.0f} W at 3 K)", ha="right", fontsize=10, color="#b45309")
+    ch = F.array(A, hx["L"], hx["S"], hx["b"], hx["t"], R, 3.0)
+    a1.plot([hx["S"] * 1000], [ch["UA"]], "o", color=BLUE, ms=9)
+    a1.annotate(f"chosen: {hx['S'] * 1000:.0f} mm gap\nUA {ch['UA']:.1f} W/K", (hx["S"] * 1000, ch["UA"]), xytext=(12, 12),
+                textcoords="offset points", fontsize=10.5, color=BLUE)
+    a1.set_xlabel("gap between fins (mm)")
+    a1.set_ylabel("UA wax ↔ room (W/K)")
+    a1.set_ylim(0, max(70, ch["UA"] * 1.25))
+    a1.legend(loc="lower right", fontsize=10)
+    a1.set_title(f"Finned panel, {hx['L']} m tall, 1 mm aluminium, room−wax 3 K", fontsize=13)
+    a2.axis("off")
+    rows = [["Area multiplier", f"× {ch['area_mult']:.2f}"], ["Fin efficiency η", f"{ch['eta']:.3f}"],
+            ["h – Bar-Cohen & Rohsenow", f"{ch['h_bar_cohen']:.2f} W/m²K"], ["h – Van de Pol & Tierney", f"{ch['h_van_de_pol']:.2f} W/m²K"],
+            ["h used (the lower)", f"{ch['h']:.2f} W/m²K"], ["UA air side", f"{ch['UA_air']:.1f} W/K"],
+            ["UA with wax layer", f"{ch['UA']:.1f} W/K  (plain {pl:.1f})"], ["Heat at 3 K", f"{ch['Q_W']:.0f} W  (needed {load:.0f} W)"],
+            ["Fins / aluminium", f"{ch['N_fins']:.0f} fins · {ch['al_kg']:.0f} kg"], ["Fan power", "0 W – no moving parts"]]
+    t = a2.table(cellText=rows, colLabels=["40 mm fins, 23 mm gap", "value"], loc="center", cellLoc="left", colWidths=[0.55, 0.45])
+    t.auto_set_font_size(False)
+    t.set_fontsize(11)
+    t.scale(1, 1.7)
+    for (r, c), cell in t.get_celld().items():
+        cell.set_edgecolor(P.GRID)
+        if r == 0:
+            cell.set_facecolor("#184f95")
+            cell.set_text_props(color="white", weight="bold")
+    a2.set_title("El = Ra_S·S/L;  Nu = [576/El² + 2.873/El^0.5]^−0.5;  η = tanh(mLc)/(mLc)\nUA = 1/[1/(h(A_base + ηA_fin)) + R_wax/A]",
+                 fontsize=10.5)
+    fig.suptitle("Fin calculation: natural convection, no fan", fontweight="bold")
     fig.tight_layout()
-    P.save(fig, "final_02_night_fan_bars", NOTE)
+    P.save(fig, "final_02_fin_calculation", "Calculation (engine/fins.py) – lower of two published fin-array correlations; radiation ignored (conservative)")
 
 
 # ---------------------------------------------------------------- 2. loading options table
@@ -178,7 +232,7 @@ def fig_monthly():
 
 
 def fig_money():
-    m = study()["wax_compare"]["Final design (115 kg wax, 1.8 kWp, night fan)"]
+    m = study()["wax_compare"][load_config()["live_run"]["designs"]["current"]["label"]]
     mc = load_config()["live_run"]["money"]
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.8))
     b = a1.bar(["vs grid-only\ncold room", "vs grid + diesel\nin power cuts"],
@@ -198,48 +252,58 @@ def fig_money():
            "– prices: check locally")
 
 
-# ---------------------------------------------------------------- 4. baffle channel drawing
-def fig_baffle(cfg):
-    nf = cfg["live_run"]["night_fan"]
-    s = study()["fan_sizing"]
-    gap_mm, H = nf["gap_m"] * 1000, nf["panel_height_m"]
-    fig, ax = plt.subplots(figsize=(9, 8))
-    ax.set_aspect("equal")
-    ax.axis("off")
-    # wall, wax panel, channel, baffle (x in cm-ish drawing units, not to scale for the gap)
-    ax.add_patch(Rectangle((0, 0), 1.0, 22, color="#c9c7c1"))                       # insulated wall
-    ax.add_patch(Rectangle((1.0, 2), 1.6, 16, color="#86b6ef", ec="#184f95"))         # wax panel
-    ax.add_patch(Rectangle((3.4, 3), 0.25, 14, color="#52514e"))                       # baffle sheet
-    ax.add_patch(Rectangle((2.9, 18.6), 1.3, 1.0, color="#1baf7a", ec="#0b6e4b"))      # fan
-    ax.text(0.5, 22.4, "insulated wall", ha="center", fontsize=10, color=INK2)
-    ax.text(1.8, 10, f"WAX (PCM) panels – {cfg['live_run']['designs']['current']['pcm_kg']:g} kg, melts 4 °C",
-            ha="center", va="center", fontsize=10, rotation=90)
-    ax.text(3.95, 10, "thin baffle sheet", rotation=90, ha="left", va="center", fontsize=10)
-    ax.text(4.4, 19.1, f"{s['fan']['count']} × {s['fan']['d_mm']} mm 12 V fans\nat the TOP, blowing DOWN",
-            fontsize=10.5, va="center")
-    ax.annotate("", xy=(2.95, 3.5), xytext=(2.95, 17.5),
-                arrowprops=dict(arrowstyle="-|>", color=BLUE, lw=2.5, mutation_scale=22))
-    ax.text(3.0, -0.3, f"{gap_mm / 10:.0f} cm gap (channel)\nbetween wax and baffle", ha="center", fontsize=10, color=BLUE)
-    for y0, y1, x in ((1.0, 2.6, 5.5),):
-        ax.add_patch(FancyArrowPatch((3.2, 2.2), (6.5, 1.0), arrowstyle="-|>", mutation_scale=20, color=BLUE, lw=2))
-    ax.text(6.7, 1.0, "cold air out\nat the bottom", va="center", fontsize=10, color=BLUE)
-    ax.add_patch(FancyArrowPatch((7.5, 17.5), (4.4, 18.3), arrowstyle="-|>", mutation_scale=20, color=ORANGE, lw=2))
-    ax.text(7.6, 17.3, "warm room air\nin at the top", va="center", fontsize=10, color=ORANGE)
-    ax.set_xlim(-0.5, 11)
-    ax.set_ylim(-1.5, 23.2)
-    info = (f"Night load (hottest night) {s['load_W']:.0f} W\n"
-            f"Natural draft only: h = {s['h_natural_W_m2K']:.1f} W/m²K → {s['Q_natural_W']:.0f} W  (too little)\n"
-            f"With fans: v = {s['v_needed_m_s']:.2f} m/s, {s['flow_needed_m3h']:.0f} m³/h, {s['pressure_Pa']:.1f} Pa\n"
-            f"h = {s['h_fan_W_m2K']:.1f} W/m²K, UA = {s['UA_fan_W_K']:.0f} W/K\n"
-            f"Fans: {s['fan']['count']} × {s['fan']['watts']:g} W = {s['fan']['count'] * s['fan']['watts']:g} W rated, "
-            f"~{s['load_parts_W']['fan heat']:.0f} W at design point\n"
-            "Fan heat is added to the room load.  Fans run from the 12 V battery.\n"
-            "Rule: fan on when compressor off and room > 5 °C (speed to hold 6.7 °C),\n"
-            f"and at full speed in the 3 h after loading while room > {nf['morning_assist_above_C']:g} °C.")
-    ax.text(5.0, 12.5, info, fontsize=9.6, va="center", family="DejaVu Sans",
-            bbox=dict(fc="white", ec=P.GRID, boxstyle="round,pad=0.5"))
-    ax.set_title("Wax panel + baffle channel (side view, gap not to scale)", fontweight="bold", fontsize=14)
-    P.save(fig, "final_07_baffle_channel", "Design drawing – sizes from config/design.json; flow and h from engine/fan.py")
+# ---------------------------------------------------------------- 4. finned panel drawing
+def fig_panel(cfg):
+    hx = cfg["live_run"]["wax_hx"]
+    st = study()
+    fl, w = st["floor"], st["wax_hx"]
+    c3 = w["calc_3K"]
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(14, 7.5), gridspec_kw={"width_ratios": [1, 1.25]})
+    for ax in (a1, a2):
+        ax.set_aspect("equal")
+        ax.axis("off")
+    # side view (cm)
+    a1.add_patch(Rectangle((0, 0), 10, 220, color="#c9c7c1"))
+    a1.add_patch(Rectangle((10, 30), 1.5, 160, color="#86b6ef", ec="#184f95"))
+    a1.add_patch(Rectangle((11.5, 30), hx["b"] * 100, 160, color="#d9e1e8", ec="#8795a3"))
+    a1.add_patch(plt.Polygon([[8, 26], [26, 22], [26, 18], [8, 22]], color="#8795a3"))
+    a1.plot([25, 25, 32], [20, 8, 8], color="#52514e", lw=2)
+    a1.add_patch(Rectangle((11.5 + hx["b"] * 100, 0), hx["keep_clear_m"] * 100, 220, fill=False, ec=MUTED, ls="--"))
+    a1.add_patch(Rectangle((11.5 + hx["b"] * 100 + hx["keep_clear_m"] * 100, 0), 3, 8, color="#52514e"))
+    a1.annotate("", xy=(14, 40), xytext=(14, 180), arrowprops=dict(arrowstyle="-|>", color=BLUE, lw=2.5, mutation_scale=22))
+    a1.text(5, 226, "wall", ha="center", fontsize=10, color=INK2)
+    a1.text(30, 175, "warm room air\nin at the top", fontsize=10, color=ORANGE)
+    a1.text(30, 110, f"{hx['b'] * 100:.0f} cm fins:\ncooled air falls\nbetween them\nby itself", fontsize=10, color=BLUE)
+    a1.text(33, 20, "drip tray → drain + trap", fontsize=10, color=INK2, va="center")
+    a1.text(21, 226, f"{hx['keep_clear_m'] * 100:.0f} cm keep clear", fontsize=9, color=MUTED, ha="left")
+    a1.text(33, 3, "floor stopper for crates", fontsize=9, color=INK2, va="center")
+    a1.set_xlim(-5, 70)
+    a1.set_ylim(-5, 235)
+    a1.set_title(f"Side view – panel {hx['L']} m tall (cm)", fontsize=13)
+    # top view of a fin section (mm)
+    a2.add_patch(Rectangle((0, 0), 600, 14, color="#86b6ef", ec="#184f95"))
+    p = hx["S"] * 1000 + hx["t"] * 1000
+    x = 5.0
+    while x + hx["t"] * 1000 <= 600:
+        a2.add_patch(Rectangle((x, 14), hx["t"] * 1000 * 1.5, hx["b"] * 1000, color="#8795a3"))
+        x += p
+    a2.annotate("", xy=(5 + p, 62), xytext=(5, 62), arrowprops=dict(arrowstyle="<->", color=INK2))
+    a2.text(5 + p / 2, 66, f"{hx['S'] * 1000:.0f} mm gap", ha="center", fontsize=10)
+    a2.text(610, 34, f"{hx['b'] * 1000:.0f} mm", fontsize=10, va="center")
+    a2.text(300, -14, f"wax panel (12 mm wax) · one removable {hx['section_length_m']} m section seen from above", ha="center", fontsize=10)
+    info = (f"Area × {c3['area_mult']:.2f} · fin efficiency {c3['eta']:.2f} · h {c3['h']:.2f} W/m²K\n"
+            f"UA {c3['UA']:.1f} W/K (plain {st['fin_table']['plain panel']['UA']:.1f}) → {c3['Q_W']:.0f} W at 3 K, needed {w['load_W']:.0f} W\n"
+            f"{c3['N_fins']:.0f} fins, {c3['al_kg']:.0f} kg extruded aluminium heat-sink profile, anodised,\n"
+            "riveted with thermal paste; removable sections for cleaning; 0 W, no moving parts\n"
+            f"Optional: mounting points + 12 V cable for {hx['optional_fans']['provision']} fans (only if Phase 4 shows fins >25 % weaker)\n"
+            f"Floor: band {fl['band_from_wall_m'] * 100:.1f} cm along walls → usable {fl['usable_floor_m2']:.2f} m² of {fl['floor_m2']:.1f} m²;\n"
+            f"150 kg = {fl['crates']} crates in {fl['stacks_of_4']} stacks of 4 ({fl['crate_footprint_m2']:.2f} m²) + 60 cm aisle → fits ✓")
+    a2.text(0, 130, info, fontsize=10.2, va="bottom", bbox=dict(fc="white", ec=P.GRID, boxstyle="round,pad=0.5"))
+    a2.set_xlim(-10, 680)
+    a2.set_ylim(-30, 330)
+    a2.set_title("Top view of the fins (mm)", fontsize=13)
+    fig.suptitle("Finned wax panel + drip tray + keep-clear zone", fontweight="bold")
+    P.save(fig, "final_07_fin_panel_drawing", "Design drawing – sizes from config/design.json → live_run.wax_hx; calculation engine/fins.py")
 
 
 # ---------------------------------------------------------------- 5. results_summary.csv section
@@ -249,15 +313,15 @@ SECTION = "Final design (2026)"
 def summary_rows(cfg):
     st, sm = study(), summary()
     T = sm["designs"]["current"]["totals"]
-    f = st["wax_compare"]["Final design (115 kg wax, 1.8 kWp, night fan)"]
-    ma = st["morning_assist"]
-    fs, b = st["fan_sizing"], st["battery"]
     lr = cfg["live_run"]
+    f = st["wax_compare"][lr["designs"]["current"]["label"]]
+    w, b, fl, J = st["wax_hx"], st["battery"], st["floor"], st["journey"]
+    c3, hx = w["calc_3K"], lr["wax_hx"]
     yr = 365.0 / T["days"]
     lab = "simulated on real 2026 Vizag weather, conservative sun (x0.88)"
     R = [
-        ("Design", "115 kg wax (PCM), 1.8 kWp PV, 1.5 kW R290 compressor, 5 x 120 mm night fans, 2 cm baffle", "-",
-         "config/design.json -> live_run"),
+        ("Design", f"115 kg wax (PCM) with {hx['b'] * 1000:.0f} mm aluminium fins ({hx['S'] * 1000:.0f} mm gap, {hx['L']} m panels), "
+         "1.8 kWp PV, 1.5 kW R290 compressor, no wax fan, no baffle", "-", "config/design.json -> live_run"),
         ("Weather period", f"{T['first']} to {T['last']} ({T['days']} days)", "-", "Open-Meteo archive (ERA5) + forecast; " + lab),
         ("Produce loading", f"{lr['loading'][0]['kg']} kg at {lr['loading'][0]['hour']}:00 every day", "-", "chosen from 4 loading options"),
         ("Compressor electricity, average", round(T["comp_kWh_day_avg"], 2), "kWh/day", "sum of P_comp x 5 min / days"),
@@ -274,13 +338,20 @@ def summary_rows(cfg):
         ("Time to cool batch to 5.5 C, average / worst", f"{T['batch_cool_h_avg']:.1f} / {T['batch_cool_h_max']:.1f}", "h",
          "first time produce node <= setpoint + 0.5 K"),
         ("Wax frozen at sunrise / sunset (average)", f"{T['wax_sunrise_avg']:.0f} / {T['wax_sunset_avg']:.0f}", "%", "pcm_pct at 05:00 and 18:00"),
-        ("Night fans", f"{fs['fan']['count']} x {fs['fan']['d_mm']} mm 12 V, {fs['fan']['count'] * fs['fan']['watts']:g} W rated", "-",
-         "engine/fan.py size_fan: flow for hottest-night load at 7 C room, margin 1.25"),
-        ("Night load on hottest night", round(fs["load_W"]), "W", "walls + respiration + controller + fan heat"),
-        ("Channel air speed / flow / pressure", f"{fs['v_needed_m_s']:.2f} / {fs['flow_needed_m3h']:.0f} / {fs['pressure_Pa']:.1f}",
-         "m/s, m3/h, Pa", "Q = UA dT with effectiveness-NTU; Gnielinski/Graetz h"),
-        ("Fan electricity = fan heat added to room", round(T["fan_kWh_day"], 3), "kWh/day", "sum fan_W x 5 min / days; added to Q_int"),
-        ("Fan run time", round(T["fan_run_h_day"], 1), "h/day", "hours with fan_speed > 0"),
+        ("Fins: area multiplier / fin efficiency", f"{c3['area_mult']:.2f} / {c3['eta']:.3f}", "-",
+         "(A_base + A_fins)/A; eta = tanh(m Lc)/(m Lc), m = sqrt(2h/(k_al t))"),
+        ("Fins: h (Bar-Cohen & Rohsenow / Van de Pol & Tierney -> used)",
+         f"{c3['h_bar_cohen']:.2f} / {c3['h_van_de_pol']:.2f} -> {c3['h']:.2f}", "W/m2K", "lower of the two natural-convection fin-array correlations, dT 3 K"),
+        ("Wax-room UA, finned / plain panel", f"{c3['UA']:.1f} / {st['fin_table']['plain panel']['UA']:.1f}", "W/K",
+         "UA = 1/[1/(h(A_base + eta A_fin)) + R_wax/A]"),
+        ("Heat removed at 3 K vs needed on hottest night", f"{c3['Q_W']:.0f} vs {w['load_W']:.0f}", "W",
+         f"Q = UA x 3 K; load = walls + respiration + controller at room 7 C, {w['T_out_design_night_C']:.1f} C outside night"),
+        ("Aluminium fins", round(c3["al_kg"]), "kg", "N x b x t x L x 2700 kg/m3"),
+        ("Fan electricity / moving parts in the wax heat exchanger", "0 / 0", "-", "passive natural convection"),
+        ("Usable floor after fins + 10 cm keep-clear", f"{fl['usable_floor_m2']:.2f} of {fl['floor_m2']:.1f}", "m2",
+         f"150 kg = {fl['crates']} crates in {fl['stacks_of_4']} stacks of 4 + 60 cm aisle -> fits"),
+        ("Wall length needed vs available", f"{fl['panel_length_needed_m']:.2f} vs {fl['wall_length_available_m']:.2f}", "m",
+         "12 m2 / 1.6 m tall panels vs room perimeter minus door; 0.3 m short -> 1.7 m panels or panel above the door"),
         ("12 V battery", f"{b['chosen_Ah']} Ah LiFePO4 ({b['chosen_kWh']:.2f} kWh)", "-",
          f"(worst night {b['worst_night_Wh']:.0f} Wh + reserve day {b['worst_day_Wh']:.0f} Wh) / 0.8 / 12.8 V = {b['needed_Ah']:.0f} Ah"),
         ("Money saved vs grid-only room", round(f["saved_vs_grid_INR_yr"]), "INR/yr", "grid tariff x (grid-only kWh - our grid kWh) x 365/days; prices: check locally"),
@@ -288,9 +359,12 @@ def summary_rows(cfg):
         ("CO2 saved vs grid-only", round(f["co2_saved_vs_grid_kg_yr"]), "kg/yr", "0.71 kg/kWh grid"),
         ("CO2 saved vs grid + diesel", round(f["co2_saved_vs_diesel_kg_yr"]), "kg/yr", "0.71 kg/kWh grid, 2.68 kg/L diesel"),
         ("Energy balance error", f"{T['energy_balance_error_pct']:.3f}", "%", "(cold in - cold out - stored change) / cold in"),
-        ("Morning assist test: air > 8 C, old rule -> new rule",
-         f"{ma['fan only when compressor off']['h_air_above_8C_per_day']:.2f} -> {ma['morning assist above 7 C']['h_air_above_8C_per_day']:.2f}",
-         "h/day", "fan also runs in the 3 h after loading while room > 7 C (adopted)"),
+        ("Design journey: days fully on solar + wax (plain -> baffle+fans -> fins)",
+         " -> ".join(str(J[k]["days_full_solar_wax"]) for k in J if not k.startswith("check")), "days", "same 2026 run, 310 days"),
+        ("Design journey: grid hours per year", " -> ".join(f"{J[k]['grid_h_per_year']:.0f}" for k in J if not k.startswith("check")), "h/yr", ""),
+        ("Check: fins 25 % weaker / + 2 optional fans, grid h/yr",
+         f"{J['check: fins 25 % weaker']['grid_h_per_year']:.0f} / {J['check: fins 25 % weaker + 2 optional fans']['grid_h_per_year']:.0f}", "h/yr",
+         "room stays in 2-8 C in both; optional fans hold 6.5 C at night"),
     ]
     return [(SECTION, *r) for r in R]
 
@@ -307,12 +381,14 @@ def write_summary(cfg):
 def main():
     cfg = load_config()
     write_summary(cfg)
-    fig_fan(cfg)
+    fig_journey()
+    fig_fins_night(cfg)
+    fig_fin_calc(cfg)
     fig_loading()
     fig_wax()
     fig_monthly()
     fig_money()
-    fig_baffle(cfg)
+    fig_panel(cfg)
 
 
 if __name__ == "__main__":

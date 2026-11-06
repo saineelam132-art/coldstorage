@@ -22,7 +22,7 @@ from twin.live_sim import simulate_live
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results" / "live" / "fin_study_2026.json"
-L_PANEL = 1.2            # fin / panel height asked for this study [m] (design.json uses 1.6 m for the baffle)
+L_PANEL = 1.6            # panel height [m] (first run of this study used 1.2 m; owner chose 1.6 m)
 T_FIN = 0.001
 PRICE_AL_FIN = 500       # Rs/kg, aluminium fin stock + cutting + bonding to the panel - GUESS
 PRICE_TRAY = 3000        # Rs, condensate drip tray + drain under the panels - GUESS
@@ -72,7 +72,7 @@ def run():
     Hg = simulate_live(w, "current", mode="grid_only", cfg=cfg)[0]
 
     def fins(b, n_fans=0, L=L_PANEL, scale=1.0):
-        S = F.best_spacing(A, L, b, T_FIN, R, 3.0)[0]["S_mm"] / 1000
+        S = 0.023 if b == 0.04 else F.best_spacing(A, L, b, T_FIN, R, 3.0)[0]["S_mm"] / 1000   # 40 mm: chosen 23 mm gap
         hx = {"kind": "fins", "L": L, "h_scale": scale, "S": S, "b": b, "t": T_FIN, "cover_m": 1.0, "flow_fraction": 0.7}
         if n_fans:
             hx["fan"] = {**FAN120, "count": n_fans}
@@ -81,14 +81,13 @@ def run():
     c7 = copy.deepcopy(cfg)                          # option C rule: fans only when the room > 7 C
     c7["live_run"]["night_fan"].update({"on_above_C": 7.0, "target_C": 7.0, "morning_assist_above_C": 7.0})
     options = {
-        "A) plain + 2 cm baffle + 5 fans (current)": (cfg, None, True),
+        "A) plain + 2 cm baffle + 5 fans": (cfg, {"kind": "baffle"}, True),
         "B) fins 30 mm, passive": (cfg, fins(0.03), False),
         "B) fins 40 mm, passive": (cfg, fins(0.04), False),
         "C) fins 30 mm + 1 fan > 7 C": (c7, fins(0.03, 1), True),
         "C) fins 30 mm + 2 fans > 7 C": (c7, fins(0.03, 2), True),
         "C) fins 40 mm + 1 fan > 7 C": (c7, fins(0.04, 1), True),
         "check: B 40 mm, h -25 %": (cfg, fins(0.04, scale=0.75), False),
-        "check: B 40 mm, 1.6 m panels": (cfg, fins(0.04, L=1.6), False),
         "check: C 40 mm + 1 fan, h -25 %": (c7, fins(0.04, 1, scale=0.75), True),
     }
     res = {}
@@ -98,14 +97,14 @@ def run():
         b = DS.battery(H, c)
         r["battery_needed_Ah"], r["battery_Ah"] = b["needed_Ah"], b["chosen_Ah"]
         r["fan_heat_kWh_day"] = r["fan_kWh_day"]                  # all fan power ends up as heat in the room
-        if hx:
+        if hx.get("kind") == "fins":
             arr = F.array(A, hx["L"], hx["S"], hx["b"], T_FIN, R, 3.0)
             nf = hx.get("fan", {}).get("count", 0) if hx.get("fan") else 0
             r.update({"fin_S_mm": hx["S"] * 1000, "fin_b_mm": hx["b"] * 1000, "aluminium_kg": arr["al_kg"],
                       "UA_3K_W_K": arr["UA"], "fans": nf})
             r["extra_cost_INR_guess"] = arr["al_kg"] * PRICE_AL_FIN + PRICE_TRAY + nf * PRICE_FAN + b["chosen_Ah"] * PRICE_BATT_PER_AH
         else:
-            r.update({"aluminium_kg": 0.0, "fans": 5, "UA_3K_W_K": T["fan_sizing"]["UA_fan_W_K"]})
+            r.update({"aluminium_kg": 0.0, "fans": 5, "UA_3K_W_K": T["wax_hx"]["UA_fan_W_K"]})
             r["extra_cost_INR_guess"] = 5 * PRICE_FAN + PRICE_BAFFLE + PRICE_TRAY + b["chosen_Ah"] * PRICE_BATT_PER_AH
         res[name] = r
     out = {"calc": calc, "options": res, "prices_note": "Extra cost = fins/baffle + fans + drip tray + 12 V battery. "
