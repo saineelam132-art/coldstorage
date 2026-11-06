@@ -242,6 +242,31 @@ PARTS.pcm = {
   },
 };
 
+PARTS.nightfan = {
+  name: 'Night wax fan (12 V, in the baffle channel)',
+  headline: v => (v.fan_W > 0 ? `${fmt(v.fan_W, '')} W · ${fmt(v.fan_speed_pct, '%')} speed` : 'off'),
+  body: (v, c) => {
+    const f = c.night_fan || {}, fan = f.fan || {}, nf = c.design.live_run.night_fan, b = c.design.live_run.battery_12V;
+    const flowNow = (fan.total_flow_m3h || 0) * v.fan_speed_pct / 100;
+    return `<div class="kv" data-live="nf">
+        <span>Fan power now ${tagChip('M')}</span><b>${fmt(v.fan_W, '')} W</b>
+        <span>Speed (PWM) ${tagChip('C')}</span><b>${fmt(v.fan_speed_pct, '%')}</b>
+        <span>Airflow now ${tagChip('C')}</span><b>${fmt(flowNow, '')} m³/h</b>
+        <span>Heat added to the room ${tagChip('C')}</span><b>${fmt(v.fan_W / 1000, 'kW')}</b>
+        <span>Wax ↔ room conductance now ${tagChip('C')}</span><b>${fmt(v.G_wax_W_K, '')} W/K</b>
+        <span>Room temperature ${tagChip('M')}</span><b>${fmt(v.T_room, '°C')}</b></div>
+      <table><tr><td>Fans</td><td>${fan.count} × ${fan.name}, ${fan.total_W} W rated, about ${fmt(fan.total_flow_m3h, '')} m³/h ${tagChip('E')}</td></tr>
+      <tr><td>Channel</td><td>baffle ${nf.gap_m * 100} cm in front of the wax panels, open top and bottom; fans at the TOP blowing DOWN</td></tr>
+      <tr><td>Fan off (natural)</td><td>h = ${fmt(f.h_natural_W_m2K, '')} W/m²K → UA = ${fmt(f.UA_natural_W_K, '')} W/K</td></tr>
+      <tr><td>Fan on (design)</td><td>h = ${fmt(f.h_fan_W_m2K, '')} W/m²K → UA = ${fmt(f.UA_fan_W_K, '')} W/K at ${fmt(f.v_needed_m_s, '')} m/s</td></tr>
+      <tr><td>Sized for</td><td>hottest 2026 night (${fmt(f.T_out_design_night_C, '°C')} outside): ${fmt(f.load_W, '')} W at room 7 °C</td></tr>
+      <tr><td>Control</td><td>on when the compressor is off and the room is above ${nf.on_above_C} °C (to hold ${nf.target_C} °C); also flat out above ${nf.morning_assist_above_C} °C while a fresh batch cools</td></tr>
+      <tr><td>Powered by</td><td>12 V ${b.capacity_Ah} Ah ${b.chemistry} battery (with controller, sensors, IoT gateway) – NO battery for the compressor</td></tr></table>
+      <div class="formula">Q = ṁ·cp·(T_room − T_wax)·(1 − e^(−NTU)), NTU = U·A/(ṁ·cp)<br>U = 1/(1/h + R_wax), fan power ∝ speed³</div>
+      <div class="note">All fan power ends up as heat inside the room and is added to the heat load every 5 minutes.</div>`;
+  },
+};
+
 PARTS.evaporator = {
   name: 'Evaporator (R290 at −5 °C)',
   headline: v => `${fmt(v.Q_coil_air, 'kW')} from the air`,

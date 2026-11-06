@@ -54,15 +54,15 @@ export class Control {
   }
   bySource(s) {
     const y = this.cfg.year_summary, v = s.values;
-    const rows = [['Walls (U·A·ΔT)', v.Q_wall, y.load_wall_kWh], ['Door – sensible', v.Q_door - (v.Q_door * (y.load_door_latent_kWh / y.load_door_kWh)), y.load_door_kWh - y.load_door_latent_kWh],
+    const rows = [['Walls (U·A·ΔT)', v.Q_wall, y.load_wall_kWh], ['Night wax fan (heat)', (v.fan_W || 0) / 1000, y.fan_kWh || 0], ['Door – sensible', v.Q_door - (v.Q_door * (y.load_door_latent_kWh / y.load_door_kWh)), y.load_door_kWh - y.load_door_latent_kWh],
       ['Door – latent (moisture)', v.Q_door * (y.load_door_latent_kWh / y.load_door_kWh), y.load_door_latent_kWh],
-      ['Produce pull-down', v.Q_batch, y.load_product_kWh], ['Respiration', v.Q_resp, y.load_resp_kWh], ['Fans, lights, controller', v.Q_int, y.load_internal_kWh]];
+      ['Produce pull-down', v.Q_batch, y.load_product_kWh], ['Respiration', v.Q_resp, y.load_resp_kWh], ['Evaporator fan, lights, controller', v.Q_int - (v.fan_W || 0) / 1000, y.load_internal_kWh - (y.fan_kWh || 0)]];
     const tot = rows.reduce((a, r) => a + r[2], 0);
-    return `<table class="calc"><tr class="grp"><td>Source</td><td class="num">Now (kW) ${tagChip('C')}</td><td class="num">Year 2025 (kWh)</td><td class="num">Share of year</td></tr>
+    return `<table class="calc"><tr class="grp"><td>Source</td><td class="num">Now (kW) ${tagChip('C')}</td><td class="num">2026 so far (kWh)</td><td class="num">Share of year</td></tr>
       ${rows.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1].toFixed(3)}</td><td class="num">${r[2].toFixed(0)}</td>
       <td class="num"><span class="sharebar"><i style="width:${(100 * r[2] / tot).toFixed(1)}%"></i></span>${(100 * r[2] / tot).toFixed(0)} %</td></tr>`).join('')}
       <tr class="grp"><td>Total</td><td class="num">${(v.Q_total).toFixed(3)}</td><td class="num">${tot.toFixed(0)}</td><td></td></tr></table>
-      <p class="small">"Now" = this 5-minute step of the simulated year (door load averaged over the 5 minutes). Year = current design.</p>`;
+      <p class="small">"Now" = this 5-minute step of the simulated 2026 (door load averaged over the 5 minutes). Year = final design, 1 Jan 2026 to today.</p>`;
   }
 
   // ---------------------------------------------------------------- what-if
@@ -109,8 +109,8 @@ export class Control {
 
   // ---------------------------------------------------------------- two rooms
   roomsHTML() {
-    return `<p class="lead">The <b>same room, same weather, same door openings</b> – left with normal control, right with smart
-      (forecast-based) control. Smart control uses tomorrow's weather from the file as a perfect forecast.</p>
+    return `<p class="lead">The <b>same room, same 2026 weather, same 150 kg loading</b> – left WITHOUT the night wax fan,
+      right WITH it (final design). Without the fan, natural convection behind the baffle cannot carry the wax's cold into the room at night.</p>
       <div class="rooms"><div class="room" id="rmN"></div><div class="room smart" id="rmS"></div></div><div id="rmY"></div>`;
   }
   roomCard(title, r, how) {
@@ -138,11 +138,11 @@ export class Control {
     if (this.tab === 'calc' && $('bySource')) $('bySource').innerHTML = this.bySource(s);
     if (this.tab === 'rooms' && $('rmN')) {
       const c = s.compare;
-      $('rmN').innerHTML = this.roomCard('Normal control', c.normal, 'Wax charged from spare sun; grid when wax < 15 % at night.');
-      $('rmS').innerHTML = this.roomCard('Smart control', c.smart, 'Sunny tomorrow → wax may go down to 5 %. Cloudy tomorrow → pre-cool to 3 °C today.');
+      $('rmN').innerHTML = this.roomCard('Without night fan', c.normal, 'Wax panels behind the baffle, natural convection only.');
+      $('rmS').innerHTML = this.roomCard('With night fan (final design)', c.smart, '5 × 120 mm 12 V fans push room air down the wax channel when the compressor is off.');
       $('rmY').innerHTML = `<div class="kv2 wide"><span>Whole year: grid backup hours</span><b>${c.year.normal_grid_h.toFixed(0)} h → ${c.year.smart_grid_h.toFixed(0)} h</b>
         <span>Days fully on solar + wax</span><b>${c.year.normal_days_pct.toFixed(1)} % → ${c.year.smart_days_pct.toFixed(1)} %</b></div>
-        <p class="small">${s.clock} · ${s.label}. Current design (${this.cfg.design.pcm.mass_kg} kg wax, ${this.cfg.design.pv.rated_kWp} kWp).</p>`;
+        <p class="small">${s.clock} · ${s.label}. Final design: 115 kg wax, 1.8 kWp, 150 kg produce loaded at 6 am.</p>`;
     }
     if (this.tab === 'sensors') document.querySelectorAll('#ccBody td[data-q]').forEach(td => {
       const v = s.values[td.dataset.q];

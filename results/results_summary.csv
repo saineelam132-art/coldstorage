@@ -153,3 +153,30 @@ Power-cut night,with PCM: highest room temperature during the cut,5.849,C,"grid 
 Power-cut night,without PCM: highest room temperature during the cut,8.238,C,"grid off 09 Jun 18:00 to 10 Jun 06:00, no sun; light room = 200 kg stored instead of 600 kg"
 Power-cut night,"with PCM, light room: highest room temperature during the cut",6.221,C,"grid off 09 Jun 18:00 to 10 Jun 06:00, no sun; light room = 200 kg stored instead of 600 kg"
 Power-cut night,"without PCM, light room: highest room temperature during the cut",10.97,C,"grid off 09 Jun 18:00 to 10 Jun 06:00, no sun; light room = 200 kg stored instead of 600 kg"
+Final design (2026),Design,"115 kg wax (PCM), 1.8 kWp PV, 1.5 kW R290 compressor, 5 x 120 mm night fans, 2 cm baffle",-,config/design.json -> live_run
+Final design (2026),Weather period,2026-01-01 to 2026-11-05 (309 days),-,"Open-Meteo archive (ERA5) + forecast; simulated on real 2026 Vizag weather, conservative sun (x0.88)"
+Final design (2026),Produce loading,150 kg at 6:00 every day,-,chosen from 4 loading options
+Final design (2026),"Compressor electricity, average",3.02,kWh/day,sum of P_comp x 5 min / days
+Final design (2026),"Compressor electricity, worst day",4.67 (2026-05-23),kWh/day,max of daily sums
+Final design (2026),Days fully on solar + wax,289 of 309,days,days with 0 grid hours
+Final design (2026),Grid backup hours,132.8,h,sum of hours with ATS on grid
+Final design (2026),Grid backup hours per year,157,h/yr,grid_h x 365 / days
+Final design (2026),Room air above 8 C during loading,1.77,h/day,only while a fresh warm batch cools (no stored product inside)
+Final design (2026),Hours outside 2-8 C at all other times,0,h,count of hours with T_room <2 or >8 outside the 3 h loading window
+Final design (2026),Produce in (average),25.4,C,outside air at loading time (average produce temperature)
+Final design (2026),Produce average after 2 h,16.1,C,lumped produce node; core measured in Phase 4
+Final design (2026),Produce average after 4 h,9.0,C,lumped produce node
+Final design (2026),"Time to cool batch to 5.5 C, average / worst",7.9 / 13.3,h,first time produce node <= setpoint + 0.5 K
+Final design (2026),Wax frozen at sunrise / sunset (average),74 / 98,%,pcm_pct at 05:00 and 18:00
+Final design (2026),Night fans,"5 x 120 mm 12 V, 15 W rated",-,"engine/fan.py size_fan: flow for hottest-night load at 7 C room, margin 1.25"
+Final design (2026),Night load on hottest night,156,W,walls + respiration + controller + fan heat
+Final design (2026),Channel air speed / flow / pressure,1.00 / 541 / 2.1,"m/s, m3/h, Pa",Q = UA dT with effectiveness-NTU; Gnielinski/Graetz h
+Final design (2026),Fan electricity = fan heat added to room,0.109,kWh/day,sum fan_W x 5 min / days; added to Q_int
+Final design (2026),Fan run time,15.4,h/day,hours with fan_speed > 0
+Final design (2026),12 V battery,80 Ah LiFePO4 (1.02 kWh),-,(worst night 313 Wh + reserve day 451 Wh) / 0.8 / 12.8 V = 75 Ah
+Final design (2026),Money saved vs grid-only room,10617,INR/yr,grid tariff x (grid-only kWh - our grid kWh) x 365/days; prices: check locally
+Final design (2026),Money saved vs grid + diesel in power cuts,26483,INR/yr,diesel 0.5 L/kWh 10:00-18:00; prices: check locally
+Final design (2026),CO2 saved vs grid-only,942,kg/yr,0.71 kg/kWh grid
+Final design (2026),CO2 saved vs grid + diesel,1202,kg/yr,"0.71 kg/kWh grid, 2.68 kg/L diesel"
+Final design (2026),Energy balance error,0.000,%,(cold in - cold out - stored change) / cold in
+Final design (2026),"Morning assist test: air > 8 C, old rule -> new rule",2.00 -> 1.77,h/day,fan also runs in the 3 h after loading while room > 7 C (adopted)

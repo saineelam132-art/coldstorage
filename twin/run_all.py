@@ -98,7 +98,11 @@ def main():
     (RES / "design_point.json").write_text(json.dumps(clean, indent=1, allow_nan=False))
     (RES / "whatif.json").write_text(json.dumps(whatif.build(cfg, weather)))
     summ = studies.summary_rows(cfg, annual, counts, base, rec, pick, comp_out, cut, rows)
-    summ.to_csv(RES / "results_summary.csv", index=False, float_format="%.4g")
+    old = RES / "results_summary.csv"                          # keep the "Final design (2026)" rows
+    if old.exists():                                          # (written by tools/make_final_figures.py)
+        prev = pd.read_csv(old)
+        summ = pd.concat([summ, prev[prev.section == "Final design (2026)"]], ignore_index=True)
+    summ.to_csv(old, index=False, float_format="%.4g")
     (RES / "recommendation.txt").write_text(recommendation_text(cfg, pick, passing, base, rec, sens), encoding="utf-8")
     print(f"\nSaved results to {RES}  ({time.time()-t0:.0f} s)")
 

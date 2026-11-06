@@ -84,6 +84,18 @@ export class PhotoView {
         lb.style.left = `${Math.min(80, Math.max(20, (x0 + x1) / 2))}%`; lb.style.top = `${Math.max(8, y0)}%`;
         kb.insertBefore(lb, kb.querySelector('.hots')); el.pcmLabel = lb;
       }
+      // night wax fans + baffle sheet (drawn in code; no picture of them yet)
+      (this.scenes.baffles?.[name] || []).forEach(([x0, y0, x1, y1]) => {
+        const d = document.createElement('div'); d.className = 'baffle';
+        d.style.cssText = `left:${x0}%;top:${y0}%;width:${x1 - x0}%;height:${y1 - y0}%`;
+        kb.insertBefore(d, kb.querySelector('.hots'));
+      });
+      el.nfans = (this.scenes.night_fans?.[name] || []).map(f => {
+        const d = document.createElement('div'); d.className = 'nfan';
+        d.style.cssText = `left:${f.x}%;top:${f.y}%;width:${2 * f.r}%`;
+        d.innerHTML = '<svg viewBox="-12 -12 24 24"><circle r="11" fill="#1f2a33" stroke="#9fb3c4" stroke-width="1.2"/><g class="blades" fill="#cfd8df"><path d="M0 0 L2 -9 A9 9 0 0 1 8 -4 Z"/><path d="M0 0 L2 -9 A9 9 0 0 1 8 -4 Z" transform="rotate(120)"/><path d="M0 0 L2 -9 A9 9 0 0 1 8 -4 Z" transform="rotate(240)"/></g><circle r="2.2" fill="#9fb3c4"/></svg><span></span>';
+        kb.insertBefore(d, kb.querySelector('.hots')); return d;
+      });
       // evaporator fan: glows and spins with the compressor speed
       const fan = this.scenes.fans?.[name];
       if (fan) {
@@ -196,6 +208,12 @@ export class PhotoView {
         el.pcm.forEach(d => (d.style.backgroundColor = `rgba(70,150,255,${(0.03 + 0.27 * frozen).toFixed(3)})`));
         el.pcmLabel.innerHTML = `Wax battery <b>${v.pcm_pct.toFixed(0)} % frozen</b> · backup <b>${v.backup_h === null ? '∞' : v.backup_h.toFixed(1) + ' h'}</b> <span class="tag C">C</span>`;
       }
+      (el.nfans || []).forEach(d => {
+        const on = v.fan_W > 0.05, sp = (v.fan_speed_pct || 0) / 100;
+        d.classList.toggle('on', on);
+        d.querySelector('.blades').style.animationDuration = on ? `${(1.4 - 1.1 * sp).toFixed(2)}s` : '0s';
+        d.querySelector('span').textContent = on ? `${v.fan_W.toFixed(1)} W` : 'off';
+      });
       if (el.fan) {
         const sp = Math.max(0, Math.min(1, v.comp_speed_pct / 100));
         el.fan.style.opacity = (0.15 + 0.85 * sp).toFixed(2);

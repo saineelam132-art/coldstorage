@@ -54,6 +54,8 @@ def day_solar_kWh(weather, cfg):
 def build(cfg=None, weather=None):
     from twin.weather import load_weather
     cfg = cfg or load_config()
+    # final design: 150 kg of fresh produce per day (rated capacity), 115 kg wax by default
+    cfg = with_overrides(cfg, {"product": {"batch_mass_kg": cfg.get("live_run", {}).get("produce_kg", cfg["product"]["batch_mass_kg"])}})
     weather = weather if weather is not None else load_weather(cfg=cfg)
     crop = load_crops()[cfg["product"]["default_crop"]]
     sunny_kWh, cloudy_kWh = day_solar_kWh(weather, cfg)

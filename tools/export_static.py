@@ -58,7 +58,7 @@ def main():
 
     state_fields = ["T_out", "RH_out", "wind", "poa", "T_room", "T_pcm", "pcm_pct", "P_pv", "P_comp", "P_solar_used",
                     "P_grid", "Q_cool", "Q_coil_air", "Q_coil_pcm", "comp_speed_pct", "cop", "Q_total", "Q_wall", "Q_door",
-                    "Q_int", "Q_resp", "Q_batch", "dp_top", "last_open_s", "last_open_ago_min"]
+                    "Q_int", "Q_resp", "Q_batch", "dp_top", "last_open_s", "last_open_ago_min", "fan_W", "fan_speed_pct", "G_wax_W_K"]
     cols = {k: [] for k in state_fields + ["T_batch", "grid_on", "backup_h", "door_s", "heat_if_open_on", "heat_if_open_off",
                                            "v_if_open_on", "v_if_open_off", "lat_frac", "sun_elev", "sun_az", "day", "day_poa",
                                            "s_T_room", "s_pcm_pct", "s_grid_on", "grid_h_n", "grid_h_s"]}
@@ -111,7 +111,11 @@ def main():
     scenes = json.loads((ROOT / "web/assets/scenes.json").read_text(encoding="utf-8"))
     hotspots = json.loads((ROOT / "web/assets/hotspots.json").read_text(encoding="utf-8"))
     crops_full = tw.crops
-    api_config = {"design": _strip(cfg), "geometry": geometry(cfg), "lan_ip": "",
+    fs = tw.final_totals.get("fan_sizing") or {}
+    night_fan = {k: fs.get(k) for k in ("h_natural_W_m2K", "UA_natural_W_K", "h_fan_W_m2K", "UA_fan_W_K", "v_needed_m_s",
+                                         "flow_needed_m3h", "pressure_Pa", "load_W", "T_out_design_night_C")}
+    night_fan["fan"] = fs.get("fan")
+    api_config = {"design": _strip(cfg), "geometry": geometry(cfg), "lan_ip": "", "night_fan": night_fan,
                   "crops": {kk: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]], "T_ref_C": v["T_ref_C"],
                                  "SL_ref_days": v["SL_ref_days"], "Q10": v["Q10"], "chill_injury_below_C": v.get("chill_injury_below_C")}
                             for kk, v in crops_full.items()},

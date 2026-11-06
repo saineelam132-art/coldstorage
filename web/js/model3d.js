@@ -321,6 +321,20 @@ export class Model3D {
     const panel = (w, h, x, y, z, ry) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.03), this.pcmMat); m.position.set(x, y0 + y, z); m.rotation.y = ry; add(m, 'pcm'); };
     panel(0.55, 1.2, -0.55, 0.95, z0 + 0.035, 0); panel(0.55, 1.2, 0.55, 0.95, z0 + 0.035, 0);
     panel(0.55, 0.35, x0 + 0.035, 1.92, z0 + 0.45, Math.PI / 2); panel(0.55, 0.35, -x0 - 0.035, 1.92, z0 + 0.45, -Math.PI / 2);
+    // baffle sheet 2 cm in front of the back-wall wax panels + night fans at the top (blowing down)
+    const baf = new THREE.MeshStandardMaterial({ color: 0xe8eef2, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+    for (const x of [-0.55, 0.55]) {
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 1.2), baf); b.position.set(x, y0 + 0.95, z0 + 0.035 + 0.035); add(b, 'nightfan');
+    }
+    this.nightFans = [];
+    const hub = new THREE.MeshStandardMaterial({ color: 0x1f2a33 }), blade = new THREE.MeshStandardMaterial({ color: 0xcfd8df });
+    [-0.75, -0.35, 0.0, 0.35, 0.75].forEach(x => {
+      const g = new THREE.Group();
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.008, 6, 20), hub); ring.rotation.x = Math.PI / 2; g.add(ring);
+      for (let k = 0; k < 3; k++) { const bl = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.004, 0.018), blade); bl.position.x = 0.024; const a = new THREE.Group(); a.add(bl); a.rotation.y = k * 2 * Math.PI / 3; g.add(a); }
+      g.position.set(x, y0 + 1.58, z0 + 0.06); g.userData.part = 'nightfan'; this.picks.push(ring); ring.userData.part = 'nightfan';
+      this.scene.add(g); this.nightFans.push(g);
+    });
     // copper charging tube between the back panels
     const cop = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.55, 8), new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: .8, roughness: .3 }));
     cop.rotation.z = Math.PI / 2; cop.position.set(0, y0 + 0.95, z0 + 0.05); add(cop);
@@ -635,6 +649,7 @@ export class Model3D {
       this.doorPivot.rotation.y = -this.doorAngle;               // outward swing
       this.fan.rotation.x += dt * (v.comp_speed_pct / 100) * 25;
       this.evapFan.rotation.z += dt * (0.25 + v.comp_speed_pct / 100) * 18;   // evaporator fan always runs; faster with compressor
+      (this.nightFans || []).forEach(f => (f.rotation.y += dt * (v.fan_speed_pct || 0) / 100 * 30));
       this.cups.rotation.y += dt * (v.wind || 0) * 2.2;
     }
     const pulse = 1 + 0.25 * Math.sin(performance.now() / 300);

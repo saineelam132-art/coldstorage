@@ -38,7 +38,11 @@ def _startup():
 @app.get("/api/config")
 def api_config():
     tw = twin()
-    return {"design": _strip(tw.cfg), "geometry": geometry(tw.cfg), "lan_ip": lan_ip(), "crops": {
+    fs = tw.final_totals.get("fan_sizing") or {}
+    night_fan = {k: fs.get(k) for k in ("h_natural_W_m2K", "UA_natural_W_K", "h_fan_W_m2K", "UA_fan_W_K", "v_needed_m_s",
+                                         "flow_needed_m3h", "pressure_Pa", "load_W", "T_out_design_night_C")}
+    night_fan["fan"] = fs.get("fan")
+    return {"design": _strip(tw.cfg), "geometry": geometry(tw.cfg), "lan_ip": lan_ip(), "night_fan": night_fan, "crops": {
         k: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]], "T_ref_C": v["T_ref_C"],
             "SL_ref_days": v["SL_ref_days"], "Q10": v["Q10"], "chill_injury_below_C": v.get("chill_injury_below_C")}
         for k, v in tw.crops.items()},
@@ -130,7 +134,7 @@ def api_fault(data: dict = Body(...)):
 
 
 # ------------------------------------------------------------ Live Year Run
-LIVE_KEYS = {"compressor_max_kW", "produce_kg", "setpoint_C", "swap_hour", "cooled_within_K", "natural_convection_h_W_m2K"}
+LIVE_KEYS = {"compressor_max_kW", "setpoint_C", "cooled_within_K"}
 
 
 @app.get("/api/live/config")

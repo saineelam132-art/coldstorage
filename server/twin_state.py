@@ -16,8 +16,7 @@ from engine import loads, psychro, pv, r290, shelf_life
 from engine.pcm_slab import simulate_slab
 from engine.config import load_config, load_crops
 from engine.pcm import PCMBattery
-from twin.simulate import daily_poa_kWh, door_seconds, simulate
-from twin.weather import load_weather
+from twin.simulate import daily_poa_kWh
 
 ROOT = Path(__file__).resolve().parent.parent
 SIM_LABEL = "Simulated – digital twin using real Visakhapatnam weather"
@@ -58,19 +57,29 @@ class TwinState:
     def __init__(self, cfg=None):
         self.cfg = cfg or load_config()
         self.crops = load_crops()
-        self.weather = load_weather(cfg=self.cfg)
-        self.door = door_seconds(self.cfg, self.weather)
-        self.summary, self.df = simulate(self.cfg, self.weather, door_secs=self.door)
-        self.dt = float(self.cfg["simulation"]["dt_s"])
-        # the SAME room with smart (forecast-based) control, for the side-by-side comparison
-        from engine.config import with_overrides
-        self.smart_summary, sdf = simulate(with_overrides(self.cfg, {"controller": {"mode": "forecast"}}),
-                                           self.weather, door_secs=self.door)
-        self.smart = {k: sdf[k].values for k in ("T_room", "pcm_pct", "P_grid", "P_solar_used")}
-        self.smart["grid_on"] = sdf["grid_on"].values
-        self.grid_h_cum = {"normal": np.cumsum(self.df["grid_on"].values) * self.dt / 3600,
+        # The main site replays the FINAL DESIGN on real 2026 weather (1 Jan 2026 -> end of tomorrow):
+        # 115 kg wax, 1.8 kWp, night wax fan, 150 kg loaded at 6 am, sunlight corrected to NASA level.
+        from twin.live_sim import simulate_live
+        from twin.live_weather import load_actual
+        W = load_actual()
+        self.final_H, ftot, _, self.final_bt = simulate_live(W, "current", cfg=self.cfg, steps=True)
+        S = ftot.pop("steps").rename(columns={"Q_air": "Q_coil_air", "Q_ch": "Q_coil_pcm"})
+        S["grid_on"] = S["grid_on"] > 0.5
+        S["P_comp"] = S["P_comp"]
+        self.df = S
+        self.final_totals = ftot
+        hourly = S[["poa", "T_out"]].resample("h").mean()
+        self.weather = pd.DataFrame({"time_ist": hourly.index, "poa": hourly["poa"].values, "T_out": hourly["T_out"].values})
+        self.summary = self._summary(S, self.final_H, ftot)
+        # the SAME room WITHOUT the night fan, for the two-rooms comparison
+        H0, t0_, _, _ = simulate_live(W, "current", cfg=self.cfg, steps=True, fan_on=False)
+        S0 = t0_.pop("steps")
+        self.nofan_summary = self._summary(S0, H0, t0_)
+        self.smart = {"T_room": S["T_room"].values, "pcm_pct": S["pcm_pct"].values, "grid_on": S["grid_on"].values}
+        self.base = {"T_room": S0["T_room"].values, "pcm_pct": S0["pcm_pct"].values, "grid_on": (S0["grid_on"] > 0.5).values}
+        self.dt = 300.0
+        self.grid_h_cum = {"normal": np.cumsum(self.base["grid_on"]) * self.dt / 3600,
                            "smart": np.cumsum(self.smart["grid_on"]) * self.dt / 3600}
-        self.dt = float(self.cfg["simulation"]["dt_s"])
         self.n = len(self.df)
         self.t0 = self.df.index[0]
         self.year_s = self.n * self.dt
@@ -87,6 +96,27 @@ class TwinState:
         self._slab = None
         from server.ledger_service import LedgerService
         self.ledger = LedgerService(self)
+
+    def _summary(self, S, H, tot):
+        """Year totals of a 5-minute run (only real hours, not the forecast)."""
+        real = ~H["is_forecast"].values if "is_forecast" in H else np.ones(len(H), bool)
+        Hr = H[real]
+        days = Hr.time_ist.dt.date
+        g = Hr.groupby(days).grid_on.sum()
+        Sr = S.iloc[: real.sum() * 12]
+        kWh = lambda c: float(Sr[c].sum() * 300 / 3600)
+        hod = Hr.time_ist.dt.hour
+        load_h = {(e["hour"] + j) % 24 for e in self.cfg["live_run"]["loading"] for j in range(3)}
+        hot = (Hr.T_room > 8) | (Hr.T_room < 2)
+        return {"hot_load_h_per_day": float((hot & hod.isin(load_h)).sum() / max(1, len(g))),
+                "hot_other_h": float((hot & ~hod.isin(load_h)).sum()),
+                "grid_hours": float(Hr.grid_on.sum()), "pct_days_full_solar_pcm": float(100 * (g == 0).mean()),
+                "days": int(len(g)), "days_full_solar_pcm": int((g == 0).sum()),
+                "load_wall_kWh": kWh("Q_wall"), "load_door_kWh": kWh("Q_door"), "load_door_latent_kWh": kWh("Q_door_lat"),
+                "load_product_kWh": kWh("Q_batch"), "load_resp_kWh": kWh("Q_resp"), "load_internal_kWh": kWh("Q_int"),
+                "fan_kWh": float(Sr["fan_W"].sum() * 300 / 3600 / 1000), "compressor_kWh_e": float(Hr.P_comp.sum()),
+                "energy_balance_error_pct": tot["energy_balance_error_pct"], "produce_kg": tot["produce_kg"],
+                "design": "Final design: 115 kg wax, 1.8 kWp, night wax fan, 150 kg loaded at 6 am (2026 weather, conservative sun)"}
 
     # --------------------------------------------------------------- helpers
     def index(self, t):
@@ -149,7 +179,7 @@ class TwinState:
         elev, az = pv.sun_angles(when.dayofyear, hour, site["lat_deg"], site["lon_deg"], site["utc_offset_h"])
         day = min(int((t % self.year_s) // 86400), len(self.day_class) - 1)
 
-        T_b = float(c["T_batch"][i])
+        T_b = float(c["T_batch"][i]) if not math.isnan(float(c["T_batch"][i])) else float("nan")
         j = int(self.last_open[i])
         last_s = float(c["door_s"][j]) if j >= 0 else 0.0
         last_kJ = door["heat_if_open_kW"] * last_s                  # kW x s = kJ
@@ -168,6 +198,8 @@ class TwinState:
             "Q_coil_air": float(c["Q_coil_air"][i]), "Q_coil_pcm": float(c["Q_coil_pcm"][i]),
             "comp_speed_pct": 100.0 * float(c["Q_coil_air"][i] + c["Q_coil_pcm"][i]) / cfg["refrigeration"]["design_capacity_kW"],
             "cop": float(c["cop"][i]),
+            "fan_W": float(c["fan_W"][i]), "fan_speed_pct": 100.0 * float(c["fan_speed"][i]),
+            "G_wax_W_K": float(c["G_wax"][i]),
             "Q_total": Q_total, **Q,
             "backup_h": None if math.isinf(backup) else backup,
             "door_open": open_now, "door_angle": 90.0 if open_now else 0.0,
@@ -186,13 +218,14 @@ class TwinState:
             "day_class": str(self.day_class[day]), "day_poa_kWh_m2": float(self.day_poa[day]),
             "values": values,
             "compare": {
-                "normal": {"T_room": T_room, "pcm_pct": float(c["pcm_pct"][i]), "grid_on": bool(c["grid_on"][i]),
-                           "grid_h_so_far": float(self.grid_h_cum["normal"][i])},
+                "normal": {"T_room": float(self.base["T_room"][i]), "pcm_pct": float(self.base["pcm_pct"][i]),
+                           "grid_on": bool(self.base["grid_on"][i]), "grid_h_so_far": float(self.grid_h_cum["normal"][i])},
                 "smart": {"T_room": float(self.smart["T_room"][i]), "pcm_pct": float(self.smart["pcm_pct"][i]),
                           "grid_on": bool(self.smart["grid_on"][i]), "grid_h_so_far": float(self.grid_h_cum["smart"][i])},
-                "year": {"normal_grid_h": self.summary["grid_hours"], "smart_grid_h": self.smart_summary["grid_hours"],
-                         "normal_days_pct": self.summary["pct_days_full_solar_pcm"],
-                         "smart_days_pct": self.smart_summary["pct_days_full_solar_pcm"]}},
+                "year": {"normal_grid_h": self.nofan_summary["grid_hours"], "smart_grid_h": self.summary["grid_hours"],
+                         "normal_days_pct": self.nofan_summary["pct_days_full_solar_pcm"],
+                         "smart_days_pct": self.summary["pct_days_full_solar_pcm"],
+                         "labels": ["Without night fan", "With night fan (final design)"]}},
             "ledger": {"length": len(self.ledger.chain.blocks), "valid": self.ledger.chain.verify()["valid"],
                        "batches": len(self.ledger.batches)},
         }
@@ -258,7 +291,8 @@ class TwinState:
         gridday = int((grid.index[grid.argmax()] - self.t0).days)
         mk = lambda day, h, why: {"t": day * 86400 + h * 3600, "why": why,
                                   "date": (self.t0 + pd.Timedelta(days=day)).strftime("%d %b")}
-        return [mk(hot, 7, "Hottest day of 2025 – batch arrives at 8 am"),
-                mk(sunny, 7, "Sunniest day – wax refreezes by noon"),
-                mk(rainy, 7, "Dullest (rainy) day – wax carries the room"),
+        h0 = max(0, self.cfg["live_run"]["loading"][0]["hour"] - 1)
+        return [mk(hot, h0, "Hottest day of 2026 – 150 kg batch arrives at 6 am"),
+                mk(sunny, h0, "Sunniest day – wax refreezes by noon"),
+                mk(rainy, h0, "Dullest (rainy) day – wax carries the room"),
                 mk(gridday, 0, "Day with the most grid backup")]

@@ -97,6 +97,7 @@ export function updateDataBar(s, cfg) {
   $('d_backup').textContent = v.backup_h === null ? '∞' : fmt(v.backup_h, 'h');
   $('d_src').textContent = v.grid_on ? 'GRID' : (v.P_solar_used > 0 ? 'SOLAR' : 'WAX');
   $('d_src').className = v.grid_on ? 'warn' : 'good';
+  $('d_fan').textContent = v.fan_W > 0.05 ? `${v.fan_W.toFixed(0)} W` : 'off';
   $('d_clock').textContent = s.clock;
   $('d_src_label').innerHTML = sourceBadge(s);
 }

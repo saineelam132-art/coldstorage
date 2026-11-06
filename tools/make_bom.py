@@ -1,6 +1,8 @@
-"""Cost table (bill of materials) for the RECOMMENDED design.
+"""Cost tables (bill of materials).
 
-    python tools/make_bom.py        ->  results/bom_recommended.csv
+    python tools/make_bom.py        ->  results/bom_final.csv        (FINAL design: 115 kg wax, 1.8 kWp,
+                                                                       5 night fans, 2 cm baffle, 12 V 80 Ah battery)
+                                        results/bom_recommended.csv  (2025 sizing-study design, kept for reference)
 
 EVERY PRICE HERE IS A GUESS (marked 'GUESS' in the CSV). Replace them with real quotations.
 Quantities come from config/design.json and results/recommended_overrides.json, so they
@@ -19,9 +21,22 @@ from engine.config import load_config, with_overrides  # noqa: E402
 
 
 def main():
+    write(final_cfg(), "bom_final.csv", final=True)
     cfg = load_config()
     rec = json.loads((ROOT / "results" / "recommended_overrides.json").read_text())
-    cfg = with_overrides(cfg, rec)
+    write(with_overrides(cfg, rec), "bom_recommended.csv", final=False)
+
+
+def final_cfg():
+    """Final design numbers come from design.json -> live_run (the 2026 run)."""
+    cfg = load_config()
+    lr = cfg["live_run"]
+    d = lr["designs"]["current"]
+    return with_overrides(cfg, {"pcm": {"mass_kg": d["pcm_kg"]}, "pv": {"rated_kWp": d["pv_kWp"]},
+                                "refrigeration": {"design_capacity_kW": lr["compressor_max_kW"]}})
+
+
+def write(cfg, name, final):
     dc, ch, pv, pcm = cfg["design_choice"], cfg["chamber"], cfg["pv"], cfg["pcm"]
     t = ch["insulation_thickness_m"]
     W, H, L = ch["width_m"] + 2 * t, ch["height_m"] + 2 * t, ch["length_m"] + 2 * t
@@ -46,13 +61,27 @@ def main():
         ("Galvanised steel canopy, 17° tilt", 1, "lot", 20000, "no", ""),
         ("Concrete pad 3.7 × 3.6 × 0.15 m", 2.0, "m³", 7500, "no", ""),
         ("ATS (grid backup switch), breakers, control box", 1, "lot", 8000, "no", ""),
-        ("Small 12 V battery for controller and fans", 1, "no.", 5000, "no", "night-time power for fans and sensors"),
+    ]
+    if final:
+        nf, b = cfg["live_run"]["night_fan"], cfg["live_run"]["battery_12V"]
+        f = nf["fan"]
+        rows += [
+            (f"Night wax fans: {f['d_mm']} mm 12 V DC, {f['watts']:g} W each, with PWM speed control", f["count"], "no.", 600, "no",
+             f"{f['count']} x {f['watts']:g} W = {f['count'] * f['watts']:g} W rated; mounted at the TOP of the channel blowing DOWN"),
+            (f"Baffle sheet (thin aluminium / GI) + spacers for a {nf['gap_m'] * 100:g} cm channel in front of the wax panels", 1, "lot", 4000,
+             "no", "open at top and bottom; fan hood at the top"),
+            (f"12 V {b['capacity_Ah']} Ah LiFePO4 battery ({b['capacity_Ah'] * b['voltage']:.0f} Wh) + charge controller", 1, "set", 16000, "no",
+             "controller, sensors, IoT gateway and night fans only – NO battery for cooling"),
+        ]
+    else:
+        rows += [("Small 12 V battery for controller and fans", 1, "no.", 5000, "no", "night-time power for fans and sensors")]
+    rows += [
         ("ESP32 + T/RH (SHT31 ×2) + DS18B20 ×4 + thermocouple + reed switch + encoder", 1, "set", 4500, "no", "Phase 4 sensor kit"),
         ("Doorway hot-wire anemometers ×3 + differential pressure sensor", 1, "set", 25000, "no", "research sensors – optional for a farm unit"),
         ("Power meters (PV DC + compressor AC) and wind/RH mast", 1, "set", 6000, "no", ""),
         ("Installation labour", 1, "lot", 20000, "no", ""),
     ]
-    out = ROOT / "results" / "bom_recommended.csv"
+    out = ROOT / "results" / name
     total = rule_total = 0.0
     with open(out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)

@@ -71,7 +71,10 @@ def metrics(H, T, bt, loading):
         "produce_in_C": float((bt.T_in_C * bt.kg).sum() / bt.kg.sum()),
         "h_air_above_8C": int((H.T_room > 8).sum()),
         "h_outside_2_8_loading": int((hot & hod.isin(load_h)).sum()), "h_outside_2_8_other": int((hot & ~hod.isin(load_h)).sum()),
+        "produce_avg_C_after_2h": float(bt.T_after_2h_C.mean()),
         "produce_avg_C_after_4h": float(bt.T_after_4h_C.mean()),
+        "h_air_above_8C_per_day": float((H.T_room > 8).sum() / n),
+        "wax_pct_sunrise": float(H.pcm_pct[hod == 5].mean()), "wax_pct_sunset": float(H.pcm_pct[hod == 18].mean()),
         "cool_h_avg": float(bt.cool_h.mean()), "cool_h_worst": float(bt.cool_h.max()),
         "not_cooled_before_next_load": int(bt.cool_h.isna().sum()),
         "grid_h": float(H.grid_on.sum()), "grid_h_per_year": float(H.grid_on.sum() * 365 / n),
@@ -136,6 +139,16 @@ def run():
         wax[cfg["live_run"]["designs"][des]["label"]] = {**metrics(H, T, bt, ld), **money(H, Hg, m)}
     out["wax_compare"] = wax
 
+    # ---- 3b. morning assist on/off (final design)
+    import copy as _c
+    ma = {}
+    for lab, val in (("fan only when compressor off", None), ("morning assist above 7 C", 7.0)):
+        c = _c.deepcopy(cfg)
+        c["live_run"]["night_fan"]["morning_assist_above_C"] = val
+        H, T, _, bt = simulate_live(w, "current", cfg=c, fan_on=True)
+        ma[lab] = metrics(H, T, bt, ld)
+    out["morning_assist"] = ma
+
     # ---- 4. channel gap (information): fan size for 5, 3, 2 cm
     from engine import fan as FAN
     import copy
@@ -143,6 +156,7 @@ def run():
     for gap in (0.05, 0.03, 0.02):
         c = copy.deepcopy(cfg)
         c["live_run"]["night_fan"]["gap_m"] = gap
+        c["live_run"]["night_fan"]["fan"] = None
         f = FAN.size_fan(c, out["fan_sizing"]["T_out_design_night_C"], cfg["live_run"]["designs"]["current"]["pcm_kg"])
         gaps[f"{gap * 100:.0f} cm"] = {"fans": f"{f['fan']['count']} x {f['fan']['name']}", "rated_W": f["fan"]["total_W"],
                                        "W_at_design": f["fan_W_at_design"], "flow_m3h": f["flow_needed_m3h"]}

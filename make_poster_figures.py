@@ -30,7 +30,8 @@ BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
 INK, INK2, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#8a8984", "#e4e3df", "#ffffff"
 BAND = "#eaf2fc"
 SEQ = LinearSegmentedColormap.from_list("blue", ["#cde2fb", "#86b6ef", "#3987e5", "#256abf", "#184f95", "#0d366b"])
-SIM_NOTE = "Simulated – digital twin using real Visakhapatnam weather (NASA POWER 2025)"
+SIM_NOTE = ("How we chose the size (NASA POWER 2025 study) – simulated digital twin, real Visakhapatnam weather 2025. "
+            "Final-design results: see figures/final_*")
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans", "font.size": 13, "axes.titlesize": 16, "axes.titleweight": "bold",

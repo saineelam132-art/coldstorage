@@ -157,7 +157,8 @@
       "crate_grapes": "B2_crate_grapes",
       "milk": "B3_milk_can",
       "vaccine": "B4_vaccine_box",
-      "worker": "B5a_worker_side"
+      "worker": "B5a_worker_side",
+      "nightfan": "missing:night wax fan (5 x 120 mm 12 V DC in a top hood)"
     },
     "crops": {
       "leafy_greens": "B1_crate_leafy",
@@ -168,5 +169,57 @@
     },
     "worker_side": "B5a_worker_side",
     "worker_back": "B5b_worker_back"
+  },
+  "night_fans": {
+    "_about": "Where the night wax fans are drawn on the inside pictures (centre x, y and radius in % of the picture width). The fans sit at the top of the baffle channel in front of the wax panels.",
+    "A8_interior_wide": [
+      {
+        "x": 35.6,
+        "y": 29.5,
+        "r": 1.6
+      },
+      {
+        "x": 64.4,
+        "y": 29.5,
+        "r": 1.6
+      }
+    ],
+    "A9_interior_pcm_wall": [
+      {
+        "x": 66.5,
+        "y": 16.5,
+        "r": 3.2
+      },
+      {
+        "x": 15.8,
+        "y": 3.5,
+        "r": 3.2
+      }
+    ]
+  },
+  "baffles": {
+    "_about": "Thin baffle sheet drawn in front of the wax panels (rectangles in %).",
+    "A8_interior_wide": [
+      [
+        30.4,
+        30.6,
+        40.8,
+        77.5
+      ],
+      [
+        59.2,
+        30.6,
+        69.6,
+        77.5
+      ]
+    ],
+    "A9_interior_pcm_wall": [
+      [
+        55.0,
+        18.5,
+        78.0,
+        74.5
+      ]
+    ]
   }
 }

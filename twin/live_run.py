@@ -24,10 +24,14 @@ from twin.live_sim import simulate_live
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "web" / "live" / "data"
 RES = ROOT / "results" / "live"
-DESIGNS = ("current", "recommended")
+DESIGNS = ("current", "recommended")          # current = FINAL design (115 kg + 1.8 kWp + night fan)
+VARIANTS = {"current": {}, "recommended": {},
+            "current_uncorrected": {"design": "current", "sun_factor": 1.0},     # comparison only
+            "current_nofan": {"design": "current", "fan_on": False}}             # fan with vs without
 HOURLY_FIELDS = ["T_out", "RH_out", "ghi", "wind", "T_room", "T_batch", "pcm_pct", "Q_wall", "Q_door", "Q_batch", "Q_resp",
                  "Q_int", "Q_load", "Q_cool", "Q_ch", "Q_pcm_room", "comp_speed_pct", "P_comp", "COP", "P_evap_bar",
-                 "P_cond_bar", "T_cond_C", "T_discharge_C", "P_pv", "P_solar_used", "P_grid", "grid_on", "door_s", "running_h"]
+                 "P_cond_bar", "T_cond_C", "T_discharge_C", "P_pv", "P_solar_used", "P_grid", "grid_on", "door_s", "running_h",
+                 "fan_W", "fan_speed", "G_wax"]
 
 
 def r(x, nd=3):
@@ -65,9 +69,10 @@ def daily(H, bt, cfg, now):
     d["deliv"] = d.Q_pcm_room.clip(lower=0)
     d["deliv_nosun"] = d.deliv * (d.solar_ok < 0.5)
     hot = (d.T_room > lr["band_C"][1]) | (d.T_room < lr["band_C"][0])
-    d["hot_load"] = hot & d.hod.between(lr["swap_hour"], lr["swap_hour"] + loading - 1)
-    d["hot_other"] = hot & ~d.hot_load
-    in_load = d.hod.between(lr["swap_hour"], lr["swap_hour"] + loading - 1)
+    load_hours = {(ev["hour"] + j) % 24 for ev in lr["loading"] for j in range(loading)}
+    in_load = d.hod.isin(load_hours)
+    d["hot_load"] = hot & in_load
+    d["hot_other"] = hot & ~in_load
     d["grid_load"] = d.grid_on * in_load
     d["grid_other"] = d.grid_on * ~in_load
     g = d.groupby("date")
@@ -81,13 +86,17 @@ def daily(H, bt, cfg, now):
         "T_room_min": g.T_room.min(), "T_room_max": g.T_room.max(), "T_out_max": g.T_out.max(), "T_out_mean": g.T_out.mean(),
         "ghi_kWh_m2": g.ghi.sum() / 1000, "pcm_min": g.pcm_pct.min(), "pcm_end": g.pcm_pct.last(),
         "door_openings": g.door_s.sum() / lr["door_seconds"], "forecast_h": g.is_forecast.sum() if "is_forecast" in d else 0,
+        "fan_kWh": g.fan_W.sum() / 1000, "fan_run_h": g.fan_speed.apply(lambda x: (x > 0).sum()),
+        "wax_sunrise": d[d.hod == 5].groupby("date").pcm_pct.mean(), "wax_sunset": d[d.hod == 18].groupby("date").pcm_pct.mean(),
         "hours": g.size(),
     })
     D["full_solar_wax"] = D.grid_h <= 1e-9
     D["wax_cycles"] = D.wax_given_kWh / max(1e-9, (H.attrs.get("pcm_kg", 0) or 0) * m_L) if H.attrs.get("pcm_kg") else 0.0
-    b = bt.set_index("date")
+    b = bt.groupby("date").agg(T_in_C=("T_in_C", "mean"), cool_h=("cool_h", "max"), T2=("T_after_2h_C", "mean"), T4=("T_after_4h_C", "mean"))
     D["batch_T_in"] = b.T_in_C.reindex(D.index)
     D["batch_cool_h"] = b.cool_h.reindex(D.index)
+    D["batch_T_after_2h"] = b.T2.reindex(D.index)
+    D["batch_T_after_4h"] = b.T4.reindex(D.index)
     D["status"] = np.where(D.index > str(now.date()), "prediction", np.where(D.index == str(now.date()), "today", "actual"))
     return D
 
@@ -103,6 +112,8 @@ def monthly(D):
     M["T_out_mean"] = g.T_out_mean.mean()
     M["batch_cool_h_avg"] = g.batch_cool_h.mean()
     M["batch_cool_h_max"] = g.batch_cool_h.max()
+    M["fan_kWh"] = g.fan_kWh.sum()
+    M["hot_load_h_per_day"] = M.hot_load_h / M.days
     return M
 
 
@@ -120,6 +131,11 @@ def totals(D, tot):
             "batch_cool_h_avg": a.batch_cool_h.mean(), "batch_cool_h_max": a.batch_cool_h.max(),
             "batch_cool_h_max_date": a.batch_cool_h.idxmax() if a.batch_cool_h.notna().any() else None,
             "batch_not_cooled_days": int(a.batch_cool_h.isna().sum()),
+            "fan_kWh": a.fan_kWh.sum(), "fan_kWh_day": a.fan_kWh.mean(), "fan_run_h_day": a.fan_run_h.mean(),
+            "wax_sunrise_avg": a.wax_sunrise.mean(), "wax_sunset_avg": a.wax_sunset.mean(),
+            "hot_load_h_per_day": a.hot_load_h.sum() / max(1, len(a)),
+            "batch_T_in_avg": a.batch_T_in.mean(), "batch_T_after_2h_avg": a.batch_T_after_2h.mean(),
+            "batch_T_after_4h_avg": a.batch_T_after_4h.mean(),
             "energy_balance_error_pct": tot["energy_balance_error_pct"]}
 
 
@@ -129,7 +145,7 @@ def money_inputs(Hg, D_designs, cfg):
     piv = a.pivot_table(index="date", columns="hod", values="P_comp", aggfunc="sum").fillna(0.0)
     days = [d for d in piv.index if D_designs["current"].loc[d, "status"] == "actual"] if len(piv) else []
     return {"days": days, "gridonly_kWh_by_hour": [[r(x, 4) for x in piv.loc[d].reindex(range(24), fill_value=0).values] for d in days],
-            "ours_grid_kWh": {k: [r(D.loc[d, "grid_kWh"], 4) for d in days] for k, D in D_designs.items()},
+            "ours_grid_kWh": {k: [r(D.loc[d, "grid_kWh"], 4) for d in days] for k, D in D_designs.items() if not k.endswith("nofan")},
             "defaults": cfg["live_run"]["money"]}
 
 
@@ -149,16 +165,32 @@ def run(fetch=False, now=None):
            "designs": {}, "design_year": {}}
     RES.mkdir(parents=True, exist_ok=True)
     D_all, H_all = {}, {}
-    for des in DESIGNS:
-        H, tot, end, bt = simulate_live(W, des, cfg=cfg)
+    for key, v in VARIANTS.items():
+        des = v.get("design", key)
+        H, tot, end, bt = simulate_live(W, des, cfg=cfg, sun_factor=v.get("sun_factor"), fan_on=v.get("fan_on"))
+        if key == "current":
+            out["fan_sizing"] = tot["fan_sizing"]
+            from twin.design_study_2026 import battery
+            out["battery"] = battery(H[~H.is_forecast] if "is_forecast" in H else H, cfg)
         H.attrs["pcm_kg"] = cfg["live_run"]["designs"][des]["pcm_kg"]
         D = daily(H, bt, cfg, now)
         M = monthly(D)
-        D_all[des], H_all[des] = D, H
-        out["designs"][des] = {"label": cfg["live_run"]["designs"][des]["label"], "totals": {k: (r(v) if isinstance(v, float) else v) for k, v in totals(D, tot).items()},
-                               "monthly": jsonable(M), "daily": jsonable(D)}
-        D.to_csv(RES / f"daily_{des}.csv"); M.to_csv(RES / f"monthly_{des}.csv")
-        H.to_csv(RES / f"hourly_{des}.csv", index=False, float_format="%.4g")
+        D_all[key], H_all[key] = D, H
+        label = cfg["live_run"]["designs"][des]["label"] + {"current_uncorrected": " – UNcorrected Open-Meteo sun (comparison only)",
+                                                              "current_nofan": " – WITHOUT the night fan (comparison only)"}.get(key, "")
+        t = totals(D, tot)
+        out["designs"][key] = {"label": label, "totals": {k: (r(v) if isinstance(v, float) else v) for k, v in t.items()},
+                               "monthly": jsonable(M), "daily": jsonable(D),
+                               "loading_statement": ("Room air above 8 °C only while a fresh warm batch is cooling (no stored product inside): "
+                                                     f"{t['hot_load_h_per_day']:.1f} h/day average. All other times: {t['hot_other_h']:.0f} h outside 2–8 °C.")}
+        if key in DESIGNS:
+            D.to_csv(RES / f"daily_{key}.csv"); M.to_csv(RES / f"monthly_{key}.csv")
+            H.to_csv(RES / f"hourly_{key}.csv", index=False, float_format="%.4g")
+    out["sun_factor"] = cfg["live_run"]["sun_factor"]
+    out["sun_label"] = "Sunlight corrected to NASA level (conservative)"
+    study = RES / "design_study_2026.json"
+    if study.exists():
+        out["design_study"] = json.loads(study.read_text())
     Hg, totg, _, btg = simulate_live(W, "current", mode="grid_only", cfg=cfg)
     out["grid_only"] = {"totals": {k: (r(v) if isinstance(v, float) else v) for k, v in totals(daily(Hg, btg, cfg, now), totg).items()}}
     out["money"] = money_inputs(Hg, D_all, cfg)
@@ -181,11 +213,12 @@ def run(fetch=False, now=None):
     out["today"], out["tomorrow"] = tdy, tmw
     out["prediction_label"] = ("PREDICTION: Open-Meteo weather forecast run through our physics twin "
                                "(not measured, not AI).")
-    for des in DESIGNS:
+    for des in VARIANTS:
         D = D_all[des]
         out["designs"][des]["tomorrow"] = {k: r(D.loc[tmw, k]) if tmw in D.index else None for k in
                                            ("load_kWh", "cool_kWh", "comp_kWh", "pv_kWh", "solar_used_kWh", "grid_kWh", "grid_h",
-                                            "T_room_min", "T_room_max", "pcm_end", "pcm_min", "T_out_max", "ghi_kWh_m2", "batch_cool_h")}
+                                            "T_room_min", "T_room_max", "pcm_end", "pcm_min", "T_out_max", "ghi_kWh_m2", "batch_cool_h",
+                                            "fan_kWh", "fan_run_h", "hot_load_h", "batch_T_in")}
     write_js("summary", out)
 
     # ---- hourly per month (calendar) for both designs
@@ -205,7 +238,7 @@ def run(fetch=False, now=None):
 
 def print_summary(out):
     print(f"\nLIVE YEAR RUN  (generated {out['generated']}, weather: {out['credit']})")
-    for des in DESIGNS:
+    for des in VARIANTS:
         t = out["designs"][des]["totals"]
         print(f"  {out['designs'][des]['label']}: {t['days']} days {t['first']} -> {t['last']}")
         print(f"     compressor {t['comp_kWh_day_avg']:.2f} kWh/day avg, {t['comp_kWh_day_max']:.2f} max ({t['comp_kWh_day_max_date']}); "
@@ -213,7 +246,8 @@ def print_summary(out):
         print(f"     batch cooling to 5.5 C: avg {t['batch_cool_h_avg']:.1f} h, worst {t['batch_cool_h_max']:.1f} h ({t['batch_cool_h_max_date']}); "
               f"hours outside 2-8 C: loading {t['hot_load_h']:.0f}, other {t['hot_other_h']:.0f}; "
               f"PCM effectiveness {t['pcm_effectiveness_pct']:.1f} %, no-sun share {t['wax_useful_share_pct']:.0f} %; "
-              f"energy balance error {t['energy_balance_error_pct']:.1e} %")
+              f"energy balance error {t['energy_balance_error_pct']:.1e} %; fan {t['fan_kWh_day']:.3f} kWh/day")
+        print("    ", out["designs"][des]["loading_statement"])
 
 
 if __name__ == "__main__":

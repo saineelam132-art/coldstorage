@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="692.433431pt" height="581.478516pt" viewBox="0 0 692.433431 581.478516" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-06T08:00:27.105089</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M -0 581.478516 
+L 692.433431 581.478516 
+L 692.433431 0 
+L -0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 238.549555 440.4234 
+L 256.50583 440.4234 
+L 256.50583 45.385343 
+L 238.549555 45.385343 
+z
+" clip-path="url(#p4549e6c031)" style="fill: #c9c7c1; stroke: #c9c7c1; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 256.50583 404.510849 
+L 285.23587 404.510849 
+L 285.23587 117.210444 
+L 256.50583 117.210444 
+z
+" clip-path="url(#p4549e6c031)" style="fill: #86b6ef; stroke: #184f95; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 299.600891 386.554574 
+L 304.08996 386.554574 
+L 304.08996 135.166719 
+L 299.600891 135.166719 
+z
+" clip-path="url(#p4549e6c031)" style="fill: #52514e; stroke: #52514e; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 290.622753 106.436679 
+L 313.965911 106.436679 
+L 313.965911 88.480404 
+L 290.622753 88.480404 
+z
+" clip-path="url(#p4549e6c031)" style="fill: #1baf7a; stroke: #0b6e4b; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 297.886693 401.60216 
+Q 325.635701 411.692709 351.283266 421.019096 
+" clip-path="url(#p4549e6c031)" style="fill: none; stroke: #2a78d6; stroke-width: 2; stroke-linecap: round"/>
+    <path d="M 345.131891 414.525978 
+L 351.283266 421.019096 
+L 342.397947 422.044325 
+z
+" clip-path="url(#p4549e6c031)" style="fill: #2a78d6; stroke: #2a78d6; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 371.288448 125.689699 
+Q 345.391899 119.006718 321.660483 112.882482 
+" clip-path="url(#p4549e6c031)" style="fill: none; stroke: #eb6834; stroke-width: 2; stroke-linecap: round"/>
+    <path d="M 328.407189 118.754615 
+L 321.660483 112.882482 
+L 330.406213 111.008397 
+z
+" clip-path="url(#p4549e6c031)" style="fill: #eb6834; stroke: #eb6834; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #52514e" x="247.527692" y="38.202833" transform="rotate(-0 247.527692 38.202833)">insulated wall</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(273.468897 359.063772) rotate(-90)">WAX (PCM) panels – 115 kg, melts 4 °C</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'" transform="translate(317.07528 301.761428) rotate(-90)">thin baffle sheet</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 10.5px; font-family: 'DejaVu Sans'" transform="translate(317.557166 93.885055)">5 × 120 mm 12 V fans</text>
+    <text style="font-size: 10.5px; font-family: 'DejaVu Sans'" transform="translate(317.557166 106.487926)">at the TOP, blowing DOWN</text>
+   </g>
+   <g id="patch_8">
+    <path d="M 291.520567 128.187072 
+Q 291.520567 251.882842 291.520567 372.783527 
+" style="fill: none; stroke: #2a78d6; stroke-width: 2.5; stroke-linecap: round"/>
+    <path d="M 295.920567 363.983527 
+L 291.520567 372.783527 
+L 287.120567 363.983527 
+z
+" style="fill: #2a78d6; stroke: #2a78d6; stroke-width: 2.5; stroke-linecap: round"/>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #2a78d6" transform="translate(243.751193 433.807548)">2 cm gap (channel)</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #2a78d6" transform="translate(232.360568 445.810282)">between wax and baffle</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #2a78d6" transform="translate(358.856599 419.063804)">cold air out</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #2a78d6" transform="translate(358.856599 431.066538)">at the bottom</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #eb6834" transform="translate(375.017247 126.376516)">warm room air</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #eb6834" transform="translate(375.017247 138.379251)">in at the top</text>
+   </g>
+   <g id="text_8">
+    <g id="patch_9">
+     <path d="M 328.330931 266.860458 
+L 685.233431 266.860458 
+Q 690.033431 266.860458 690.033431 262.060458 
+L 690.033431 169.879458 
+Q 690.033431 165.079458 685.233431 165.079458 
+L 328.330931 165.079458 
+Q 323.530931 165.079458 323.530931 169.879458 
+L 323.530931 262.060458 
+Q 323.530931 266.860458 328.330931 266.860458 
+z
+" style="fill: #ffffff; stroke: #e4e3df; stroke-linejoin: miter"/>
+    </g>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 178.134896)">Night load (hottest night) 156 W</text>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 189.657521)">Natural draft only: h = 3.1 W/m²K → 47 W  (too little)</text>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 201.180146)">With fans: v = 1.00 m/s, 541 m³/h, 2.1 Pa</text>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 212.702771)">h = 6.0 W/m²K, UA = 52 W/K</text>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 224.225396)">Fans: 5 × 3 W = 15 W rated, ~7 W at design point</text>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 235.748021)">Fan heat is added to the room load.  Fans run from the 12 V battery.</text>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 247.270646)">Rule: fan on when compressor off and room &gt; 5 °C (speed to hold 6.7 °C),</text>
+    <text style="font-size: 9.6px; font-family: 'DejaVu Sans'" transform="translate(328.330931 258.793271)">and at full speed in the 3 h after loading while room &gt; 7 °C.</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 14px; font-family: 'DejaVu Sans'; text-anchor: middle" x="332.82" y="17.837813" transform="rotate(-0 332.82 17.837813)">Wax panel + baffle channel (side view, gap not to scale)</text>
+   </g>
+  </g>
+  <g id="text_10">
+   <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #8a8984" x="7.2" y="572.116406" transform="rotate(-0 7.2 572.116406)">Design drawing – sizes from config/design.json; flow and h from engine/fan.py</text>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p4549e6c031">
+   <rect x="229.571417" y="23.837813" width="206.497166" height="443.52"/>
+  </clipPath>
+ </defs>
+</svg>

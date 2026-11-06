@@ -92,7 +92,13 @@ def test_crop_shelf_life_uses_room_history(tw):
     a = d["assess"]
     assert 0 < a["remaining_days_at_ref"] < d["SL_ref_days"]
     assert len(d["history_T"]) == 2 * 24 + 1
-    assert all(2 <= T <= 8 for T in d["history_T"])
+    # hourly samples from 12:00 back 2 days: the room air is only above 8 C while a fresh batch cools
+    # (the 3 hours after the 6 am loading), never at other times
+    import pandas as pd
+    t_end = pd.Timestamp("2026-03-28 12:00")
+    times = [t_end - pd.Timedelta(hours=k) for k in range(len(d["history_T"]) - 1, -1, -1)]
+    load_h = {(e["hour"] + j) % 24 for e in tw.cfg["live_run"]["loading"] for j in range(3)}
+    assert all(2 <= T <= 8 for T, tm in zip(d["history_T"], times) if tm.hour not in load_h)
 
 
 def test_live_cycle_uses_outside_temperature(tw):

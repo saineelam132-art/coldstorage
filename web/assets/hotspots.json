@@ -364,6 +364,16 @@
    "part": "milk",
    "x": 30.0,
    "y": 71.6
+  },
+  {
+   "part": "nightfan",
+   "x": 35.6,
+   "y": 26.5
+  },
+  {
+   "sensor": "fan_power",
+   "x": 64.4,
+   "y": 26.5
   }
  ],
  "A9_interior_pcm_wall": [
@@ -382,6 +392,11 @@
    "x": 43.3,
    "y": 48.5,
    "label": "charging coil"
+  },
+  {
+   "part": "nightfan",
+   "x": 66.5,
+   "y": 11.5
   }
  ],
  "A10_interior_evaporator": [

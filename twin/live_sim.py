@@ -71,7 +71,7 @@ def door_times(loading):
 
 
 def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_key=None, init=None,
-                  fan_on=None, sun_factor=None, loading=None):
+                  fan_on=None, sun_factor=None, loading=None, steps=False, hx=None):
     """Run the live twin. weather: hourly frame with time_ist, T_out, RH_out, ps_Pa, ghi, wind.
     Returns (hourly DataFrame, totals dict, end_state dict, batches DataFrame)."""
     from engine import fan as FAN
@@ -93,6 +93,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     RH = np.clip(_steps(weather["RH_out"], 0.0, nH), 1, 100)
     ps = _steps(weather["ps_Pa"], 0.0, nH)
     poa = np.clip(_steps(poa_hourly(cfg, weather), 0.5, nH), 0, None)
+    wind_s = _steps(weather["wind"], 0.0, nH)
     pvc = cfg["pv"]
     kWp = 0.0 if grid_only else des["pv_kWp"]
     T_cell = T_out + (pvc["NOCT_C"] - 20.0) / 800.0 * poa
@@ -142,9 +143,30 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         UA_ch = A / (half + cfg["simulation"]["pcm_charge_coil_R_m2K_W"]) / 1000.0
         T_night = float(_hottest_night(weather))
         fan_info = FAN.size_fan(cfg, T_night, m_p, nf["design_room_max_C"], nf["margin"])
+        if nf.get("fan"):                       # the chosen fan is fixed in design.json (stable results)
+            f = nf["fan"]
+            geo = FAN.geometry(cfg)
+            dp = FAN.channel_pressure(fan_info["v_needed_m_s"], geo)
+            eff = f["flow_m3h"] * max(0.1, 1 - dp / f["pressure_Pa"])
+            fan_info["fan"] = {**f, "total_W": f["count"] * f["watts"], "total_flow_m3h": f["count"] * eff}
         speeds, G_fan_tab, dTs, G_nat_tab, v_max = FAN.conductance_tables(cfg, m_p, fan_info["fan"])
         G_fan_tab, G_nat_tab = G_fan_tab / 1000.0, G_nat_tab / 1000.0          # kW/K
         fan_rated_kW = fan_info["fan"]["total_W"] / 1000.0
+        if hx and hx.get("kind") == "fins":     # finned panels, no baffle (study option, engine/fins.py)
+            from engine import fins as FINS
+            fan_info = {"kind": "fins", **{k: v for k, v in hx.items() if k != "fan"}, "fan": hx.get("fan")}
+            fsp = hx.get("fan")
+            if fsp:
+                fsp = {**fsp, "total_W": fsp["count"] * fsp["watts"],
+                       "total_flow_m3h": fsp["count"] * fsp["flow_m3h"] * hx.get("flow_fraction", 0.7)}
+                fan_info["fan"] = fsp
+            speeds, G_fan_tab, dTs, G_nat_tab, v_max = FINS.conductance_tables(
+                A, hx["L"], hx["S"], hx["b"], hx["t"], half, fsp, hx.get("cover_m", 1.0))
+            k = hx.get("h_scale", 1.0)               # sensitivity: correlation uncertainty
+            G_fan_tab, G_nat_tab = k * G_fan_tab / 1000.0, k * G_nat_tab / 1000.0
+            fan_rated_kW = fsp["total_W"] / 1000.0 if fsp else 0.0
+            if not fsp:
+                fan_enabled = False
     else:
         UA_ch = 0.0
     h_min = cps * (cfg["simulation"]["pcm_charge_stop_C"] - Tm)
@@ -171,9 +193,10 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
 
     out = {k: np.zeros(n) for k in ("T_room", "T_batch", "pcm_pct", "Q_wall", "Q_door", "Q_batch", "Q_resp", "Q_int",
                                     "Q_air", "Q_ch", "Q_pcm_room", "P_comp", "P_pv", "P_solar_used", "P_grid", "grid_on",
-                                    "running", "door_s", "solar_ok", "fan_speed", "fan_W", "G_wax", "batt12_W")}
+                                    "running", "door_s", "solar_ok", "fan_speed", "fan_W", "G_wax", "batt12_W",
+                                    "T_pcm", "pcm_h", "cop", "T_out", "RH_out", "poa", "wind", "Q_door_lat")}
     acc = dict(in_=0.0, out=0.0, prod_in=0.0, prod_out=0.0)
-    batches = []        # [step, event k, T_in, steps to cool or None, T after 4 h]
+    batches = []        # [step, event k, T_in, steps to cool or None, T after 4 h, T after 2 h]
     last_event = None
     last_k = 0
     since = [None] * len(masses)
@@ -186,7 +209,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
             acc["prod_out"] += masses[k] * cp * T_n[k]
             T_n[k] = T_out[i]
             acc["prod_in"] += masses[k] * cp * T_n[k]
-            batches.append([i, k, T_n[k], None, None])
+            batches.append([i, k, T_n[k], None, None, None])
             since[k] = len(batches) - 1
             last_event = i
             last_k = k
@@ -198,6 +221,8 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                 b[3] = i - b[0]
             if b[4] is None and i - b[0] >= s4:
                 b[4] = T_n[kk]
+            if b[5] is None and i - b[0] >= s4 // 2:
+                b[5] = T_n[kk]
 
         T_p = T_pcm_of(h) if m_p > 0 else T_r
         pct = 100.0 * (1 - min(1.0, max(0.0, h / L))) if m_p > 0 else 0.0
@@ -224,8 +249,9 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         if Dt > 0:
             inf = loads.infiltration_load(cfg, T_out[i], RH[i], T_r, rh_in, D_t=1.0, curtain=curtain, p=ps[i])
             Q_door = inf["Q_kW"] * Dt
+            Q_door_lat = inf["Q_latent_kW"] * Dt
         else:
-            Q_door = 0.0
+            Q_door = Q_door_lat = 0.0
         Q_resp = sum(m * r_ref * Q10 ** ((t - T_ref) / 10.0) for m, t in zip(masses, T_n)) / 1000.0
         Q_bs = [m * cp / tau * (t - T_r) for m, t in zip(masses, T_n)]
         Q_b = sum(Q_bs)
@@ -249,7 +275,13 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         # NIGHT WAX FAN: only when the compressor is off and the room is above 5 C; lowest speed
         # that holds the fan target (about 6 C). Its power is heat in the room (counted in Q_int).
         spd, P_nf, G_w = 0.0, 0.0, G_nat
-        if m_p > 0 and fan_enabled and not running and T_r > nf["on_above_C"] and dTw > 0.05:
+        assist_C = nf.get("morning_assist_above_C")
+        if m_p > 0 and fan_enabled and assist_C is not None and loading_now and T_r > assist_C and dTw > 0.05:
+            # MORNING ASSIST: while a fresh batch cools, run the wax fans flat out whenever the air is
+            # above the assist limit - even with the compressor on - to pull cold out of the wax.
+            spd, P_nf = 1.0, fan_rated_kW
+            G_w = max(G_nat, float(G_fan_tab[-1]))
+        elif m_p > 0 and fan_enabled and not running and T_r > nf["on_above_C"] and dTw > 0.05:
             need = (base - Q_pa_nat * 0 + C_room * (T_r - nf["target_C"]) / 1800.0)
             for _ in range(2):                                # fan heat is part of what it must remove
                 G_need = (need + P_nf) / dTw
@@ -284,7 +316,9 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                          ("Q_pcm_room", Q_pa), ("P_comp", P_comp), ("P_pv", P_pv[i]), ("P_solar_used", P_sol),
                          ("P_grid", P_grid), ("grid_on", float(grid_mode)), ("running", float(running)),
                          ("door_s", door[i]), ("solar_ok", float(solar_ok)), ("fan_speed", spd), ("fan_W", P_nf * 1000),
-                         ("G_wax", G_w * 1000), ("batt12_W", (batt_base_kW + P_nf) * 1000)):
+                         ("G_wax", G_w * 1000), ("batt12_W", (batt_base_kW + P_nf) * 1000),
+                         ("T_pcm", T_pcm_of(h) if m_p > 0 else np.nan), ("pcm_h", h), ("cop", cop[i]),
+                         ("T_out", T_out[i]), ("RH_out", RH[i]), ("poa", poa[i]), ("wind", wind_s[i]), ("Q_door_lat", Q_door_lat)):
             out[key][i] = val
 
     E1 = C_room * T_r + sum(m * cp * t for m, t in zip(masses, T_n)) + m_p * h
@@ -293,6 +327,11 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     bal = heat_in - heat_out - (E1 - E0)
 
     # ---- hourly table (means of the 12 five-minute steps; energies in kWh)
+    S5 = None
+    if steps:                                  # every 5-minute step (for the main site replay)
+        S5 = pd.DataFrame(out, index=hrs)
+        S5["T_batch"] = out["T_batch"]
+    out = {k: v for k, v in out.items() if k not in ("T_pcm", "pcm_h", "cop", "T_out", "RH_out", "poa", "wind", "Q_door_lat")}
     H = pd.DataFrame({k: v.reshape(nH, 12).mean(axis=1) for k, v in out.items()})
     H["door_s"] = out["door_s"].reshape(nH, 12).sum(axis=1)
     H["running_h"] = H.pop("running")
@@ -312,7 +351,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     H.loc[H["running_h"] == 0, ["COP", "P_evap_bar", "P_cond_bar", "T_cond_C", "T_discharge_C"]] = np.nan
     H["Q_load"] = H["Q_wall"] + H["Q_door"] + H["Q_batch"] + H["Q_resp"] + H["Q_int"]
 
-    bt = pd.DataFrame(batches, columns=["step", "event", "T_in_C", "cool_steps", "T_after_4h_C"])
+    bt = pd.DataFrame(batches, columns=["step", "event", "T_in_C", "cool_steps", "T_after_4h_C", "T_after_2h_C"])
     bt["date"] = (t0 + pd.to_timedelta(bt["step"] * DT, unit="s")).dt.date.astype(str)
     bt["cool_h"] = bt["cool_steps"].astype(float) * DT / 3600.0
     bt["kg"] = [masses[e] for e in bt["event"]]
@@ -323,4 +362,6 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
               "sun_factor": sun, "fan_enabled": bool(fan_enabled and m_p > 0), "fan_sizing": fan_info,
               "loading": loading, "produce_kg": m_b}
     end_state = {"T_room": T_r, "T_nodes": T_n, "pcm_h": h, "grid_mode": grid_mode}
-    return H, totals, end_state, bt[["date", "event", "kg", "T_in_C", "cool_h", "T_after_4h_C"]]
+    if steps:
+        totals["steps"] = S5
+    return H, totals, end_state, bt[["date", "event", "kg", "T_in_C", "cool_h", "T_after_2h_C", "T_after_4h_C"]]

@@ -20,6 +20,11 @@ async function boot() {
   const feed = new StateFeed(clock);
   initDetails(cfg, sensors, manifest, scenes, () => feed.state, () => clock.t);
 
+  // the loading statement, on every page
+  const Y = cfg.year_summary || {};
+  if (Y.hot_load_h_per_day !== undefined) {
+    $('simnote').innerHTML += ` · Rated 150 kg. Room air above 8 °C only while a fresh warm batch is cooling (no stored product inside): ${Y.hot_load_h_per_day.toFixed(1)} h/day average. All other times: ${Y.hot_other_h.toFixed(0)} h outside 2–8 °C.`;
+  }
   const photo = new PhotoView($('photoFrame'), manifest, scenes, hotspots);
   let model = null, view = 'photo', mode = 'auto';
 
@@ -40,7 +45,7 @@ async function boot() {
   const batches = new Batches({ cfg, manifest, photo, getModel: () => model, clock, feed, ledgerUI });
   const control = new Control({ cfg, sensors, feed });
   const toPhoto = () => { if (view !== 'photo') $('viewSeg').querySelector('[data-view=photo]').click(); };
-  new Tour({ photo, clock, feed, demo, ledgerUI, control, batches, toPhoto });
+  new Tour({ photo, clock, feed, demo, ledgerUI, control, batches, toPhoto, cfg });
 
   // 2D mode: photo view only, three.js is never loaded (safest on a weak laptop). Remembered; also ?2d=1
   const set2d = on => {
