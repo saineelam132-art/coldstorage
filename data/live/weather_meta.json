@@ -1,20 +1,20 @@
 {
   "archive": {
-    "updated": "2026-11-08 11:53 IST",
-    "url": "https://archive-api.open-meteo.com/v1/archive?latitude=17.69&longitude=83.22&start_date=2026-01-01&end_date=2026-11-07&hourly=temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m&timezone=Asia%2FKolkata",
-    "last_valid": "2026-11-07 22:00:00"
+    "updated": "2026-11-09 22:10 IST",
+    "url": "https://archive-api.open-meteo.com/v1/archive?latitude=17.69&longitude=83.22&start_date=2026-01-01&end_date=2026-11-08&hourly=temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m,precipitation,cloud_cover&timezone=Asia%2FKolkata",
+    "last_valid": "2026-11-08 22:00:00"
   },
   "forecast": {
-    "updated": "2026-11-08 11:53 IST",
-    "url": "https://api.open-meteo.com/v1/forecast?latitude=17.69&longitude=83.22&hourly=temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m&past_days=7&forecast_days=3&timezone=Asia%2FKolkata",
-    "from": "2026-11-01 00:00:00",
-    "to": "2026-11-10 23:00:00"
+    "updated": "2026-11-09 22:10 IST",
+    "url": "https://api.open-meteo.com/v1/forecast?latitude=17.69&longitude=83.22&hourly=temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m,precipitation,cloud_cover&past_days=7&forecast_days=3&timezone=Asia%2FKolkata",
+    "from": "2026-11-02 00:00:00",
+    "to": "2026-11-11 23:00:00"
   },
   "ishrae": {
-    "updated": "2026-11-08 11:53 IST",
+    "updated": "2026-11-09 22:10 IST",
     "url": "https://climate.onebuilding.org/WMO_Region_2_Asia/IND_India/AP_Andhra_Pradesh/IND_AP_Vishakhapatnam.431500_ISHRAE2014.zip",
     "note": "kept out of git (ISHRAE licence)"
   },
-  "last_attempt": "2026-11-08 11:53 IST",
+  "last_attempt": "2026-11-09 22:10 IST",
   "credit": "Weather data by Open-Meteo.com"
 }
