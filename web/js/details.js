@@ -4,12 +4,21 @@ import { fmt, sensorValue, tagChip, sourceBadge, openPanel, drawHistory } from '
 import { getJSON } from './api.js';
 import { lineChart, phChart } from './charts.js';
 
-let CFG = null, SENSORS = {}, MANIFEST = null, SCENES = null, getState = () => null, getT = () => 0;
-export function initDetails(cfg, sensors, manifest, scenes, stateFn, tFn) {
-  CFG = cfg; MANIFEST = manifest; SCENES = scenes; getState = stateFn; getT = tFn;
+let CFG = null, SENSORS = {}, MANIFEST = null, SCENES = null, getState = () => null, getT = () => 0, todaySeries = () => null;
+export function initDetails(cfg, sensors, manifest, scenes, stateFn, tFn, todayFn) {
+  CFG = cfg; MANIFEST = manifest; SCENES = scenes; getState = stateFn; getT = tFn; if (todayFn) todaySeries = todayFn;
   sensors.sensors.forEach(s => (SENSORS[s.id] = s));
 }
 export const sensorById = id => SENSORS[id];
+
+// Data tag shown on the cards: W = real weather (Open-Meteo), S = digital-twin simulation of a sensor
+// (no real sensor fitted yet), C = calculated by a formula, L = live sensor (Phase 4).
+export const WEATHER_Q = ['T_out', 'RH_out', 'wind'];
+export function tagFor(s, st) {
+  if (st?.source === 'LIVE' && s.tag === 'M') return 'L';
+  if (WEATHER_Q.includes(s.quantity)) return 'W';
+  return s.tag === 'C' ? 'C' : 'S';
+}
 
 function closeupImg(key) {
   const name = SCENES?.closeups?.[key];
@@ -36,7 +45,7 @@ function cutoutImg(kind, id) {
 export function sensorTip(id) {
   const s = SENSORS[id], st = getState();
   if (!s) return '';
-  return `<b>${s.name}</b>${tagChip(s.tag)}<span class="v">${sensorValue(s, st)}</span><small>${s.location}</small>`;
+  return `<b>${s.name}</b>${tagChip(tagFor(s, st))}<span class="v">${sensorValue(s, st)}</span>`;
 }
 export function partTip(id) {
   if (id.startsWith('batch:')) return `<b>New batch ${id.slice(6)}</b><span class="v">click for batch card + QR</span>`;
@@ -52,29 +61,40 @@ export function openSensor(id) {
   const hasHistory = !['door_open', 'door_angle', 'v_door_top', 'v_door_mid', 'v_door_bot', 'dp_top', 'gas_ppm', 'RH_room'].includes(s.quantity);
   const render = () => {
     const st = getState();
-    return `<h2>${s.name}</h2><div class="sub">${tagChip(s.tag)} ${sourceBadge(st)}</div>
+    return `<h2>${s.name} ${tagChip(tagFor(s, st))}</h2><div class="sub">${sourceBadge(st)}</div>
       ${cutoutImg('sensors', s.id)}
       <div class="big" data-live="v">${sensorValue(s, st)}</div>
       ${s.tag === 'C' ? `<div class="note">In the twin this value is <b>calculated</b> from the door physics (ASHRAE Gosney–Olama). With the real sensor fitted it becomes a measurement (M) that checks the formula.</div>` : ''}
       ${extraFor(s, st)}
-      ${hasHistory ? '<canvas id="hist"></canvas>' : ''}
+      ${hasHistory ? '<div class="hist"><div class="histbox"><canvas id="hist"></canvas></div><div class="histsrc"></div></div>' : ''}
       <table>
         <tr><td>Sensor type</td><td>${s.type}</td></tr>
         <tr><td>Range</td><td>${s.range}</td></tr>
         <tr><td>Accuracy</td><td>${s.accuracy}</td></tr>
-        <tr><td>Location</td><td>${s.location}</td></tr>
-        <tr><td>Protocol</td><td>${s.protocol}</td></tr>
         <tr><td>Used in</td><td>${s.used_in}</td></tr>
       </table>
       ${s.id === 't_out' || s.id === 'wind' ? closeupImg('mast') : ''}
       <div class="note">${st?.label || ''}</div>`;
   };
   const el = openPanel(render);
-  if (hasHistory) drawHistory(el.querySelector('#hist'), s.quantity, getT(), s.unit, s.name);
+  document.dispatchEvent(new CustomEvent('highlight', { detail: { kind: 'sensor', id, label: `${s.name} sensor` } }));
+  if (hasHistory) {
+    const yTitle = { T_out: 'Outside temperature', RH_out: 'Outside humidity', wind: 'Wind speed' }[s.quantity] || s.name;
+    drawHistory(el.querySelector('#hist'), { quantity: s.quantity, t: getT(), unit: s.unit, yTitle,
+      today: WEATHER_Q.includes(s.quantity) ? todaySeries(s.quantity, getT()) : null });
+  }
 }
 
 function extraFor(s, st) {
   const v = st?.values || {};
+  if (s.id === 'door_angle' || s.id === 'door_switch') {
+    return `<div class="kv" data-live="doorsens">
+      <span>Door now</span><b>${v.door_open ? 'OPEN' : 'closed'}${v.door_by_demo ? ' (demo)' : ''}</b>
+      <span>Angle</span><b>${fmt(v.door_angle, '°')}</b>
+      <span>Seconds open today</span><b>${(v.door_open_today_s ?? 0).toFixed(0)} s</b>
+      <span>Warm air entering now</span><b>${v.door_open ? `${(v.heat_now_kW * 1000).toFixed(0)} W` : '0 W'}</b></div>
+      <div class="note">0° = shut, 90° = fully open. It swings in about 2 s each way.</div>`;
+  }
   if (s.id.startsWith('v_') || s.id === 'dp') {
     return `<div class="kv" data-live="door">
       <span>Door now</span><b>${v.door_open ? 'OPEN' : 'closed'}</b>
@@ -124,20 +144,21 @@ export const PARTS = {
   },
   door: {
     name: 'Door (0.8 × 1.8 m) and strip curtain',
-    headline: v => (v.door_open ? `OPEN – ${fmt(v.heat_now_kW, 'kW')} coming in` : 'closed'),
+    headline: v => (v.door_open ? `OPEN ${fmt(v.door_angle, '°')} – ${(v.heat_now_kW * 1000).toFixed(0)} W warm air coming in` : 'closed'),
     body: (v, c) => `<div class="kv" data-live="door">
-        <span>Door ${tagChip('M')}</span><b>${v.door_open ? 'OPEN' : 'closed'}</b>
-        <span>Heat entering now ${tagChip('C')}</span><b>${fmt(v.heat_now_kW, 'kW')}</b>
-        <span>…of which moisture (latent)</span><b>${fmt(v.heat_latent_now_kW, 'kW')}</b>
-        <span>Heat if the door opens now</span><b>${fmt(v.heat_if_open_kW, 'kW')}</b>
-        <span>Last opening lasted ${tagChip('M')}</span><b>${v.last_open_s.toFixed(0)} s</b>
+        <span>Door ${tagChip('S')}</span><b class="${v.door_open ? 'warnc' : ''}">${v.door_open ? 'OPEN' : 'closed'}${v.door_by_demo ? ' (demo)' : ''}</b>
+        <span>Door angle ${tagChip('S')}</span><b>${fmt(v.door_angle, '°')}</b>
+        <span>Seconds open today ${tagChip('S')}</span><b>${(v.door_open_today_s ?? 0).toFixed(0)} s</b>
+        <span>Warm air entering now ${tagChip('C')}</span><b>${v.door_open ? `${(v.heat_now_kW * 1000).toFixed(0)} W` : '0 W (door shut)'}</b>
+        <span>…of which moisture (latent)</span><b>${(v.heat_latent_now_kW * 1000).toFixed(0)} W</b>
+        <span>If the door opens fully now</span><b>${(v.heat_if_open_kW * 1000).toFixed(0)} W</b>
+        <span>Strip curtain</span><b>${v.curtain ? 'ON (E = 0.85) – hangs in the doorway' : 'OFF (E = 0)'}</b>
+        <span>Last opening lasted ${tagChip('S')}</span><b>${v.last_open_s.toFixed(0)} s</b>
         <span>Energy of that opening ${tagChip('C')}</span><b>${v.last_open_kJ.toFixed(0)} kJ</b>
-        <span>…same as the walls leak in</span><b>${v.last_open_wall_minutes.toFixed(0)} min</b>
-        <span>Strip curtain</span><b>${v.curtain ? 'ON (E = 0.85)' : 'OFF (E = 0)'}</b>
-        <span>Door open in this 5 min</span><b>${fmt(v.door_s_this_5min, '')} s</b>
-        <span>Door load, 5-min average ${tagChip('C')}</span><b>${fmt(v.Q_door, 'kW')}</b></div>
-        <div class="formula">q = 0.221·A·(h_out − h_in)·ρ_in·(1 − ρ_out/ρ_in)^0.5·(g·H)^0.5·F_m<br>Q = q·D_t·D_f·(1 − E)</div>
-        <div class="note">Try the Curtain switch at the top: the heat entering changes immediately.</div>`,
+        <span>…same as the walls leak in</span><b>${v.last_open_wall_minutes.toFixed(0)} min</b></div>
+        <div class="formula">q = 0.221·A·(h_out − h_in)·ρ_in·(1 − ρ_out/ρ_in)^0.5·(g·H)^0.5·F_m<br>Q = q·D_f·(1 − E) · (angle / 90°)</div>
+        <div class="note">The strip curtain is seen only while the door is open (it hangs inside the doorway).
+        Try the Curtain switch at the top: the warm air coming in changes immediately.</div>`,
   },
   crates: {
     name: 'Produce crates',
@@ -170,6 +191,7 @@ export function openPart(id) {
       <div class="big" data-live="head">${st ? p.headline(st.values) : '—'}</div>
       ${st ? p.body(st.values, CFG) : ''}<div class="note">${st?.label || ''}</div>`;
   });
+  document.dispatchEvent(new CustomEvent('highlight', { detail: { kind: 'part', id, label: p.name } }));
   if (p.after) p.after(el, getT());
 }
 
@@ -213,6 +235,22 @@ function cropPart(id) {
 }
 Object.keys(CROPS).forEach(id => (PARTS[id] = cropPart(id)));
 
+// Fin data box (final design): every number from /api/config -> wax_hx (engine/fins.py) and design.json
+function finBox(c) {
+  const f = c.wax_hx || {}, hx = c.design.live_run?.wax_hx || {}, n = (x, d = 0) => (x === null || x === undefined ? '—' : Number(x).toFixed(d));
+  const img = cutoutSrc('B16_finned_panel_cutaway');
+  return `<div class="finbox"><b>Finned wax panel (final design)</b>
+    ${img ? `<img src="${img}" alt="Cut-away of a finned wax panel: copper coil in the wax, aluminium fins, drip tray">` : ''}
+    <div class="kv"><span>Fins</span><b>${n(f.b_mm)} mm deep · ${n(f.S_mm)} mm gap · ${n(f.t_mm)} mm thick</b>
+    <span>Panel height</span><b>${n(f.L_m, 1)} m</b>
+    <span>Number of fins</span><b>${n(f.N_fins)}</b>
+    <span>Surface area</span><b>× ${n(f.area_mult, 1)}</b>
+    <span>UA (room ↔ wax)</span><b>${n(f.UA, 1)} W/K</b>
+    <span>Heat at 3 K</span><b>${n(f.Q_W)} W, no fan</b>
+    <span>Below</span><b>drip tray + drain</b>
+    <span>In front</span><b>${n((hx.keep_clear_m || 0) * 100)} cm keep-clear zone</b></div></div>`;
+}
+
 PARTS.pcm = {
   name: 'Wax (PCM) cold battery',
   headline: v => `${fmt(v.pcm_pct, '%')} frozen`,
@@ -226,6 +264,7 @@ PARTS.pcm = {
         <span>Latent cold left ${tagChip('C')}</span><b>${latent.toFixed(2)} kWh</b>
         <span>Melted thickness now ${tagChip('C')}</span><b>${((1 - v.pcm_pct / 100) * g.thickness_mm).toFixed(1)} of ${g.thickness_mm.toFixed(1)} mm</b>
         <span>Being charged by the coil</span><b>${fmt(v.Q_coil_pcm, 'kW')}</b></div>
+      ${finBox(c)}
       <table><tr><td>Wax</td><td>${p.mass_kg} kg paraffin, melts at ${p.T_melt_C} °C, L = ${p.latent_kJ_kg} kJ/kg ${tagChip('E')}</td></tr>
       <tr><td>Panels</td><td>${g.area_m2} m² of wall, ${g.thickness_mm.toFixed(1)} mm thick</td></tr></table>
       <div class="formula">E = m·L·frozen fraction  ·  backup = E_remaining / holding load</div>

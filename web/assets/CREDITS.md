@@ -32,6 +32,13 @@ They are illustrations, not photographs of the real system.
 | B7_temperature_probe | B | cut-out object (background removed) |
 | B8_door_reed_switch | B | cut-out object (background removed) |
 | B9_controller_box | B | cut-out object (background removed) |
+| A2b_front_door_closed_nocurtain | A | photographic scene |
+| A6b_door_worker_curtain | A | photographic scene |
+| A9b_interior_finned_pcm_wall | A | photographic scene |
+| A14_night_wax_cooling | A | photographic scene |
+| B15_strip_curtain | B | object picture (white background kept) |
+| B16_finned_panel_cutaway | B | object picture (white background kept) |
+| B17_split_valve_manifold | B | object picture (white background kept) |
 
 ## Software
 

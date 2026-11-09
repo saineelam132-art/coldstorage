@@ -1,12 +1,13 @@
-# Daily Live Year Run: every morning at 06:00 IST (00:30 UTC) GitHub downloads the newest weather,
-# runs the twin from 1 Jan 2026 to tomorrow, rebuilds static_site/ and commits the results.
+# Live Year Run: every 3 hours (about 05:50, 08:50, 11:50 ... IST) GitHub downloads the newest weather,
+# runs the twin from 1 Jan 2026 to tomorrow, rebuilds static_site/ and commits the results, so the
+# home page "Today" strip is never more than about 3 h old. (GitHub may start scheduled runs late.)
 # Vercel (if connected to this branch) then redeploys by itself.
 # Run it by hand: GitHub -> Actions -> "Daily Live Year Run" -> "Run workflow".
 name: Daily Live Year Run
 
 on:
   schedule:
-    - cron: "30 0 * * *"        # 00:30 UTC = 06:00 IST
+    - cron: "20 */3 * * *"      # every 3 h at :20 UTC (= :50 IST): 05:50, 08:50, 11:50 ... IST
   workflow_dispatch: {}
 
 permissions:
@@ -46,9 +47,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/live web/live/data results/live static_site
           if git diff --cached --quiet; then
-            echo "Nothing changed today."
+            echo "Nothing changed since the last run."
           else
-            git commit -m "Daily Live Year Run $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M IST')"
+            git commit -m "Live Year Run $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M IST')"
             git pull --rebase
             git push
           fi

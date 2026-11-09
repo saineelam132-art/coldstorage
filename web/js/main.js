@@ -7,6 +7,8 @@ import { LedgerUI } from './ledgerui.js';
 import { Batches } from './batch.js';
 import { Control } from './control.js';
 import { Tour } from './tour.js';
+import { Today } from './today.js';
+import { door } from './door.js';
 
 const $ = id => document.getElementById(id);
 
@@ -15,10 +17,48 @@ async function boot() {
     getJSON('api/config'), getJSON('api/sensors'), getJSON('assets/manifest.json'),
     getJSON('assets/scenes.json'), getJSON('assets/hotspots.json'), getJSON('api/demo_days')]);
 
-  // start on the hottest day, 7 am, so the 8 am batch arrives soon
-  const clock = new SimClock(demo[0].t, 720);
+  // TODAY strip: real date, IST clock, real weather of this hour and the twin's state (live/data files)
+  const today = new Today(cfg);
+  const todayEl = $('today');
+  let lastH = -1;
+  const setTodayH = () => {
+    if (todayEl.offsetHeight === lastH) return;
+    lastH = todayEl.offsetHeight;
+    document.documentElement.style.setProperty('--todayH', `${lastH}px`);
+    dispatchEvent(new Event('resize'));                    // pictures re-fit the smaller stage
+  };
+  new ResizeObserver(setTodayH).observe(todayEl); setTodayH();
+  today.load();
+
+  // the simulated clock starts at the REAL present moment (IST) when the twin has data for it;
+  // otherwise on the hottest day of 2026, just before the 6 am batch
+  const tinfo = cfg.time || {};
+  const nowT = () => (Date.now() + 5.5 * 3600e3 - Date.parse((tinfo.t0 || '2026-01-01T00:00:00') + 'Z')) / 1000;
+  const hasNow = () => tinfo.t_end && nowT() >= 0 && nowT() < tinfo.t_end;
+  const startLive = hasNow() && new URLSearchParams(location.search).get('judge') !== '1';
+  const clock = new SimClock(startLive ? nowT() : demo[0].t, startLive ? 1 : 720);
+  if (window.STATIC_API && startLive && Math.abs(window.STATIC_API.clamp(clock.t) - clock.t) > 3600) { clock.t = demo[0].t; clock.speed = 720; }
+  $('speed').value = String(clock.speed);
+  const isLive = () => hasNow() && Math.abs(clock.t - nowT()) < 1800;
+  $('liveNow').onclick = () => {
+    if (!hasNow()) { alert('The saved data does not reach today yet – the next data update will add it.'); return; }
+    clock.jump(nowT()); clock.speed = 1; clock.playing = true; $('speed').value = '1'; $('play').textContent = '❚❚'; feed.poll();
+  };
+  setInterval(() => $('liveNow').classList.toggle('on', isLive()), 1000);
   const feed = new StateFeed(clock);
-  initDetails(cfg, sensors, manifest, scenes, () => feed.state, () => clock.t);
+  feed.transform = s => (door.apply(s.values, s.t), s);
+  let doorTimer = null;                                    // 12 updates a second while the door swings
+  door.onChange(() => {
+    clearInterval(doorTimer);
+    doorTimer = setInterval(() => { feed.emit(); if (!door.active) clearInterval(doorTimer); }, 80);
+  });
+  // weather-sensor graphs use TODAY's real hourly weather when the clock is at the live moment
+  const todaySeries = q => {
+    if (!today.rows || today.stale || !isLive() || !today.rows[q]) return null;
+    const day = today.rows.t[today.i].slice(0, 10), ix = today.dayRows(day).filter(j => j <= today.i);
+    return { labels: ix.map(j => `${today.rows.t[j].slice(11)}:00`), values: ix.map(j => today.rows[q][j]) };
+  };
+  initDetails(cfg, sensors, manifest, scenes, () => feed.state, () => clock.t, todaySeries);
 
   // the loading statement, on every page
   const Y = cfg.year_summary || {};
@@ -45,7 +85,39 @@ async function boot() {
   const batches = new Batches({ cfg, manifest, photo, getModel: () => model, clock, feed, ledgerUI });
   const control = new Control({ cfg, sensors, feed });
   const toPhoto = () => { if (view !== 'photo') $('viewSeg').querySelector('[data-view=photo]').click(); };
-  new Tour({ photo, clock, feed, demo, ledgerUI, control, batches, toPhoto, cfg });
+  const tour = new Tour({ photo, clock, feed, demo, ledgerUI, control, batches, toPhoto, cfg });
+
+  // poster headline numbers, read from results/live/design_study_2026.json (never typed in)
+  getJSON('results/live/design_study_2026.json').then(st => {
+    const fin = Object.entries(st.journey || {}).find(([k]) => k.startsWith('3)'))?.[1];
+    const money = Object.values(st.wax_compare || {})[0];
+    if (!fin || !money) return;
+    $('tdHeadline').innerHTML = `<span class="hlt">Poster headline · simulated on real 2026 Vizag weather:</span>
+      <span class="hn"><b>${fin.days_full_solar_wax}/${fin.days}</b> days on solar + wax</span>
+      <span class="hn"><b>${fin.moving_parts}</b> fans</span>
+      <span class="hn"><b>${fin.grid_h_per_year.toFixed(0)}</b> grid h/yr</span>
+      <span class="hn"><b>₹${(money.saved_vs_diesel_INR_yr / 1000).toFixed(1)}k</b>/yr vs diesel</span>
+      <span class="hn"><b>${(money.co2_saved_vs_diesel_kg_yr / 1000).toFixed(1)} t</b> CO₂/yr</span>`;
+    setTodayH();
+  }).catch(e => console.warn('headline', e));
+
+  // JUDGE MODE (?judge=1): full screen, big fonts, the demo plays slowly and loops; a click pauses it
+  if (new URLSearchParams(location.search).get('judge') === '1') {
+    document.body.classList.add('judge');
+    tour.slow = 1.6; tour.loop = true;
+    const go = document.createElement('button');
+    go.className = 'judgego'; go.innerHTML = '▶ Start the demo<br><small>full screen · click anywhere to pause / resume</small>';
+    document.body.appendChild(go);
+    go.onclick = async () => {
+      go.remove();
+      try { await document.documentElement.requestFullscreen(); } catch (e) { /* not allowed: carry on in the window */ }
+      tour.start();
+      $('stage').addEventListener('click', e => {
+        if (!tour.running || e.target.closest('#panel,.tourbar,button,a,select,input')) return;
+        tour.pause();
+      });
+    };
+  }
 
   // 2D mode: photo view only, three.js is never loaded (safest on a weak laptop). Remembered; also ?2d=1
   const set2d = on => {
@@ -117,15 +189,25 @@ async function boot() {
   $('play').onclick = () => { clock.playing = !clock.playing; $('play').textContent = clock.playing ? '❚❚' : '▶'; };
   $('speed').onchange = e => (clock.speed = +e.target.value);
   demo.forEach(d => $('jump').insertAdjacentHTML('beforeend', `<option value="${d.t}">${d.date}: ${d.why}</option>`));
-  $('jump').onchange = e => { if (e.target.value) { clock.jump(+e.target.value); feed.poll(); } e.target.value = ''; };
+  $('jump').onchange = e => {
+    if (e.target.value) {
+      clock.jump(+e.target.value);
+      if (clock.speed === 1) { clock.speed = 720; $('speed').value = '720'; }     // demo days play fast
+      feed.poll();
+    }
+    e.target.value = '';
+  };
   addEventListener('keydown', e => {
     if (view !== 'photo' || e.target.tagName === 'SELECT') return;
     if (e.key === 'ArrowRight') photo.go(photo.idx + 1, true);
     if (e.key === 'ArrowLeft') photo.go(photo.idx - 1, true);
   });
 
+  // day picture between sunrise and sunset, night picture otherwise; monsoon picture on a rainy day
+  // (at the live moment 'rainy' = today's real rain from Open-Meteo, otherwise the twin's day class)
   function autoMode(s) {
-    if (s.sun.elevation_deg < -2) return 'night';
+    if (s.sun.elevation_deg < -0.83) return 'night';
+    if (isLive() && today.rows) return today.rainToday ? 'monsoon' : 'day';
     return s.day_class === 'rainy' ? 'monsoon' : 'day';
   }
 

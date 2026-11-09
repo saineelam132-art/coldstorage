@@ -27,7 +27,7 @@
     <button data-mode="monsoon" title="Jump to the rainiest day of 2025, 11 am">Monsoon</button>
   </div>
   <div class="acts">
-    <button id="tourBtn" class="act tour">▶ Start tour</button>
+    <button id="tourBtn" class="act tour">▶ Start demo</button>
     <button id="ccBtn" class="act">☰ Control centre</button>
     <a class="act" href="live.html" title="The system on real 2026 weather, today and tomorrow">📅 Live 2026</a>
     <button id="newBatchBtn" class="act">+ New batch</button>
@@ -40,6 +40,20 @@
     <label class="chk" title="Photo view only, no 3D (safest on a weak laptop)"><input type="checkbox" id="flat2d"> 2D mode</label>
   </div>
 </header>
+
+<section id="today" class="today" aria-label="Today in Visakhapatnam">
+  <div class="tdrow tdtop">
+    <b id="tdDate">–</b><span id="tdClock" class="tdclock">–</span>
+    <span id="tdLive" class="tdlive"></span><span id="tdOffline" class="tdoff" hidden></span>
+    <span id="tdWarn" class="tdwarn" hidden></span>
+    <button class="tdtoggle" aria-expanded="true">▴ less</button>
+  </div>
+  <div class="tdrow tdwx" id="tdWx"></div>
+  <div class="tdrow tdtwin"><span id="tdTwin" class="tdtwinv"></span><span id="tdTom" class="tdtom"></span></div>
+  <div class="tdrow tdnote">Weather = real (Open-Meteo). Room values = digital twin simulation for this hour.
+    <span class="tdkey"><span class="tag W">W</span> real weather <span class="tag S">S</span> twin simulation <span class="tag C">C</span> calculated <span class="tag L">L</span> live sensor</span></div>
+  <div class="tdrow tdhl" id="tdHeadline"></div>
+</section>
 
 <main id="stage">
   <section id="photoView" class="view on" aria-label="Photo view">
@@ -83,6 +97,7 @@
         <option value="2880">1 day / 30 s</option>
       </select>
       <select id="jump" title="Jump to an interesting day"><option value="">Jump to…</option></select>
+      <button id="liveNow" class="livenow" title="Back to the real time now (IST)">● Now</button>
     </div>
     <div class="row"><b id="d_clock">–</b><span id="d_src_label"><span class="badge sim">SIMULATED</span></span></div>
   </div>
@@ -123,7 +138,7 @@
 <section id="cc" class="cc" aria-label="Control centre">
   <header><b>☰ Control centre</b>
     <nav id="ccTabs">
-      <button data-tab="calc" class="on">Calculations</button><button data-tab="whatif">What-If</button>
+      <button data-tab="how">How it works</button><button data-tab="calc" class="on">Calculations</button><button data-tab="whatif">What-If</button>
       <button data-tab="rooms">Two rooms</button><button data-tab="year">Year results</button><button data-tab="sensors">Sensors</button>
     </nav>
     <button id="ccClose" class="x" aria-label="Close">×</button></header>
@@ -141,6 +156,7 @@
 <div id="simnote" class="simnote"><b>STATIC BACKUP (no Python, saved demo days)</b> · Simulated – digital twin on real 2026 Visakhapatnam weather (Open-Meteo, sunlight corrected to NASA level)</div>
 
 <script src="vendor/qrcode/qrcode.js"></script>
+<script src="vendor/chartjs/chart.umd.js"></script>
 <script src="js/data.js"></script>
 <script src="js/app.bundle.js"></script>
 </body>

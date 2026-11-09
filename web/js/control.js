@@ -1,6 +1,8 @@
 // Control centre: Calculations, What-If, Two rooms, Year results, Sensors.
 import { getJSON } from './api.js';
 import { fmt, tagChip } from './ui.js';
+import { splitHTML, splitUpdate } from './split.js';
+import { cutoutSrc } from './details.js';
 
 const $ = id => document.getElementById(id);
 const FINAL = [
@@ -25,7 +27,7 @@ export class Control {
     $('ccBtn').onclick = () => this.open();
     $('ccClose').onclick = () => this.close();
     $('ccTabs').onclick = e => { const b = e.target.closest('button'); if (b) this.show(b.dataset.tab); };
-    feed.on(s => { if (this.isOpen() && (this.tab === 'rooms' || this.tab === 'sensors' || this.tab === 'calc')) this.live(s); });
+    feed.on(s => { if (this.isOpen() && ['rooms', 'sensors', 'calc', 'how'].includes(this.tab)) this.live(s); });
   }
   isOpen() { return $('cc').classList.contains('on'); }
   open(tab) { $('cc').classList.add('on'); this.show(tab || this.tab); }
@@ -35,6 +37,7 @@ export class Control {
     this.tab = tab;
     [...$('ccTabs').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const body = $('ccBody');
+    if (tab === 'how') { body.innerHTML = splitHTML(cutoutSrc('B17_split_valve_manifold')); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg); }
     if (tab === 'calc') body.innerHTML = await this.calc();
     if (tab === 'whatif') { body.innerHTML = await this.whatifHTML(); this.whatifWire(); }
     if (tab === 'rooms') body.innerHTML = this.roomsHTML();
@@ -145,6 +148,7 @@ export class Control {
   }
 
   live(s) {
+    if (this.tab === 'how') splitUpdate(s.values, this.cfg);
     if (this.tab === 'calc' && $('bySource')) $('bySource').innerHTML = this.bySource(s);
     if (this.tab === 'rooms' && $('rmN')) {
       const c = s.compare;

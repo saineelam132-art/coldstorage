@@ -159,6 +159,23 @@ Weather data by Open-Meteo.com (CC BY 4.0). The ISHRAE design-year file is **not
 git (its licence forbids sharing); it is downloaded where it is used and only our simulation
 results are published.
 
+## Home page "Today", judge mode and the picture editor
+
+* The home page opens on **today in Visakhapatnam** (IST): date, ticking clock, the real weather of this
+  hour (Open-Meteo, tag **W**), the twin's room / wax / power source for this hour (tag **S**), ₹ saved
+  today so far (**C**) and tomorrow's prediction. **● Now** (bottom right) brings the clock back to the
+  present. If the data files are older than 24 h it says "Showing data from … – live update pending".
+* It works **offline**: everything is on the laptop (no internet fonts or libraries). With no internet a
+  badge says "Offline – using data from …".
+* `?judge=1` (e.g. `http://localhost:8000/?judge=1`): full screen, big fonts, the demo plays slowly and
+  loops; click on the picture to pause / resume.
+* `?edit=1`: click on a picture and its x, y in % appears on screen and in the browser console – copy it
+  into `web/assets/hotspots.json` to move a dot exactly onto its sensor.
+* **Real photo:** put it in `web/assets/images/real/` and tell us the file name. It is converted to
+  `web/assets/img/`, set as `"home_photo"` in `web/assets/scenes.json`, and gets its own entry in
+  `hotspots.json`. All other pictures are labelled "Concept illustration (AI-generated picture)".
+* The GitHub Action now runs **every 3 hours** (weather + twin + static site).
+
 ## At the stall
 
 **Normal start:** double-click `start.bat`. It uses **Python 3.12** first (`py -3.12`, because

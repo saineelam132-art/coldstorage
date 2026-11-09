@@ -107,6 +107,12 @@ class TwinState:
         # index of the most recent 5-min step with a door opening (for "this opening lasted Z s")
         idx = np.where(self.cols["door_s"] > 0, np.arange(self.n), -1)
         self.last_open = np.maximum.accumulate(idx)
+        # door seconds open earlier the same day (before this 5-min step), for "seconds open today"
+        spd = int(86400 // self.dt)
+        ds = self.cols["door_s"].astype(float)
+        day_id = np.arange(self.n) // spd
+        cum = pd.Series(ds).groupby(day_id).cumsum().values
+        self.door_before = cum - ds
         self._slab = None
         from server.ledger_service import LedgerService
         self.ledger = LedgerService(self)
@@ -133,6 +139,10 @@ class TwinState:
                 "design": "Final design: 115 kg wax, 1.8 kWp, finned wax panels (no fan), 150 kg loaded at 6 am (2026 weather, conservative sun)"}
 
     # --------------------------------------------------------------- helpers
+    def time_info(self):
+        """Time base of the replay: t = seconds from t0 (IST); data end = t_end (end of tomorrow)."""
+        return {"t0": self.t0.strftime("%Y-%m-%dT%H:%M:%S"), "t_end": float(self.year_s), "dt": self.dt}
+
     def index(self, t):
         return int((t % self.year_s) // self.dt)
 
@@ -174,6 +184,8 @@ class TwinState:
         door_s = float(c["door_s"][i])
         into_step = float(t % self.dt)
         open_now = door_s > 0 and into_step < door_s
+        # the door swings open and shut in about 2 s each way (same rule in the static backup)
+        angle = 90.0 * max(0.0, min(1.0, into_step / 2.0, (door_s - into_step) / 2.0)) if open_now else 0.0
 
         T_out, RH_out, T_room = float(c["T_out"][i]), float(c["RH_out"][i]), float(c["T_room"][i])
         self.ledger.advance(t)
@@ -216,7 +228,8 @@ class TwinState:
             "G_wax_W_K": float(c["G_wax"][i]), "Q_pcm_room": float(c["Q_pcm_room"][i]),
             "Q_total": Q_total, **Q,
             "backup_h": None if math.isinf(backup) else backup,
-            "door_open": open_now, "door_angle": 90.0 if open_now else 0.0,
+            "door_open": open_now, "door_angle": angle,
+            "door_open_today_s": float(self.door_before[i]) + min(into_step, door_s),
             "door_s_this_5min": door_s,
             "last_open_s": last_s,
             "last_open_kJ": last_kJ,

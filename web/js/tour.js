@@ -21,11 +21,11 @@ export class Tour {
       { s: 9, cap: () => `This is our solar–PCM cold room for farmers near Visakhapatnam, rated for <b>150 kg</b> of fresh produce. It runs on a digital twin with the <b>real 2026 weather</b> of Vizag.`,
         go: () => { reset(); this.app.toPhoto(); clock.jump(hot + 5 * 3600); clock.speed = 720; photo.goByName('A1_outside'); } },
       { s: 9, cap: () => `Every glowing dot is a sensor. Outside air now: <b>${v().T_out?.toFixed(1)} °C</b>, ${v().RH_out?.toFixed(0)} % humidity – this is the hottest day of 2026.`,
-        go: () => { photo.goByName('A2_front'); openSensor('t_out'); } },
+        go: () => { photo.goByName('A2b_front_door_closed_nocurtain'); openSensor('t_out'); } },
       { s: 9, cap: () => `The 1.8 kWp solar canopy faces south at 17°. Right now it gives <b>${v().P_pv?.toFixed(2)} kW</b> to the R290 (propane) compressor. No battery for cooling – the wax is the storage.`,
         go: () => { closePanel(); photo.goByName('A3_exterior_side_condenser'); openPart('solar'); } },
       { s: 9, cap: () => `Opening the door lets warm air in at the top and cold air out at the bottom. <b>Without the strip curtain: ${v().heat_if_open_kW?.toFixed(1)} kW</b> pours in…`,
-        go: () => { closePanel(); curtain(false); photo.goByName('A6_door_worker'); } },
+        go: () => { closePanel(); curtain(false); photo.goByName('A6b_door_worker_curtain'); } },
       { s: 7, cap: () => `…with the curtain only <b>${v().heat_if_open_kW?.toFixed(1)} kW</b> – and only for ${v().last_open_s?.toFixed(0)} seconds per opening.`,
         go: () => curtain(true) },
       { s: 13, cap: () => `At 6 am the farmer brings the day's 150 kg. The batch gets an ID and a QR code, and is <b>sealed into a hash-chain ledger</b> every hour.`,
@@ -33,7 +33,7 @@ export class Tour {
       { s: 9, cap: () => `Inside it is <b>${v().T_room?.toFixed(1)} °C</b>. The blue wax (PCM) panels are the cold battery: <b>${v().pcm_pct?.toFixed(0)} % frozen</b>, enough for <b>${v().backup_h?.toFixed(0)} hours</b> without sun.`,
         go: () => { $('cardModal').classList.remove('on'); ledgerUI.close(); photo.goByName('A8_interior_wide'); openPart('pcm'); } },
       { s: 11, cap: () => `Night: the compressor sleeps. <b>Aluminium fins</b> on the wax panels give <b>4.3 × more surface</b>; cooled air falls between them by itself – <b>no fan, 0 W</b>. Now ${v().G_wax_W_K?.toFixed(0)} W/K, room <b>${v().T_room?.toFixed(1)} °C</b>. A drip tray catches the condensate.`,
-        go: () => { closePanel(); clock.jump(hot + 22 * 3600); photo.goByName('A9_interior_pcm_wall'); openPart('fins'); } },
+        go: () => { closePanel(); clock.jump(hot + 22 * 3600); photo.goByName('A9b_interior_finned_pcm_wall'); openPart('fins'); } },
       { s: 8, cap: () => `By day the evaporator runs on R290 at −5 °C. COP <b>${v().cop?.toFixed(2)}</b>, calculated with CoolProp from the outside temperature.`,
         go: () => { closePanel(); clock.jump(hot + 13 * 3600 + 86400); photo.goByName('A10_interior_evaporator'); openPart('evaporator'); } },
       { s: 8, cap: () => `Each crate knows its <b>remaining shelf life in days</b>, from the real temperature history of this room (Q10 model).`,
@@ -62,16 +62,16 @@ export class Tour {
     feed.on(() => this.running && this.render());
   }
 
-  start() { this.running = true; document.body.classList.add('touring'); $('tourBtn').textContent = '■ Stop tour'; this.goto(0); }
+  start() { this.running = true; document.body.classList.add('touring'); $('tourBtn').textContent = '■ Stop demo'; this.goto(0); }
   stop() {
     this.running = false; clearTimeout(this.timer); document.body.classList.remove('touring');
-    $('tourBtn').textContent = '▶ Start tour'; $('tourBar').classList.remove('on');
+    $('tourBtn').textContent = '▶ Start demo'; $('tourBar').classList.remove('on');
   }
   pause() { this.paused = !this.paused; $('tourPause').textContent = this.paused ? '▶' : '❚❚'; if (!this.paused) this.schedule(); else clearTimeout(this.timer); }
 
   async goto(i) {
     if (i < 0) i = 0;
-    if (i >= this.steps.length) return this.stop();
+    if (i >= this.steps.length) return this.loop ? this.goto(0) : this.stop();
     clearTimeout(this.timer);
     this.i = i; this.t0 = performance.now();
     $('tourBar').classList.add('on');
@@ -81,7 +81,7 @@ export class Tour {
     this.render();
     if (!this.paused) this.schedule();
   }
-  schedule() { clearTimeout(this.timer); this.timer = setTimeout(() => this.goto(this.i + 1), this.steps[this.i].s * 1000); }
+  schedule() { clearTimeout(this.timer); this.timer = setTimeout(() => this.goto(this.i + 1), this.steps[this.i].s * 1000 * (this.slow || 1)); }
   render() {
     if (this.i < 0) return;
     $('tourCap').innerHTML = this.steps[this.i].cap();

@@ -44,9 +44,16 @@ def main():
 
     # ---- which days to save: each demo day from the day before to two days after (merged)
     spans = []
+    # TODAY (live home page): yesterday -> the end of the saved data (end of tomorrow)
+    from twin.live_weather import now_ist
+    import pandas as pd
+    last_day = int(tw.year_s // 86400) - 1
+    today = int((pd.Timestamp(now_ist()) - tw.t0).total_seconds() // 86400)
+    if 0 <= today <= last_day:
+        spans.append([max(0, today - 1), last_day])
     for d in demo:
         day = int(d["t"] // 86400)
-        spans.append([max(0, day - 1), min(364, day + 2)])
+        spans.append([max(0, day - 1), min(int(tw.year_s // 86400) - 1, day + 2)])
     spans.sort()
     merged = []
     for a, b in spans:
@@ -61,7 +68,8 @@ def main():
                     "Q_int", "Q_resp", "Q_batch", "dp_top", "last_open_s", "last_open_ago_min", "fan_W", "fan_speed_pct", "G_wax_W_K", "Q_pcm_room"]
     cols = {k: [] for k in state_fields + ["T_batch", "grid_on", "backup_h", "door_s", "heat_if_open_on", "heat_if_open_off",
                                            "v_if_open_on", "v_if_open_off", "lat_frac", "sun_elev", "sun_az", "day", "day_poa",
-                                           "s_T_room", "s_pcm_pct", "s_grid_on", "grid_h_n", "grid_h_s"]}
+                                           "s_T_room", "s_pcm_pct", "s_grid_on", "grid_h_n", "grid_h_s",
+                                           "n_T_room", "n_pcm_pct", "n_grid_on", "door_before"]}
     classes = ["sunny", "cloudy", "rainy"]
     windows, k = [], 0
     for a, b in merged:
@@ -96,6 +104,10 @@ def main():
             cols["s_grid_on"].append(int(cp["smart"]["grid_on"]))
             cols["grid_h_n"].append(r(cp["normal"]["grid_h_so_far"]))
             cols["grid_h_s"].append(r(cp["smart"]["grid_h_so_far"]))
+            cols["n_T_room"].append(r(cp["normal"]["T_room"]))
+            cols["n_pcm_pct"].append(r(cp["normal"]["pcm_pct"]))
+            cols["n_grid_on"].append(int(cp["normal"]["grid_on"]))
+            cols["door_before"].append(r(float(tw.door_before[i])))
         k += n
     compare_year = tw.state(0)["compare"]["year"]
 
@@ -113,13 +125,13 @@ def main():
     crops_full = tw.crops
     from server.twin_state import wax_hx_info
     wax_hx = wax_hx_info(tw.final_totals)
-    api_config = {"design": _strip(cfg), "geometry": geometry(cfg), "lan_ip": "", "wax_hx": wax_hx,
+    api_config = {"design": _strip(cfg), "geometry": geometry(cfg), "lan_ip": "", "wax_hx": wax_hx, "time": tw.time_info(),
                   "crops": {kk: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]], "T_ref_C": v["T_ref_C"],
                                  "SL_ref_days": v["SL_ref_days"], "Q10": v["Q10"], "chill_injury_below_C": v.get("chill_injury_below_C")}
                             for kk, v in crops_full.items()},
                   "year_summary": {kk: vv for kk, vv in tw.summary.items() if isinstance(vv, (int, float, str, bool))}}
     data = {
-        "label": SIM_LABEL, "dt": dt, "n": k, "windows": windows, "cols": cols, "state_fields": state_fields,
+        "label": SIM_LABEL, "dt": dt, "n": k, "t0": tw.time_info()["t0"], "windows": windows, "cols": cols, "state_fields": state_fields,
         "day_classes": classes, "design": _strip(cfg), "crops": crops_full, "compare_year": compare_year,
         "cycles": cycles, "cycle_T": [float(f"{lo:.2f}"), float(f"{hi:.2f}")],
         "dome": r290.saturation_dome(), "cycle_design": {kk: r(vv, 6) for kk, vv in r290.cycle_from_config(cfg).items()},
@@ -130,6 +142,7 @@ def main():
             "assets/manifest.json": manifest, "assets/scenes.json": scenes, "assets/hotspots.json": hotspots,
             "results/design_point.json": json.loads((ROOT / "results/design_point.json").read_text()),
             "results/whatif.json": json.loads((ROOT / "results/whatif.json").read_text()),
+            "results/live/design_study_2026.json": json.loads((ROOT / "results/live/design_study_2026.json").read_text()),
         },
     }
 

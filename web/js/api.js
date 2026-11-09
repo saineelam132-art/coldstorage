@@ -28,15 +28,22 @@ export class SimClock {
 
 // Polls /api/state about 3 times a second and hands the newest state to listeners.
 export class StateFeed {
-  constructor(clock) { this.clock = clock; this.curtain = true; this.listeners = []; this.state = null; this.busy = false; }
+  constructor(clock) {
+    this.clock = clock; this.curtain = true; this.listeners = []; this.state = null; this.raw = null; this.busy = false;
+    this.transform = s => s;                      // e.g. the demo door animation (door.js)
+  }
   on(fn) { this.listeners.push(fn); if (this.state) fn(this.state); }
+  emit() {                                         // re-send the last twin state through the transform
+    if (!this.raw) return;
+    this.state = this.transform({ ...this.raw, values: { ...this.raw.values } });
+    this.listeners.forEach(fn => fn(this.state));
+  }
   async poll() {
     if (this.busy) return;
     this.busy = true;
     try {
-      const s = await getJSON(`api/state?t=${this.clock.t.toFixed(0)}&curtain=${this.curtain ? 1 : 0}`);
-      this.state = s;
-      this.listeners.forEach(fn => fn(s));
+      this.raw = await getJSON(`api/state?t=${this.clock.t.toFixed(0)}&curtain=${this.curtain ? 1 : 0}`);
+      this.emit();
     } catch (e) { console.warn(e); }
     this.busy = false;
   }

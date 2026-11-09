@@ -28,12 +28,13 @@ function rangeBack(i, steps) {                        // indices going back in t
   return out;
 }
 const pad = n => String(n).padStart(2, '0');
+const T0 = Date.parse((D.t0 || '2026-01-01T00:00:00') + 'Z');      // IST wall clock stored as if UTC
 function timeStr(t, sec = true) {
-  const d = new Date(Date.UTC(2025, 0, 1) + t * 1000);
+  const d = new Date(T0 + t * 1000);
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` + (sec ? `:${pad(d.getUTCSeconds())}` : '');
 }
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-function clockStr(t) { const d = new Date(Date.UTC(2025, 0, 1) + t * 1000); return `${pad(d.getUTCDate())} ${MON[d.getUTCMonth()]} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
+function clockStr(t) { const d = new Date(T0 + t * 1000); return `${pad(d.getUTCDate())} ${MON[d.getUTCMonth()]} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
 
 // ---------------------------------------------------------------- ledger state (saved in the browser)
 let S = null;
@@ -129,7 +130,9 @@ function state(t, curtain) {
   for (const f of D.state_fields) v[f] = C[f][i];
   Object.assign(v, {
     RH_room: D.design.setpoint.rh_room_pct, T_batch: Number.isNaN(C.T_batch[i]) || C.T_batch[i] === null ? null : C.T_batch[i],
-    grid_on: !!C.grid_on[i], backup_h: C.backup_h[i], door_open: open, door_angle: open ? 90 : 0, door_s_this_5min: doorS,
+    grid_on: !!C.grid_on[i], backup_h: C.backup_h[i], door_open: open,
+    door_angle: open ? 90 * Math.max(0, Math.min(1, into / 2, (doorS - into) / 2)) : 0, door_s_this_5min: doorS,
+    door_open_today_s: (C.door_before ? C.door_before[i] : 0) + Math.min(into, doorS),
     heat_if_open_kW: hif, heat_now_kW: open ? hif : 0, heat_sensible_now_kW: open ? hif * (1 - C.lat_frac[i]) : 0,
     heat_latent_now_kW: open ? hif * C.lat_frac[i] : 0, v_door_if_open: C[`v_if_open_${k}`][i],
     v_door_top: open ? C[`v_if_open_${k}`][i] : 0, v_door_mid: 0, v_door_bot: open ? C[`v_if_open_${k}`][i] : 0,
@@ -142,7 +145,7 @@ function state(t, curtain) {
   return { t, time: timeStr(t), clock: clockStr(t), label: D.label, source: 'SIMULATED',
     sun: { elevation_deg: C.sun_elev[i], azimuth_deg: C.sun_az[i] }, day_class: D.day_classes[C.day[i]], day_poa_kWh_m2: C.day_poa[i],
     values: v, ledger: { length: S.blocks.length, valid: v2.valid, batches: Object.keys(S.batches).length },
-    compare: { normal: { T_room: C.T_room[i], pcm_pct: C.pcm_pct[i], grid_on: !!C.grid_on[i], grid_h_so_far: C.grid_h_n[i] },
+    compare: { normal: { T_room: (C.n_T_room || C.T_room)[i], pcm_pct: (C.n_pcm_pct || C.pcm_pct)[i], grid_on: !!(C.n_grid_on || C.grid_on)[i], grid_h_so_far: C.grid_h_n[i] },
       smart: { T_room: C.s_T_room[i], pcm_pct: C.s_pcm_pct[i], grid_on: !!C.s_grid_on[i], grid_h_so_far: C.grid_h_s[i] }, year: D.compare_year } };
 }
 

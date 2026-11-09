@@ -415,5 +415,205 @@
    "x": 81.7,
    "y": 55.2
   }
+ ],
+ "A2b_front_door_closed_nocurtain": [
+  {
+   "part": "solar",
+   "x": 50.0,
+   "y": 20.0
+  },
+  {
+   "part": "door",
+   "x": 51.5,
+   "y": 70.0
+  },
+  {
+   "sensor": "door_switch",
+   "x": 57.6,
+   "y": 43.0
+  },
+  {
+   "sensor": "door_angle",
+   "x": 45.6,
+   "y": 48.5
+  },
+  {
+   "sensor": "dp",
+   "x": 51.5,
+   "y": 38.5
+  },
+  {
+   "sensor": "t_out",
+   "x": 79.6,
+   "y": 69.0
+  },
+  {
+   "sensor": "wind",
+   "x": 77.0,
+   "y": 59.0
+  },
+  {
+   "part": "condenser",
+   "x": 74.6,
+   "y": 71.0
+  },
+  {
+   "part": "crates",
+   "x": 31.0,
+   "y": 88.0
+  }
+ ],
+ "A6b_door_worker_curtain": [
+  {
+   "part": "solar",
+   "x": 50.0,
+   "y": 20.0
+  },
+  {
+   "part": "door",
+   "x": 60.0,
+   "y": 52.0,
+   "label": "strip curtain"
+  },
+  {
+   "sensor": "door_angle",
+   "x": 39.6,
+   "y": 45.0
+  },
+  {
+   "sensor": "v_top",
+   "x": 50.0,
+   "y": 46.0
+  },
+  {
+   "sensor": "v_mid",
+   "x": 48.0,
+   "y": 66.0
+  },
+  {
+   "sensor": "v_bot",
+   "x": 50.5,
+   "y": 91.0
+  },
+  {
+   "part": "worker",
+   "x": 55.5,
+   "y": 64.0
+  },
+  {
+   "sensor": "t_out",
+   "x": 79.6,
+   "y": 69.0
+  },
+  {
+   "sensor": "wind",
+   "x": 77.0,
+   "y": 59.0
+  },
+  {
+   "part": "crates",
+   "x": 31.0,
+   "y": 88.0
+  }
+ ],
+ "A9b_interior_finned_pcm_wall": [
+  {
+   "part": "pcm",
+   "x": 25.0,
+   "y": 52.0
+  },
+  {
+   "part": "fins",
+   "x": 70.0,
+   "y": 55.0
+  },
+  {
+   "sensor": "t_pcm",
+   "x": 59.3,
+   "y": 39.0
+  },
+  {
+   "part": "pcm",
+   "x": 52.5,
+   "y": 37.0,
+   "label": "charging coil"
+  },
+  {
+   "part": "driptray",
+   "x": 71.0,
+   "y": 90.5
+  },
+  {
+   "part": "crate_greens",
+   "x": 94.0,
+   "y": 61.0
+  }
+ ],
+ "A14_night_wax_cooling": [
+  {
+   "part": "evaporator",
+   "x": 52.0,
+   "y": 18.0
+  },
+  {
+   "sensor": "t_evap",
+   "x": 52.2,
+   "y": 29.0
+  },
+  {
+   "sensor": "t_high",
+   "x": 52.0,
+   "y": 36.0
+  },
+  {
+   "sensor": "t_mid",
+   "x": 52.0,
+   "y": 59.0
+  },
+  {
+   "sensor": "t_low",
+   "x": 52.0,
+   "y": 81.0
+  },
+  {
+   "part": "pcm",
+   "x": 36.5,
+   "y": 55.0
+  },
+  {
+   "part": "fins",
+   "x": 68.0,
+   "y": 50.0
+  },
+  {
+   "sensor": "t_pcm",
+   "x": 64.0,
+   "y": 40.0
+  },
+  {
+   "sensor": "gas",
+   "x": 17.5,
+   "y": 18.0
+  },
+  {
+   "part": "crate_greens",
+   "x": 12.0,
+   "y": 62.0
+  },
+  {
+   "sensor": "t_prod",
+   "x": 19.0,
+   "y": 62.0
+  },
+  {
+   "part": "crate_grapes",
+   "x": 90.0,
+   "y": 62.0
+  },
+  {
+   "part": "milk",
+   "x": 29.0,
+   "y": 76.0
+  }
  ]
 }

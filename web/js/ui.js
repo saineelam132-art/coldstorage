@@ -15,7 +15,9 @@ export function sensorValue(sensor, state) {
   if (sensor.quantity === 'gas_ppm' && (v === null || v === undefined)) return 'no sensor connected';
   return fmt(v, sensor.unit);
 }
-export const tagChip = t => `<span class="tag ${t}" title="${{M: 'Measured by a sensor', C: 'Calculated by a formula', E: 'Estimated / design value', AI: 'Prediction'}[t] || ''}">${t}</span>`;
+const TAGS = { M: 'Measured by a sensor', C: 'Calculated by a formula', E: 'Estimated / design value', AI: 'Prediction',
+  W: 'Real weather (Open-Meteo)', S: 'Digital-twin simulation', L: 'Live sensor reading' };
+export const tagChip = t => `<span class="tag ${t}" title="${TAGS[t] || ''}">${t}</span>`;
 export function sourceBadge(state) {
   return state?.source === 'LIVE' ? '<span class="badge live">LIVE sensor</span>' : '<span class="badge sim">SIMULATED</span>';
 }
@@ -44,7 +46,10 @@ export function openPanel(render) {
   panel.classList.add('on');
   return body;
 }
-export function closePanel() { panel.classList.remove('on'); refresh = null; }
+export function closePanel() {
+  panel.classList.remove('on'); refresh = null;
+  document.dispatchEvent(new Event('panelclose'));
+}
 export function refreshPanel() {
   if (!refresh) return;
   // only update elements marked as live, so graphs are not redrawn every tick
@@ -56,29 +61,57 @@ export function refreshPanel() {
   });
 }
 
-// ---------------------------------------------------------------- small graph
-export async function drawHistory(canvas, quantity, t, unit, label) {
-  const d = await getJSON(`api/series?q=${quantity}&t=${t.toFixed(0)}&hours=24`);
-  const ctx = canvas.getContext('2d');
-  const dpr = devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr; ctx.scale(dpr, dpr);
-  const v = d.v.map(x => (x === null ? NaN : (typeof x === 'boolean' ? +x : x)));
-  const ok = v.filter(x => !Number.isNaN(x));
-  if (!ok.length) { ctx.fillStyle = '#7b8a99'; ctx.font = '12px sans-serif'; ctx.fillText('No history for this value', 8, 20); return; }
-  let lo = Math.min(...ok), hi = Math.max(...ok);
-  if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
-  const pad = { l: 38, r: 8, t: 14, b: 18 };
-  const X = i => pad.l + (W - pad.l - pad.r) * i / (v.length - 1);
-  const Y = y => pad.t + (H - pad.t - pad.b) * (1 - (y - lo) / (hi - lo));
-  ctx.strokeStyle = '#d5e2ec'; ctx.lineWidth = 1; ctx.fillStyle = '#41566b'; ctx.font = '11px sans-serif';
-  [lo, (lo + hi) / 2, hi].forEach(g => { ctx.beginPath(); ctx.moveTo(pad.l, Y(g)); ctx.lineTo(W - pad.r, Y(g)); ctx.stroke();
-    ctx.fillText(fmt(g, unit).replace(' ' + unit, ''), 2, Y(g) + 4); });
-  ctx.fillText(d.t[0], pad.l, H - 4); ctx.textAlign = 'right'; ctx.fillText(`${d.t[d.t.length - 1]}  (last 24 h, ${unit})`, W - pad.r, H - 4); ctx.textAlign = 'left';
-  ctx.strokeStyle = '#2a78d6'; ctx.lineWidth = 2; ctx.beginPath();
-  let pen = false;
-  v.forEach((y, i) => { if (Number.isNaN(y)) { pen = false; return; } pen ? ctx.lineTo(X(i), Y(y)) : ctx.moveTo(X(i), Y(y)); pen = true; });
-  ctx.stroke();
+// ---------------------------------------------------------------- sensor graph (Chart.js)
+// Clear axis titles with units, grid lines, and a tooltip + vertical line at the nearest time.
+const hoverLine = {
+  id: 'hoverLine',
+  afterDatasetsDraw(chart) {
+    const a = chart.tooltip?.getActiveElements?.() || [];
+    if (!a.length) return;
+    const x = a[0].element.x, { top, bottom } = chart.chartArea, g = chart.ctx;
+    g.save(); g.strokeStyle = 'rgba(13,27,42,.45)'; g.lineWidth = 1; g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(x, top); g.lineTo(x, bottom); g.stroke(); g.restore();
+  },
+};
+let histChart = null;
+// opts: {quantity, t, unit, yTitle, today: {labels, values} | null, note}
+export async function drawHistory(canvas, { quantity, t, unit, yTitle, today = null }) {
+  let labels, values, src;
+  if (today) { labels = today.labels; values = today.values; src = 'Real weather today (Open-Meteo, hourly)'; }
+  else {
+    const d = await getJSON(`api/series?q=${quantity}&t=${t.toFixed(0)}&hours=24`);
+    labels = d.t; values = d.v.map(x => (x === null ? null : (typeof x === 'boolean' ? +x : x)));
+    src = 'Last 24 h of the digital twin (15-min points)';
+  }
+  if (histChart) { histChart.destroy(); histChart = null; }
+  const box = canvas.parentElement, note = box.parentElement.querySelector('.histsrc');
+  if (note) note.textContent = src;
+  if (!window.Chart || !values.some(v => v !== null && !Number.isNaN(v))) {
+    box.innerHTML = '<div class="histnone">No history for this value</div>'; return;
+  }
+  const dec = DEC[unit] ?? 2;
+  histChart = new window.Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [{ label: yTitle, data: values, borderColor: '#2a78d6', backgroundColor: 'rgba(42,120,214,.12)',
+      fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#ef4444', borderWidth: 2, tension: 0.25, spanGaps: true }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { displayColors: false, callbacks: {
+          title: it => `${it[0].label} IST`,
+          label: c => `${yTitle}: ${c.parsed.y === null ? '—' : c.parsed.y.toFixed(dec)}${unit ? ' ' + unit : ''}` } },
+      },
+      scales: {
+        x: { title: { display: true, text: 'Time (IST)', color: '#41566b', font: { weight: '600' } },
+          ticks: { maxTicksLimit: 7, maxRotation: 0, color: '#41566b', font: { size: 11 } }, grid: { color: '#e3ecf3' } },
+        y: { title: { display: true, text: unit ? `${yTitle} (${unit})` : yTitle, color: '#41566b', font: { weight: '600' } },
+          ticks: { color: '#41566b', font: { size: 11 } }, grid: { color: '#e3ecf3' } },
+      },
+    },
+    plugins: [hoverLine],
+  });
 }
 
 // ---------------------------------------------------------------- data bar

@@ -28,6 +28,7 @@ DESIGNS = ("current", "recommended")          # current = FINAL design (115 kg +
 VARIANTS = {"current": {}, "recommended": {},
             "current_uncorrected": {"design": "current", "sun_factor": 1.0},     # comparison only
             "current_plain": {"design": "current", "hx": {"kind": "plain"}}}     # plain panels vs fins
+WEB_EXTRA = ["rain_mm", "cloud_pct", "poa", "gonly_kWh"]   # website only: sky, sun on panel, grid-only kWh/h
 HOURLY_FIELDS = ["T_out", "RH_out", "ghi", "wind", "T_room", "T_batch", "pcm_pct", "Q_wall", "Q_door", "Q_batch", "Q_resp",
                  "Q_int", "Q_load", "Q_cool", "Q_ch", "Q_pcm_room", "comp_speed_pct", "P_comp", "COP", "P_evap_bar",
                  "P_cond_bar", "T_cond_C", "T_discharge_C", "P_pv", "P_solar_used", "P_grid", "grid_on", "door_s", "running_h",
@@ -226,14 +227,21 @@ def run(fetch=False, now=None):
     write_js("summary", out)
 
     # ---- hourly per month (calendar) for both designs
+    # web-only extras (no physics): sky (rain, cloud), sunlight on the panel, grid-only compressor kWh per hour
+    from twin.live_sim import poa_hourly
+    wx = W.set_index("time_ist")
+    go = Hg.set_index("time_ist")["P_comp"]
     for des in DESIGNS:
         H = H_all[des]
-        H = H.assign(month=H.time_ist.dt.strftime("%Y-%m"))
+        H = H.assign(month=H.time_ist.dt.strftime("%Y-%m"),
+                     rain_mm=H.time_ist.map(wx.get("rain_mm", pd.Series(dtype=float))),
+                     cloud_pct=H.time_ist.map(wx.get("cloud_pct", pd.Series(dtype=float))),
+                     poa=poa_hourly(cfg, H[["time_ist", "ghi"]]), gonly_kWh=H.time_ist.map(go))
         for mon, g in H.groupby("month"):
             rows = {"t": g.time_ist.dt.strftime("%Y-%m-%d %H").tolist(),
                     "pred": [bool(x) for x in g.get("is_forecast", pd.Series(False, index=g.index))],
                     "src": g.get("source", pd.Series("", index=g.index)).fillna("").tolist()}
-            for f in HOURLY_FIELDS:
+            for f in HOURLY_FIELDS + WEB_EXTRA:
                 rows[f] = [r(x) for x in g[f].values]
             write_js(f"h_{des}_{mon}", rows)
     (RES / "summary.json").write_text(json.dumps(clean(out), indent=1, allow_nan=False))

@@ -1,4 +1,5 @@
 // Farmer batch: form -> worker walks in -> crate placed -> batch card with QR -> sealed in the ledger.
+import { door } from './door.js';
 import { getJSON, postJSON } from './api.js';
 import { lineChart } from './charts.js';
 
@@ -58,9 +59,10 @@ export class Batches {
   // Photo story: worker walks to the door (A2) -> door opens (A6) -> crate on the rack (A8)
   async walkPhoto(b) {
     const P = this.photo, wait = ms => new Promise(r => setTimeout(r, ms));
-    P.goByName('A2_front');
+    const FRONT = 'A2b_front_door_closed_nocurtain';
+    P.goByName(FRONT);
     await wait(1500);
-    const el = P.layers.A2_front;
+    const el = P.layers[FRONT];
     const r = el.getBoundingClientRect();
     const W = $('walker'); W.innerHTML = this.workerHTML; W.classList.add('on');
     const h = r.height * 0.46, w = h * (this.side ? 507 / 900 : 0.5);
@@ -80,15 +82,17 @@ export class Batches {
     });
     await walk(x0, x1, 2600);                                        // side view, walking to the door
     if (this.back) W.innerHTML = `<img src="${this.back}" alt="worker from behind">`;   // turns: back view
-    const xd = r.left + r.width * 0.496;
+    const xd = r.left + r.width * 0.515;
     await walk(x1, xd, 600);
-    await walk(xd, xd, 900, 0.82, true);                             // steps into the door, smaller and fading
+    door.open();                                                     // door swings open (0 -> 90 deg, 2 s), curtain appears
+    await wait(2100);
+    await walk(xd, xd, 900, 0.82, true);                             // steps through the curtain, smaller and fading
     W.classList.remove('on');
-    P.goByName('A6_door_worker');
-    await wait(3500);
+    await wait(2600);                                                // door-open picture: farmer with the crate
     P.goByName('A8_interior_wide');
     P.addBatchSpot(b.id, SPOT, this.cropImg(b.crop));
     await wait(1600);
+    door.close();                                                    // 90 -> 0 deg behind the farmer
   }
 
   async showCard(id, fresh = false) {

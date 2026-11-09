@@ -71,6 +71,30 @@
       "small": "assets/img/A9_interior_pcm_wall_960.webp",
       "w": 1920,
       "h": 1072
+    },
+    "A2b_front_door_closed_nocurtain": {
+      "src": "assets/img/A2b_front_door_closed_nocurtain.webp",
+      "small": "assets/img/A2b_front_door_closed_nocurtain_960.webp",
+      "w": 1920,
+      "h": 1080
+    },
+    "A6b_door_worker_curtain": {
+      "src": "assets/img/A6b_door_worker_curtain.webp",
+      "small": "assets/img/A6b_door_worker_curtain_960.webp",
+      "w": 1920,
+      "h": 1080
+    },
+    "A9b_interior_finned_pcm_wall": {
+      "src": "assets/img/A9b_interior_finned_pcm_wall.webp",
+      "small": "assets/img/A9b_interior_finned_pcm_wall_960.webp",
+      "w": 1920,
+      "h": 1080
+    },
+    "A14_night_wax_cooling": {
+      "src": "assets/img/A14_night_wax_cooling.webp",
+      "small": "assets/img/A14_night_wax_cooling_960.webp",
+      "w": 1920,
+      "h": 1080
     }
   },
   "B": {
@@ -157,6 +181,24 @@
       "w": 880,
       "h": 900,
       "method": "rembg u2net"
+    },
+    "B15_strip_curtain": {
+      "src": "assets/cutouts/B15_strip_curtain.webp",
+      "w": 900,
+      "h": 900,
+      "method": "white background kept (picture is translucent / shown on a white card)"
+    },
+    "B16_finned_panel_cutaway": {
+      "src": "assets/cutouts/B16_finned_panel_cutaway.webp",
+      "w": 900,
+      "h": 502,
+      "method": "white background kept (picture is translucent / shown on a white card)"
+    },
+    "B17_split_valve_manifold": {
+      "src": "assets/cutouts/B17_split_valve_manifold.webp",
+      "w": 900,
+      "h": 502,
+      "method": "white background kept (picture is translucent / shown on a white card)"
     }
   },
   "C": {}
