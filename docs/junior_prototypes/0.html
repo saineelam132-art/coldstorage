@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ColdTrustTwin – Simulation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#f4f7fa;--card:#fff;--tx:#12202e;--mut:#5b6b7b;--ac:#0b7285;--ok:#2b8a3e;--bad:#c92a2a;--wn:#e8590c;--bd:#d6dee6}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1620;--card:#16222f;--tx:#e6edf3;--mut:#8fa3b5;--ac:#3bc9db;--ok:#69db7c;--bad:#ff6b6b;--wn:#ffa94d;--bd:#283849}}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--tx);padding:12px}
+h1{font-size:20px;margin:0 0 2px}h3{margin:0 0 8px;font-size:15px}.sub{color:var(--mut);margin-bottom:10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.tabs button{padding:7px 12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:6px;cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px}
+label{display:block;margin:6px 0 2px;color:var(--mut);font-size:12px}
+input,select{width:100%;padding:6px;border:1px solid var(--bd);border-radius:5px;background:var(--bg);color:var(--tx)}
+button.b{margin:6px 6px 0 0;padding:7px 11px;border:0;border-radius:6px;background:var(--ac);color:#fff;cursor:pointer}
+button.r{background:var(--bad)}button.w{background:var(--wn)}button.g{background:var(--mut)}button:disabled{opacity:.4}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:4px;border-bottom:1px solid var(--bd);text-align:left}
+.slip{border:2px dashed var(--mut);padding:10px;border-radius:6px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px}
+.bar{height:14px;background:var(--bd);border-radius:7px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok);width:0}
+.chain{max-height:240px;overflow:auto;font:11px ui-monospace,monospace}.blk{border-left:3px solid var(--ok);padding:3px 6px;margin:3px 0;background:var(--bg);word-break:break-all}.blk.x{border-color:var(--bad)}
+.alert{margin-top:8px;padding:10px;border-radius:6px;font-weight:700}.alert.bad{background:var(--bad);color:#fff}.alert.ok{background:var(--ok);color:#fff}
+.warn{color:var(--wn);font-weight:700}pre{background:var(--bg);border:1px solid var(--bd);padding:10px;border-radius:6px;overflow:auto;font-size:11.5px;line-height:1.4}
+.pane{display:none}.pane.on{display:block}
+</style></head><body>
+<h1>❄ ColdTrustTwin</h1>
+<div class="sub">Cloud-native cold-storage digital twin · 2.0×2.0×2.2 m (8.8 m³) · 150 kg · 2–8 °C · RH 85–95 % · 0.5–2.0 m/s · browser simulation of the AWS pipeline</div>
+<div class="tabs" id="tabs"></div>
+
+<div class="pane on" id="p-sim">
+<div class="grid">
+<div class="card"><h3>① Farmer check-in → API Gateway + Lambda → DynamoDB</h3>
+<label>Farmer name</label><input id="fn" value="Ramesh Kumar">
+<label>Produce type</label><select id="pt"><option>Tomato</option><option>Spinach</option><option>Strawberry</option><option>Capsicum</option></select>
+<label>Quantity (kg, max 150)</label><input id="qt" type="number" value="120" min="1" max="150">
+<div id="qwarn" class="warn"></div>
+<label>Base contract price (₹/kg)</label><input id="bp" type="number" value="40">
+<button class="b" id="bci">Check in &amp; print slip</button>
+<div id="slip" style="margin-top:8px"></div></div>
+
+<div class="card"><h3>② IoT edge nodes → IoT Core (MQTT) → Ledger</h3>
+<label>Scenario</label><select id="sc"><option value="n">Normal operation</option><option value="d">Door seal failure (warm)</option><option value="f">Evaporator over-cooling (freeze)</option></select>
+<button class="b" id="t1" disabled>+1 hour</button><button class="b g" id="t24" disabled>+12 hours</button>
+<table id="nodes" style="margin-top:8px"><tr><th>Node</th><th>Reading</th></tr></table>
+<div style="margin-top:8px">Load: <span id="lt">0</span>/150 kg <div class="bar"><i id="lb"></i></div></div>
+<svg id="ch" viewBox="0 0 300 90" style="width:100%;margin-top:8px"></svg></div>
+
+<div class="card"><h3>③ Freshness engine &amp; buyer settlement</h3>
+<div>Sim time: <b id="sh">0</b> h · Freshness: <b id="fr">100.0</b>%</div>
+<div class="bar"><i id="fb"></i></div>
+<button class="b" id="bs" disabled>Buyer scan QR (verify + settle)</button>
+<button class="b r" id="tp" disabled>Attacker: tamper a block</button>
+<div id="res"></div></div>
+
+<div class="card" style="grid-column:1/-1"><h3>Evidence ledger (SHA-256 hash chain) · <span id="cl">0</span> blocks</h3><div class="chain" id="chain"></div></div>
+</div></div>
+
+<div class="pane" id="p-arch"><div class="card"><h3>AWS reference architecture</h3><pre>
+ Farmer kiosk / mobile ──HTTPS──▶ API Gateway ──▶ Lambda (checkin) ──▶ DynamoDB  ColdTrustTwinState
+                                                       │ HMAC key ◀── Secrets Manager / KMS (sign QR)
+                                                       ▼
+ 4 edge nodes (ESP32/Greengrass)                  QR + paper slip (Slip ID, Bay, SHA-256 sig)
+  N1 supply duct  T/RH/wind
+  N2 core probe   T          ──MQTT 8883 (X.509)──▶ AWS IoT Core ──Rule──▶ Lambda (ingest)
+  N3 door seal    leakage                                   │                    │
+  N4 return air   T/RH                                      │                    ├─▶ QLDB / Amazon Managed Blockchain
+                                                            │                    │   (hash-chained blocks = owner evidence)
+                                                            ▼                    ├─▶ Timestream (telemetry, dashboards)
+                                                       IoT Events (alarm)        └─▶ DynamoDB twin state (latest values)
+                                                            └─▶ SNS (SMS/email, 150 kg &amp; temp excursion)
+ Buyer scan ──▶ API Gateway ──▶ Lambda (verify) : walk chain → recompute hashes → freshness → price
+                                  ├ OK       : Final = Base × Freshness%  → payment release
+                                  └ TAMPERED : "EVIDENCE TAMPERED" → freeze payment (Step Functions) → penalty mode
+ Observability: CloudWatch, X-Ray · Security: IAM least privilege, KMS, IoT policies per thing
+ Azure equivalent: IoT Hub, Functions, Cosmos DB, Confidential Ledger · GCP: IoT-via-Pub/Sub, Cloud Run, Firestore, Spanner
+ </pre>
+<h3>Decay model</h3><pre>rate_%/h = 0.10                                   (baseline, in range)
+         + 0.40 × dev^1.6   dev = °C below 2 or above 8 (core temp)   (non-linear)
+         + 0.05 × RH/airflow excursion
+Freshness = max(0, 100 − Σ rate·Δt)    Final Price = Base × Freshness%</pre></div></div>
+
+<div class="pane" id="p-sch"><div class="card"><h3>Telemetry payload (MQTT topic: coldtrust/{chamberId}/telemetry)</h3><pre>{
+ "$schema":"http://json-schema.org/draft-07/schema#","type":"object",
+ "required":["chamberId","slipId","simHour","ts","nodes"],
+ "properties":{
+  "chamberId":{"type":"string"},"slipId":{"type":"string"},"simHour":{"type":"number"},"ts":{"type":"string","format":"date-time"},
+  "nodes":{"type":"object","required":["n1","n2","n3","n4"],"properties":{
+    "n1":{"type":"object","properties":{"tempC":{"type":"number"},"rh":{"type":"number"},"windMs":{"type":"number"}}},
+    "n2":{"type":"object","properties":{"coreTempC":{"type":"number"}}},
+    "n3":{"type":"object","properties":{"leakageW":{"type":"number"}}},
+    "n4":{"type":"object","properties":{"returnTempC":{"type":"number"},"rh":{"type":"number"}}}}}}}</pre>
+<h3>Ledger block</h3><pre>{
+ "index":42,"ts":"2026-11-10T10:00:00Z","slipId":"CT-XXXX",
+ "payload":{ ...telemetry... },
+ "prevHash":"64-hex","hash":"SHA256(index|ts|slipId|canonicalJSON(payload)|prevHash)"
+}  // genesis: prevHash = "0"*64, payload = slip record</pre>
+<h3>QR content</h3><pre>{"slipId":"CT-XXXX","bay":"B3","genesisHash":"...","sig":"HMAC_SHA256(secret, slipId|bay|genesisHash)"}</pre></div></div>
+
+<div class="pane" id="p-code"><div class="card">
+<h3>Lambda: check-in (Python)</h3><pre>import json, os, uuid, hmac, hashlib, boto3, decimal
+ddb = boto3.resource("dynamodb").Table(os.environ["TABLE"]); KEY = os.environ["QR_KEY"].encode()
+def handler(event, ctx):
+    b = json.loads(event["body"]); q = float(b["quantityKg"])
+    if q &lt;= 0 or q &gt; 150: return {"statusCode":400,"body":"Max 150 kg"}
+    slip = "CT-" + uuid.uuid4().hex[:8].upper(); bay = "B" + str(int(slip[3:5],16) % 6 + 1)
+    gen = hashlib.sha256(f"0|{slip}|{b['farmerName']}|{q}".encode()).hexdigest()
+    sig = hmac.new(KEY, f"{slip}|{bay}|{gen}".encode(), hashlib.sha256).hexdigest()
+    ddb.put_item(Item={"slipId":slip,"bay":bay,"farmer":b["farmerName"],"produce":b["produceType"],
+        "qtyKg":decimal.Decimal(str(q)),"basePrice":decimal.Decimal(str(b["basePrice"])),"genesisHash":gen,"status":"STORED"})
+    return {"statusCode":200,"body":json.dumps({"slipId":slip,"bay":bay,"qr":{"slipId":slip,"bay":bay,"genesisHash":gen,"sig":sig}})}</pre>
+<h3>IoT simulator (Python, MQTT)</h3><pre>import json, time, random, ssl, paho.mqtt.client as mqtt
+c = mqtt.Client(); c.tls_set("AmazonRootCA1.pem","cert.pem","key.pem", tls_version=ssl.PROTOCOL_TLSv1_2)
+c.connect("xxxx-ats.iot.ap-south-1.amazonaws.com", 8883); c.loop_start()
+core = 4.0
+for h in range(0, 48):
+    air = random.gauss(4,0.4) + (6 if 20 &lt; h &lt; 26 else 0)          # door-seal fault window
+    core += (air - core) * 0.25
+    msg = {"chamberId":"CH-01","slipId":"CT-XXXX","simHour":h,"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+      "nodes":{"n1":{"tempC":air,"rh":random.gauss(90,2),"windMs":random.uniform(.6,1.8)},"n2":{"coreTempC":core},
+               "n3":{"leakageW":random.uniform(5,15)},"n4":{"returnTempC":air+1.5,"rh":random.gauss(88,2)}}}
+    c.publish("coldtrust/CH-01/telemetry", json.dumps(msg), qos=1); time.sleep(1)</pre>
+<h3>Lambda: ingest → hash-chain (Python)</h3><pre>import json, hashlib
+def h(i, ts, slip, payload, prev):
+    return hashlib.sha256(f"{i}|{ts}|{slip}|{json.dumps(payload,sort_keys=True,separators=(',',':'))}|{prev}".encode()).hexdigest()
+def handler(event, ctx):               # triggered by IoT Rule; append with conditional write (QLDB/DynamoDB)
+    last = get_last_block(event["slipId"])           # your ledger accessor
+    i = last["index"] + 1
+    blk = {"index":i,"ts":event["ts"],"slipId":event["slipId"],"payload":event,"prevHash":last["hash"]}
+    blk["hash"] = h(i, blk["ts"], blk["slipId"], blk["payload"], blk["prevHash"])
+    put_block_if_absent(blk)                           # ConditionExpression attribute_not_exists(index)</pre>
+<h3>Lambda: buyer verify &amp; settle (Python)</h3><pre>def verify(chain):
+    prev = "0"*64
+    for b in chain:
+        if b["prevHash"] != prev or h(b["index"],b["ts"],b["slipId"],b["payload"],b["prevHash"]) != b["hash"]:
+            return False, b["index"]
+        prev = b["hash"]
+    return True, None
+def freshness(chain):
+    f = 100.0
+    for b in chain[1:]:
+        t = b["payload"]["nodes"]["n2"]["coreTempC"]; dev = max(2-t, t-8, 0)
+        f -= 0.10 + 0.40 * dev ** 1.6
+    return max(f, 0)
+def handler(event, ctx):
+    chain = load_chain(event["slipId"]); ok, bad = verify(chain)
+    if not ok:
+        freeze_payment(event["slipId"]); return {"alert":"EVIDENCE TAMPERED","brokenAt":bad,"mode":"PENALTY"}
+    f = freshness(chain); return {"freshness":f,"finalPrice":base_price(event["slipId"]) * f/100}</pre></div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const tabs=[["sim","Simulator"],["arch","Architecture"],["sch","JSON Schemas"],["code","Serverless Code"]];
+tabs.forEach(([k,n],i)=>{const b=document.createElement("button");b.textContent=n;if(!i)b.className="on";b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.className="");b.className="on";document.querySelectorAll(".pane").forEach(p=>p.className="pane");$("p-"+k).className="pane on"};$("tabs").appendChild(b)});
+
+const enc=new TextEncoder();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+const sha=async s=>hex(await crypto.subtle.digest("SHA-256",enc.encode(s)));
+async function hmac(k,s){const key=await crypto.subtle.importKey("raw",enc.encode(k),{name:"HMAC",hash:"SHA-256"},false,["sign"]);return hex(await crypto.subtle.sign("HMAC",key,enc.encode(s)))}
+const KEY="demo-kms-secret", Z="0".repeat(64);
+let S=null, chain=[], core=4, hour=0;
+const canon=o=>JSON.stringify(o,Object.keys(o).sort ? undefined : undefined);
+const hb=(i,ts,slip,p,prev)=>sha(`${i}|${ts}|${slip}|${JSON.stringify(p)}|${prev}`);
+const dev=t=>Math.max(2-t,t-8,0);
+
+$("qt").oninput=()=>{$("qwarn").textContent=+$("qt").value>150?"⚠ Exceeds 150 kg limit":+$("qt").value>=135?"⚠ Near 150 kg capacity (>90%)":""};
+
+$("bci").onclick=async()=>{
+  const q=+$("qt").value; if(!(q>0&&q<=150)){$("qwarn").textContent="⚠ Quantity must be 1–150 kg";return}
+  const id="CT-"+crypto.getRandomValues(new Uint32Array(1))[0].toString(16).toUpperCase().padStart(8,"0");
+  const bay="B"+(parseInt(id.slice(3,5),16)%6+1);
+  S={id,bay,farmer:$("fn").value,produce:$("pt").value,q,base:+$("bp").value};
+  const gp={event:"CHECKIN",farmer:S.farmer,produce:S.produce,qtyKg:q,basePrice:S.base};
+  const gh=await hb(0,new Date().toISOString(),id,gp,Z);
+  chain=[{index:0,ts:new Date().toISOString(),slipId:id,payload:gp,prevHash:Z,hash:gh}];
+  S.gen=gh; S.sig=await hmac(KEY,`${id}|${bay}|${gh}`);
+  chain[0].hash=await hb(0,chain[0].ts,id,gp,Z); S.gen=chain[0].hash; S.sig=await hmac(KEY,`${id}|${bay}|${S.gen}`);
+  hour=0; core=4;
+  $("slip").innerHTML=`<div class="slip"><div id="qr"></div><div><b>PAPER SLIP ${id}</b><br>Farmer: ${S.farmer}<br>${S.produce} · ${q} kg · ₹${S.base}/kg<br>Bay: <b>${bay}</b><br>Sig: ${S.sig.slice(0,20)}…</div></div>`;
+  const qrText=JSON.stringify({slipId:id,bay,genesisHash:S.gen,sig:S.sig});
+  try{new QRCode($("qr"),{text:qrText,width:96,height:96})}catch(e){$("qr").textContent="[QR lib offline]"}
+  ["t1","t24","bs","tp"].forEach(x=>$(x).disabled=false);
+  $("lt").textContent=q;$("lb").style.width=q/150*100+"%";$("lb").style.background=q>=135?"var(--wn)":"var(--ok)";
+  $("res").innerHTML="";render();
+};
+
+function readings(){
+  const sc=$("sc").value; let air=4+(Math.random()-.5)*.8,leak=8+Math.random()*4,wind=1.2+(Math.random()-.5)*.6;
+  if(sc=="d"){air+=7;leak=60+Math.random()*20} if(sc=="f"){air-=7.5}
+  core+=(air-core)*.3;
+  return {n1:{tempC:+air.toFixed(2),rh:+(90+(Math.random()-.5)*4).toFixed(1),windMs:+wind.toFixed(2)},
+          n2:{coreTempC:+core.toFixed(2)},n3:{leakageW:+leak.toFixed(1)},
+          n4:{returnTempC:+(air+1.5+(core-air)*.3).toFixed(2),rh:+(88+(Math.random()-.5)*4).toFixed(1)}};
+}
+async function tick(){
+  hour++; const ts=new Date(Date.now()+hour*3600e3).toISOString(), nodes=readings();
+  const payload={chamberId:"CH-01",slipId:S.id,simHour:hour,ts,nodes}, prev=chain[chain.length-1];
+  const i=prev.index+1; chain.push({index:i,ts,slipId:S.id,payload,prevHash:prev.hash,hash:await hb(i,ts,S.id,payload,prev.hash)});
+}
+const T=async n=>{for(let i=0;i<n;i++)await tick();render()};
+$("t1").onclick=()=>T(1);$("t24").onclick=()=>T(12);
+
+function fresh(c){let f=100;for(const b of c.slice(1)){const d=dev(b.payload.nodes.n2.coreTempC);f-=.1+.4*Math.pow(d,1.6)}return Math.max(0,f)}
+function render(){
+  const l=chain[chain.length-1]; const n=l.payload.nodes;
+  if(n){const t=n.n2.coreTempC,ok=(v,a,b)=>v>=a&&v<=b?"":"warn";
+   $("nodes").innerHTML=`<tr><th>Node</th><th>Reading</th></tr>
+   <tr><td>N1 Supply duct</td><td class="${ok(n.n1.tempC,2,8)}">${n.n1.tempC}°C · ${n.n1.rh}% · <span class="${ok(n.n1.windMs,.5,2)}">${n.n1.windMs} m/s</span></td></tr>
+   <tr><td>N2 Core probe</td><td class="${ok(t,2,8)}">${t}°C</td></tr>
+   <tr><td>N3 Door seal</td><td class="${n.n3.leakageW>30?"warn":""}">${n.n3.leakageW} W leakage</td></tr>
+   <tr><td>N4 Return air</td><td>${n.n4.returnTempC}°C · ${n.n4.rh}%</td></tr>`}
+  const f=fresh(chain); $("sh").textContent=hour; $("fr").textContent=f.toFixed(1); $("fb").style.width=f+"%";
+  $("fb").style.background=f>85?"var(--ok)":f>60?"var(--wn)":"var(--bad)";
+  $("cl").textContent=chain.length;
+  $("chain").innerHTML=chain.slice().reverse().map(b=>`<div class="blk${b.bad?" x":""}">#${b.index} · ${b.payload.event||"h"+b.payload.simHour+" core "+(b.payload.nodes?b.payload.nodes.n2.coreTempC+"°C":"")}<br>prev ${b.prevHash.slice(0,16)}… hash ${b.hash.slice(0,16)}…</div>`).join("");
+  const pts=chain.slice(1).map((b,i,a)=>`${i*300/Math.max(a.length-1,1)},${90-(b.payload.nodes.n2.coreTempC+5)*5}`).join(" ");
+  $("ch").innerHTML=`<rect x="0" y="${90-13*5}" width="300" height="${6*5}" fill="rgba(43,138,62,.15)"/><text x="2" y="10" font-size="8" fill="currentColor">Core °C (green = 2–8)</text><polyline fill="none" stroke="var(--ac)" stroke-width="2" points="${pts}"/>`;
+}
+
+$("tp").onclick=()=>{ if(chain.length<4){alert("Run a few hours first");return}
+  const b=chain[Math.floor(chain.length/2)]; if(b.payload.nodes){b.payload.nodes.n2.coreTempC=4.0;b.tampered=true}
+  $("res").innerHTML='<div class="alert">Attacker silently rewrote block #'+b.index+' (excursion hidden). Hashes not recomputed. Now run the buyer scan.</div>';};
+
+$("bs").onclick=async()=>{
+  let prev=Z,broken=null;
+  for(const b of chain){const h=await hb(b.index,b.ts,b.slipId,b.payload,b.prevHash); if(b.prevHash!==prev||h!==b.hash){broken=b.index;break} prev=b.hash}
+  const sig=await hmac(KEY,`${S.id}|${S.bay}|${chain[0].hash}`), sigOK=sig===S.sig;
+  if(broken!==null||!sigOK){
+    chain.forEach(b=>{if(broken!==null&&b.index>=broken)b.bad=true}); render();
+    $("res").innerHTML=`<div class="alert bad">🚨 EVIDENCE TAMPERED — broken hash link at block #${broken}<br>Payment FROZEN · Penalty mode triggered · Incident escalated to auditor (SNS)</div>`;
+  }else{
+    const f=fresh(chain), p=S.base*f/100, tot=p*S.q;
+    $("res").innerHTML=`<div class="alert ok">✔ Chain integrity verified (${chain.length} blocks, QR signature valid)</div>
+    <table><tr><td>Freshness</td><td><b>${f.toFixed(2)}%</b></td></tr><tr><td>Base price</td><td>₹${S.base}/kg</td></tr>
+    <tr><td>Final price/kg</td><td><b>₹${p.toFixed(2)}</b></td></tr><tr><td>Settlement (${S.q} kg)</td><td><b>₹${tot.toFixed(2)}</b></td></tr></table>`;
+  }
+};
+</script></body></html>

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://koolkisaan.example/schemas/telemetry.schema.json",
+  "title": "KoolKisaan chamber telemetry (one message every 5 minutes)",
+  "description": "MQTT topic coldtrust/{chamberId}/telemetry (QoS 1, TLS 8883, X.509 device certificate). The same values become the payload of a READING block. Simulator: tools/mqtt_simulator.py.",
+  "type": "object",
+  "required": ["chamberId", "ts", "step", "N1", "N2", "N3", "N4", "out", "P_el_W"],
+  "properties": {
+    "chamberId": {"type": "string"},
+    "ts": {"type": "string", "description": "ISO-8601 UTC"},
+    "step": {"type": "integer", "description": "5-minute step number (gaps are detected from ts)"},
+    "N1": {"type": "object", "description": "supply air at the coil outlet", "required": ["T_s", "RH_s", "v_m_s"],
+      "properties": {"T_s": {"type": "number"}, "RH_s": {"type": "number", "minimum": 0, "maximum": 100}, "v_m_s": {"type": "number", "minimum": 0}}},
+    "N2": {"type": "object", "description": "produce core probe", "required": ["T_core"], "properties": {"T_core": {"type": "number"}}},
+    "N3": {"type": "object", "description": "door", "required": ["open", "angle_deg", "Q_door_W"],
+      "properties": {"open": {"type": "number", "enum": [0, 1]}, "angle_deg": {"type": "number"}, "Q_door_W": {"type": "number", "description": "leakage from the ASHRAE infiltration formula"}}},
+    "N4": {"type": "object", "description": "return air", "required": ["T_r", "RH_r"],
+      "properties": {"T_r": {"type": "number"}, "RH_r": {"type": "number", "minimum": 0, "maximum": 100}}},
+    "out": {"type": "object", "description": "outside air (weather)", "properties": {"T_out": {"type": "number"}, "RH_out": {"type": "number"}}},
+    "P_el_W": {"type": "number", "minimum": 0, "description": "compressor + coil fan electrical power (energy meter)"},
+    "ctl": {"type": "object", "description": "controller log used by the physics check: P_fan_kW, cop, Q_wax_branch_kW, Q_int_kW, G_wax_kW_K, T_pcm, load_event"}
+  }
+}

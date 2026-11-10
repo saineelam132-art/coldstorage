@@ -8,6 +8,8 @@ Serves the website in web/ and these JSON APIs:
     /api/state?t=    every sensor value at simulated time t (seconds from 1 Jan 00:00)
     /api/series?q=&t=&hours=   history of one value (for small graphs)
     /api/demo_days   interesting moments of the simulated year
+    /api/trust/info, /api/trust/sign, /api/trust/verify   slip signing for Trust & Trade (web/trust.html).
+        The HMAC key lives only here, read from the environment variable KOOLKISAAN_HMAC_KEY.
 """
 from pathlib import Path
 
@@ -110,6 +112,36 @@ def api_batch(bid: str, t: float = -1):
     if v is None:
         raise HTTPException(404, "batch not found")
     return v
+
+
+@app.get("/api/trust/info")
+def api_trust_info():
+    import os
+    return {"mode": "server", "key_from_env": bool(os.environ.get("KOOLKISAAN_HMAC_KEY")),
+            "note": "Slips are signed on the server. The key is never sent to the browser."}
+
+
+def _slip_fields(body):
+    try:
+        return str(body["slipId"]), str(body["bay"]), str(body["genesisHash"])
+    except (KeyError, TypeError):
+        raise HTTPException(400, "need slipId, bay, genesisHash")
+
+
+@app.post("/api/trust/sign")
+def api_trust_sign(body: dict = Body(...)):
+    # Demo: anyone on the network can ask for a signature. A real deployment puts this behind login
+    # (API Gateway + Cognito) so only the cold-store clerk's check-in app can sign.
+    from engine import trust_ledger as TL
+    sid, bay, gen = _slip_fields(body)
+    return {"sig": TL.sign(sid, bay, gen), "mode": "server"}
+
+
+@app.post("/api/trust/verify")
+def api_trust_verify(body: dict = Body(...)):
+    from engine import trust_ledger as TL
+    sid, bay, gen = _slip_fields(body)
+    return {"valid": TL.verify_sig({"slipId": sid, "bay": bay, "genesisHash": gen, "sig": str(body.get("sig", ""))})}
 
 
 @app.get("/api/ledger")

@@ -191,6 +191,37 @@ results are published.
   → `results/live/uncertainty_2026.json`; the base case reproduces `design_study_2026.json` exactly.
   Control centre → **How sure are we?** shows it; poster chart `figures/final_10_uncertainty.png`.
 
+## Trust & Trade (farmer → owner → transporter → buyer)
+
+Open **🤝 Trust & Trade** in the top bar (or `trust.html`; works from the static folder and offline too).
+Pick a role at the top. Everything is a demo: the ledger is kept in this browser; **Demo: reset** clears it.
+
+* **Farmer** – check in (at most 150 kg in the room, never more than the free space; least-loaded of 6 bays).
+  You get a slip ID `CT-YYMMDD-NNN`, the genesis block and a printable A6 slip with a QR
+  `{slipId, bay, genesisHash, sig}`, sig = HMAC-SHA256. Freshness and price of your produce update live.
+* **Cold-store owner** – move the twin clock (each 5 min = one READING block with the four nodes N1–N4),
+  see the Φ gauge, the 24-h chart, alarms, the read-only ledger and the daily anchors.
+  Demo buttons: *Edit an old reading* (chain breaks), *edit + re-hash* (daily anchor catches it),
+  *Report fake readings from now on* (4.0 °C; hashes stay valid, Φ catches it).
+* **Transporter** – verify the QR, sign the hand-over, add transit readings (typed, or the vehicle model),
+  deliver. Shows the freshness lost per leg (farm, storage, transport).
+* **Buyer** – runs 5 checks (signature, all hashes, no gaps, daily anchors, physics flags) and settles:
+  intact → price by freshness; broken → payment FROZEN; physics flag → payment ON HOLD.
+
+Signing key: the Python server reads it from the environment variable `KOOLKISAAN_HMAC_KEY`
+(set it before `python run.py`; never put it in a file in the repository). The static/Vercel copy has no
+server and uses a clearly labelled public demo key.
+
+Re-make the node data and the Φ numbers (σ tuning, false flags, fake detection) after a design change:
+
+```
+python -m twin.trust_nodes
+```
+
+→ `web/trust/data/trust_data.js` and `data/trust/phi_2026_stats.json` (not in results/).
+More: `docs/cloud_architecture.md` (AWS/Azure/GCP mapping), `docs/schemas/` (block and telemetry JSON
+Schemas), `tools/mqtt_simulator.py` (sends the node data as MQTT messages, or prints them).
+
 ## At the stall
 
 **Normal start:** double-click `start.bat`. It uses **Python 3.12** first (`py -3.12`, because

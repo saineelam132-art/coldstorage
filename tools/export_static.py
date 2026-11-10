@@ -174,6 +174,9 @@ def main():
     (OUT / "buyer.html").write_text(bh, encoding="utf-8")
     # the Live Year Run page is a plain script page: it works from a folder as it is
     shutil.copy(ROOT / "web" / "live.html", OUT / "live.html")
+    # Trust & Trade: plain script page too (demo signing key, ledger in the browser)
+    shutil.copy(ROOT / "web" / "trust.html", OUT / "trust.html")
+    shutil.copytree(ROOT / "web" / "trust", OUT / "trust")
     (OUT / "README.txt").write_text(
         "KoolKisaan - STATIC BACKUP (no Python needed)\n\n"
         "Double-click index.html (Chrome or Edge). Everything runs from these files.\n"

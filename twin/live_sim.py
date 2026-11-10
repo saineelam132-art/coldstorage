@@ -71,9 +71,12 @@ def door_times(loading):
 
 
 def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_key=None, init=None,
-                  fan_on=None, sun_factor=None, loading=None, steps=False, hx=None):
+                  fan_on=None, sun_factor=None, loading=None, steps=False, hx=None, scenario=None):
     """Run the live twin. weather: hourly frame with time_ist, T_out, RH_out, ps_Pa, ghi, wind.
-    Returns (hourly DataFrame, totals dict, end_state dict, batches DataFrame)."""
+    Returns (hourly DataFrame, totals dict, end_state dict, batches DataFrame).
+    scenario (Trust & Trade demo faults; None = normal, results unchanged):
+      {"from_step": i, "door_leak": fraction of a fully open door, "setpoint_C": failed-thermostat set point,
+       "no_grid": True for a power cut, "load_once": True = only the first loading event happens}"""
     from engine import fan as FAN
     cfg = cfg or load_config()
     lr = cfg["live_run"]
@@ -196,6 +199,14 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     event_at = np.full(n, -1)
     for k, ev in enumerate(loading):
         event_at[(hod == ev["hour"]) & (minute == 0)] = k
+    if scenario and scenario.get("load_once"):          # one batch only (Trust & Trade slip demo)
+        first = {}
+        for j in np.where(event_at >= 0)[0]:
+            if event_at[j] in first:
+                event_at[j] = -1
+                door[j] = 0.0
+            else:
+                first[event_at[j]] = j
 
     # ---- state
     st = init or {}
@@ -216,8 +227,13 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     since = [None] * len(masses)
     batt_base_kW = sum(lr["battery_12V"]["loads_W"].values()) / 1000.0
     s4 = int(4 * 3600 / DT)
+    sc = scenario or {}
+    sc_from = int(sc.get("from_step", 0))
+    Tset0 = Tset
 
     for i in range(n):
+        fault = any(k_ in sc for k_ in ("door_leak", "setpoint_C", "no_grid")) and i >= sc_from
+        Tset = sc.get("setpoint_C", Tset0) if fault else Tset0
         k = event_at[i]
         if k >= 0:                                    # loading event k: that share goes out, fresh in
             acc["prod_out"] += masses[k] * cp * T_n[k]
@@ -231,7 +247,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
             if bi is None:
                 continue
             b = batches[bi]
-            if b[3] is None and T_n[kk] <= Tset + lr["cooled_within_K"]:
+            if b[3] is None and T_n[kk] <= Tset0 + lr["cooled_within_K"]:
                 b[3] = i - b[0]
             if b[4] is None and i - b[0] >= s4:
                 b[4] = T_n[kk]
@@ -256,9 +272,14 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                 grid_mode = hot
             else:
                 grid_mode = grid_mode or (m_p > 0 and pct < ats_thr) or (m_p == 0) or hot
+        if fault and sc.get("no_grid"):              # power cut: no grid, only sun (and the wax)
+            grid_mode = False
         Q_avail = Qmax if grid_mode else Q_sun
 
         Dt = min(1.0, door[i] / DT)
+        Dt_door = Dt
+        if fault and sc.get("door_leak"):            # torn door seal: a small part of the door always open
+            Dt = max(Dt, float(sc["door_leak"]))
         Q_wall = UAw * (T_out[i] - T_r)
         if Dt > 0:
             inf = loads.infiltration_load(cfg, T_out[i], RH[i], T_r, rh_in, D_t=1.0, curtain=curtain, p=ps[i])
@@ -274,7 +295,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         dTw = T_r - T_p if m_p > 0 else 0.0
         G_nat = float(np.interp(max(dTw, 0.0), dTs, G_nat_tab)) if m_p > 0 else 0.0
         Q_pa_nat = G_nat * dTw if dTw > 0 else (G_nat_tab[1] * dTw if m_p > 0 else 0.0)
-        lights = il["lights_W"] / 1000.0 * max(il["lights_on_fraction"], Dt)
+        lights = il["lights_W"] / 1000.0 * max(il["lights_on_fraction"], Dt_door)
         base = Q_wall + Q_door + Q_resp + Q_b + lights + ctrl_kW
         Q_req = base + fan_kW - Q_pa_nat + C_room * (T_r - Tset) / DT
         Q_air = min(max(Q_req, 0.0), Q_avail)

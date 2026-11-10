@@ -1,0 +1,60 @@
+{
+ "sigma": {
+  "W_kg_kg": 7.06224619934701e-05,
+  "E_W": 77.86015508931312,
+  "Q_W": 75.0949765816526,
+  "core_K": 0.05100441025482844
+ },
+ "_note": "Digital twin (S) with simulated sensor noise; frozen 2026 study weather. Nothing measured.",
+ "sigma_tuned": {
+  "W_kg_kg": 7.06224619934701e-05,
+  "E_W": 77.86015508931312,
+  "Q_W": 75.0949765816526,
+  "core_K": 0.05100441025482844
+ },
+ "days": 309.625,
+ "phi_mean": 0.6670961379122453,
+ "phi_p99": 1.869321173663194,
+ "time_green_pct": 99.43255730498363,
+ "false_flags": 0,
+ "false_flags_per_year": 0.0,
+ "false_flags_per_month": 0.0,
+ "false_flag_times": [],
+ "fake_detection_day_07_17": {
+  "n": 435,
+  "caught_pct": 100.0,
+  "caught_within_30min_pct": 100.0,
+  "median_min": 15.0,
+  "p90_min": 15.0
+ },
+ "fake_detection_night": {
+  "n": 606,
+  "caught_pct": 100.0,
+  "caught_within_30min_pct": 99.5049504950495,
+  "median_min": 15.0,
+  "p90_min": 15.0
+ },
+ "fake_detection_all": {
+  "n": 1041,
+  "caught_pct": 100.0,
+  "caught_within_30min_pct": 99.71181556195965,
+  "median_min": 15.0,
+  "p90_min": 15.0
+ },
+ "fake_detection_note": "Fake = air and core report 4.0 °C from one reading on (the demo). Horizon 3 h.",
+ "slow_fake_day_07_17": {
+  "n": 435,
+  "caught_pct": 86.4367816091954,
+  "caught_within_30min_pct": 29.195402298850574,
+  "median_min": 60.0,
+  "p90_min": 65.0
+ },
+ "slow_fake_night": {
+  "n": 606,
+  "caught_pct": 68.97689768976898,
+  "caught_within_30min_pct": 60.23102310231023,
+  "median_min": 30.0,
+  "p90_min": 61.50000000000006
+ },
+ "slow_fake_note": "Harder case: the cheater slides the readings to 4.0 °C over 1 h (no jump). Horizon 6 h."
+}

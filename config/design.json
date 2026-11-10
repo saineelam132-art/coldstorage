@@ -108,6 +108,34 @@
     "_note": "Automatic transfer switch moves the compressor to grid when PCM battery < 15 % and there is no solar power."
   },
 
+  "trust": {
+    "_note": "Trust & Trade (farmer, transporter, owner, buyer): capacity rules, the 4 inside nodes, the physics consistency check (Φ) and the freshness price. Values marked E are design assumptions.",
+    "payload_limit_kg": 150,
+    "bays": 6,
+    "load_warn_frac": 0.8,
+    "rh_band_pct": [85, 95],
+    "air_speed_produce_m_s": [0.5, 2.0],
+    "produce_air_speed_fan_on_m_s": 1.0,
+    "produce_air_speed_fan_off_m_s": 0.5,
+    "evaporator_airflow_m3_h": 900,
+    "evaporator_airflow_note": "E – typical small R290 unit cooler with a 40 W fan (check the chosen unit). Air speed at the coil outlet = airflow / face area.",
+    "coil_face_area_m2": 0.12,
+    "crop": "pomegranate",
+    "reading_interval_s": 300,
+    "transit_interval_min": 30,
+    "vehicle_time_constant_h": 4.0,
+    "vehicle_rh_pct": 85, "vehicle_air_speed_m_s": 0.5,
+    "harvest_to_checkin_h_default": 2,
+    "vehicle_note": "E – insulated box on a two-wheeler / auto: warms toward the outside air with this time constant; RH and air speed inside the box are also assumptions.",
+    "sensor_noise": {"T_K": 0.1, "RH_pct": 1.0, "P_rel": 0.02, "airflow_bias_rel": 0.05, "seed": 7},
+    "phi": {"weights": [1, 1, 1, 1], "window_steps": 3,
+            "sigma_default": {"W_kg_kg": 0.00005, "E_W": 40, "Q_W": 30, "core_K": 0.05},
+            "sigma_note": "Floors = about what the sensor noise alone gives after the 15-min mean (0.1 K, 1 % RH, 2 % power). The values used are tuned on the twin's normal 2026 run: sigma = max(floor, 99.9th percentile of |r| / 3) -> data/trust/phi_2026_stats.json.",
+            "green_below": 2.0, "red_at": 3.0, "red_steps": 3},
+    "fake_reading_C": 4.0,
+    "demo_key_note": "Demo signing key – real deployment keeps the key in a secrets manager."
+  },
+
   "physics_check": {
     "threshold_K": 1.5,
     "persist_minutes": 15,

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trust &amp; Trade – KoolKisaan</title>
+<meta name="description" content="KoolKisaan Trust &amp; Trade: farmer check-in with a signed slip, per-batch hash chain, physics check (Φ) on the sensor data, transporter custody and buyer settlement by freshness.">
+<link rel="icon" type="image/png" sizes="64x64" href="public/favicon-64.png">
+<link rel="apple-touch-icon" href="public/apple-touch-icon.png">
+<meta name="theme-color" content="#06121f">
+<link rel="stylesheet" href="trust/trust.css">
+</head>
+<body>
+<header class="tt-top">
+  <a class="tt-brand" href="index.html" title="Back to the cold room"><img src="public/koolkisaan-logo-small.png" alt="KoolKisaan logo"><span><b>KoolKisaan</b><small>Trust &amp; Trade</small></span></a>
+  <nav class="tt-roles" id="roles" aria-label="Role">
+    <button data-role="farmer" class="on">👩‍🌾 Farmer</button>
+    <button data-role="owner">🏠 Cold-store owner</button>
+    <button data-role="transporter">🚚 Transporter</button>
+    <button data-role="buyer">🛒 Buyer</button>
+  </nav>
+  <div class="tt-clock"><span class="lbl">Twin clock</span><b id="clock">–</b><span id="clockTag"></span></div>
+  <div class="tt-acts">
+    <label class="lbl" for="scenario">Scenario</label>
+    <select id="scenario" title="Which twin run the cold room follows (S)"></select>
+    <button id="resetBtn" class="ghost" title="Delete all demo slips and start again">Demo: reset</button>
+  </div>
+</header>
+<div id="keyNote" class="keynote" hidden></div>
+
+<main>
+  <!-- ======================= FARMER ======================= -->
+  <section id="v-farmer" class="view on">
+    <div class="grid">
+      <div class="card">
+        <h3>1 · Check in your produce</h3>
+        <label>Farmer name<input id="fName" value="Lakshmi R." autocomplete="off"></label>
+        <label>Produce<select id="fCrop"></select></label>
+        <label>Quantity (kg) – <span id="fFree"></span> kg free in the room<input id="fKg" type="number" min="1" step="1" value="40"></label>
+        <label>Agreed base price (₹/kg, at 100 % freshness)<input id="fBase" type="number" min="1" step="1" value="120"></label>
+        <label>Harvested how many hours before check-in?<input id="fHarv" type="number" min="0" step="0.5"></label>
+        <div id="fMsg" class="msg"></div>
+        <button id="fGo" class="primary">Check in &amp; print slip</button>
+        <p class="note">Rules: at most <b id="fCap"></b> kg in the room in total (payload limit) and never more than the free space.
+          The produce goes to the least-loaded bay. A slip ID, the first ledger block (genesis) and a signed QR are made at once.</p>
+      </div>
+      <div class="card">
+        <h3>2 · Room load and bays</h3>
+        <div class="loadbar"><i id="loadBar"></i></div>
+        <div class="loadtx"><b id="loadKg">0</b> / <span id="loadCap"></span> kg (<span id="loadPct">0</span> %) <span id="loadWarn" class="msg"></span></div>
+        <svg id="bays" viewBox="0 0 300 150" role="img" aria-label="Six storage bays with their load"></svg>
+        <p class="note">Green below 80 %, orange from 80 %, red when full.</p>
+      </div>
+      <div class="card wide">
+        <h3>3 · Your slip <span class="hint">(print it: A6, hand it to the farmer)</span></h3>
+        <div id="slipBox" class="muted">No slip yet – check in first.</div>
+      </div>
+      <div class="card wide">
+        <h3>4 · My produce now <span class="chip S">S</span> <span class="chip C">C</span></h3>
+        <div id="fMine" class="muted">Nothing stored yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= OWNER ======================= -->
+  <section id="v-owner" class="view">
+    <div class="grid">
+      <div class="card">
+        <h3>Twin clock <span class="chip S">S</span></h3>
+        <p class="note" id="scenarioNote"></p>
+        <div class="row">
+          <button data-adv="12">+1 h</button><button data-adv="72">+6 h</button><button data-adv="288">+24 h</button><button data-adv="9999">to the end</button>
+        </div>
+        <p class="note">Each 5-minute step writes one READING block (all four nodes) into every stored slip's chain.
+          The owner can read the ledger but has no button to change it.</p>
+      </div>
+      <div class="card">
+        <h3>Physics check Φ <span class="chip C">C</span></h3>
+        <div id="gauge"></div>
+        <div id="phiTx" class="phitx"></div>
+      </div>
+      <div class="card wide">
+        <h3>Inside nodes now <span class="chip S">S</span> · outside <span class="chip W">W</span></h3>
+        <div id="nodes" class="nodes"></div>
+      </div>
+      <div class="card wide">
+        <h3>Air and produce core – last 24 h <span class="chip S">S</span></h3>
+        <div class="chartbox"><canvas id="c24"></canvas></div>
+        <p class="note">Shaded = 2–8 °C safe band. Lines are what the nodes REPORT (with the fake readings, if switched on).</p>
+      </div>
+      <div class="card">
+        <h3>Alarms</h3>
+        <div id="alarms"></div>
+      </div>
+      <div class="card">
+        <h3>Demo: what if the owner cheats?</h3>
+        <button id="dEdit" class="danger">Demo: Edit an old reading</button>
+        <p class="note">Changes one old warm reading in the stored ledger to 5.0 °C without re-making the hashes – like someone editing the database.</p>
+        <button id="dFake" class="danger">Demo: Report fake readings from now on</button>
+        <p class="note">From the next step the nodes report <b id="fakeC"></b> °C for the air and the core. Every new block is hashed correctly –
+          the chain stays valid. Only the physics check Φ can see it.</p>
+        <div id="cheatState" class="msg"></div>
+      </div>
+      <div class="card wide">
+        <h3>Ledger (read-only) <select id="oSlip"></select></h3>
+        <div id="ledger" class="ledger"></div>
+      </div>
+      <div class="card wide">
+        <h3>Daily anchors</h3>
+        <div id="anchors" class="muted"></div>
+        <p class="note">Once a day one hash of all slips' last blocks is published (in a real system: a public GitHub commit or S3 file).
+          It is also printed on new slips. After that, even the owner cannot quietly re-write a whole day.</p>
+      </div>
+      <div class="card wide honesty" id="honestyO"></div>
+    </div>
+  </section>
+
+  <!-- ======================= TRANSPORTER ======================= -->
+  <section id="v-transporter" class="view">
+    <div class="grid">
+      <div class="card">
+        <h3>1 · Scan the slip</h3>
+        <label>Pick a slip in the room<select id="tSlip"></select></label>
+        <label>…or paste the QR text<textarea id="tQR" rows="3" placeholder='{"slipId":"CT-…","bay":"B1","genesisHash":"…","sig":"…"}'></textarea></label>
+        <button id="tVerify">Verify QR signature</button>
+        <div id="tVmsg" class="msg"></div>
+      </div>
+      <div class="card">
+        <h3>2 · Take over (HANDOVER_OUT)</h3>
+        <label>Transporter ID<input id="tId" value="TR-0457"></label>
+        <label>Vehicle number<input id="tVeh" value="AP 31 TX 4821"></label>
+        <label>Produce temperature at pick-up (°C)<input id="tTemp" type="number" step="0.1"></label>
+        <button id="tOut" class="primary" disabled>Sign hand-over</button>
+        <div id="tOmsg" class="msg"></div>
+      </div>
+      <div class="card">
+        <h3>3 · On the road (TRANSIT)</h3>
+        <div class="row"><input id="tManual" type="number" step="0.1" placeholder="°C in the box"><button id="tAdd" disabled>Add reading (+30 min)</button></div>
+        <button id="tModel" disabled>Demo: vehicle model, drive 2 h</button>
+        <p class="note">Vehicle model <span class="chip E">E</span>: insulated box warms toward the outside air,
+          T(t) = T<sub>out</sub> + (T<sub>0</sub> − T<sub>out</sub>)·e<sup>−t/τ</sup>, τ = <b id="tTau"></b> h. One block every 30 min; outside air from the weather <span class="chip W">W</span>.</p>
+        <div id="tTrip" class="muted"></div>
+      </div>
+      <div class="card">
+        <h3>4 · Deliver (HANDOVER_IN)</h3>
+        <label>Buyer ID<input id="tBuyer" value="BY-VSKP-12"></label>
+        <label>Produce temperature at delivery (°C)<input id="tInTemp" type="number" step="0.1"></label>
+        <button id="tIn" class="primary" disabled>Sign delivery</button>
+        <div id="tImsg" class="msg"></div>
+      </div>
+      <div class="card wide">
+        <h3>Who is responsible for what? (freshness lost per leg) <span class="chip C">C</span></h3>
+        <div id="tBlame" class="muted">Pick a slip.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= BUYER ======================= -->
+  <section id="v-buyer" class="view">
+    <div class="grid">
+      <div class="card">
+        <h3>Check a batch</h3>
+        <label>Pick a delivered slip<select id="bSlip"></select></label>
+        <label>…or paste the QR text<textarea id="bQR" rows="3"></textarea></label>
+        <button id="bCheck" class="primary">Run the 5 checks</button>
+        <ol id="bChecks" class="checks"></ol>
+      </div>
+      <div class="card">
+        <h3>Verdict</h3>
+        <div id="bVerdict" class="verdict muted">Run the checks first.</div>
+        <div id="bPay"></div>
+      </div>
+      <div class="card">
+        <h3>Physics check Φ <span class="chip C">C</span></h3>
+        <div id="gaugeB"></div>
+        <div id="phiTxB" class="phitx"></div>
+      </div>
+      <div class="card wide">
+        <h3>Freshness along the journey <span class="chip C">C</span></h3>
+        <div class="chartbox"><canvas id="cFresh"></canvas></div>
+        <p class="note">Left axis: freshness F (100 % at harvest). Right axis: produce temperature with the 2–8 °C band and the best temperature line.</p>
+      </div>
+      <div class="card wide">
+        <h3>How freshness is counted</h3>
+        <div id="fModel"></div>
+      </div>
+      <div class="card wide honesty" id="honestyB"></div>
+    </div>
+  </section>
+</main>
+
+<!-- printable A6 slip (only this prints) -->
+<div id="printSlip" aria-hidden="true"></div>
+
+<script src="vendor/qrcode/qrcode.js"></script>
+<script src="vendor/chartjs/chart.umd.js"></script>
+<script src="trust/data/trust_data.js"></script>
+<script src="trust/trust_core.js"></script>
+<script src="trust/trust.js"></script>
+</body>
+</html>
