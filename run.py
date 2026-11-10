@@ -25,7 +25,7 @@ def lan_ip():
 if __name__ == "__main__":
     import uvicorn
     port = 8000
-    print(f"\n  ColdTrust Twin starting ...\n  On this laptop:   http://localhost:{port}\n"
+    print(f"\n  KoolKisaan starting ...\n  On this laptop:   http://localhost:{port}\n"
           f"  From a phone on the same Wi-Fi:   http://{lan_ip()}:{port}\n")
     if "--no-browser" not in sys.argv:
         threading.Timer(3.0, lambda: webbrowser.open(f"http://localhost:{port}")).start()

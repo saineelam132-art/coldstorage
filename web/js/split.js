@@ -60,7 +60,7 @@ export function splitHTML(img) {
     </g>
     <text x="430" y="365" class="lbl stopnote" id="stopNote" text-anchor="middle"></text>
   </svg>
-  ${img ? `<figure class="splitimg"><img src="${img}" alt="Copper Y-split in the liquid line with two electronic expansion valves"><figcaption>The split: a copper Y in the liquid line, then one EEV per branch (concept picture)</figcaption></figure>` : ''}</div>
+  ${img ? `<figure class="splitimg"><img src="${img}" alt="Copper Y-split in the liquid line with two electronic expansion valves"><figcaption>The split: a copper Y in the liquid line, then one EEV per branch</figcaption></figure>` : ''}</div>
   <div class="splitnums" id="splitNums"></div>
   <p class="note">The controller opens <b>EEV-B</b> only when there is spare solar after the room is cold enough. The split happens in the
   <b>liquid line, before expansion</b>, so each branch gets an even flow; each EEV then sets its own branch's flow and superheat.

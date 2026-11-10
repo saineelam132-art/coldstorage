@@ -1,4 +1,4 @@
-"""ColdTrust Twin - physics engine.
+"""KoolKisaan - physics engine.
 
 Every engineering number shown on the website comes from a function in this
 package. Each module is small and holds one topic:

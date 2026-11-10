@@ -52,7 +52,7 @@ def now_ist():
 
 
 def _get_json(url, timeout=120):
-    req = urllib.request.Request(url, headers={"User-Agent": "ColdTrustTwin/1.0 (student project)"})
+    req = urllib.request.Request(url, headers={"User-Agent": "KoolKisaan/1.0 (student project)"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
@@ -97,7 +97,7 @@ def fetch_forecast():
 def fetch_ishrae():
     """Download the ISHRAE EPW into data/live/ishrae/ (git-ignored, see licence)."""
     ISHRAE_DIR.mkdir(parents=True, exist_ok=True)
-    req = urllib.request.Request(EPW_URL, headers={"User-Agent": "ColdTrustTwin/1.0"})
+    req = urllib.request.Request(EPW_URL, headers={"User-Agent": "KoolKisaan/1.0"})
     with urllib.request.urlopen(req, timeout=180) as r:
         z = zipfile.ZipFile(io.BytesIO(r.read()))
     (ISHRAE_DIR / EPW_NAME).write_bytes(z.read(EPW_NAME))

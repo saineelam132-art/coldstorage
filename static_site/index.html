@@ -3,28 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ColdTrust Twin</title>
+<title>KoolKisaan – Cold from the sun, wax for the night, truth in the ledger</title>
+<meta name="description" content="KoolKisaan: a solar–PCM (wax) cold room with an R290 refrigeration system for farmers near Visakhapatnam – digital twin on real 2026 weather and a hash-chain ledger. Cold from the sun, wax for the night, truth in the ledger.">
+<meta name="application-name" content="KoolKisaan">
+<meta name="theme-color" content="#06121f">
+<meta property="og:title" content="KoolKisaan">
+<meta property="og:description" content="Cold from the sun, wax for the night, truth in the ledger.">
+<meta property="og:image" content="public/koolkisaan-logo.png">
+<link rel="icon" type="image/png" sizes="64x64" href="public/favicon-64.png">
+<link rel="apple-touch-icon" href="public/apple-touch-icon.png">
 <link rel="stylesheet" href="css/app.css">
-<!-- importmap not needed in the static backup -->
-<script type="text/plain">
-{ "imports": {
-    "three": "./vendor/three/three.module.min.js",
-    "three/addons/": "./vendor/three/addons/"
-} }
-</script>
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="logo">❄</span><div><b>ColdTrust Twin</b><small>Solar–PCM cold room · R290 · Visakhapatnam</small></div></div>
-  <div class="seg" id="viewSeg" role="tablist" aria-label="View">
-    <button data-view="photo" class="on">Photo</button>
-    <button data-view="model">3D</button>
-  </div>
+  <button id="menuBtn" class="menubtn" aria-label="Outside conditions" aria-controls="outside" aria-expanded="false">☰</button>
+  <div class="brand"><img class="logoimg" src="public/koolkisaan-logo-small.png" alt="KoolKisaan logo">
+    <div class="brandtx"><b>KoolKisaan</b><span class="tagline">Cold from the sun, wax for the night, truth in the ledger.</span></div></div>
   <div class="seg" id="modeSeg" aria-label="Scene mode">
-    <button data-mode="auto" class="on" title="The picture follows the simulated time and weather">Auto</button>
-    <button data-mode="day" title="Jump the simulated clock to 11 am">Day</button>
-    <button data-mode="night" title="Jump the simulated clock to 10 pm">Night</button>
-    <button data-mode="monsoon" title="Jump to the rainiest day of 2025, 11 am">Monsoon</button>
+    <button data-mode="auto" class="on" title="Follows the clock and the weather on its own">Auto</button>
+    <button data-mode="day" title="Stays in daytime: 9 am – 4 pm of the sunniest day, played in a loop">Day</button>
+    <button data-mode="night" title="Stays at night: 8 pm – 5 am, played in a loop">Night</button>
+    <button data-mode="monsoon" title="Stays on the rainiest day of 2026, 9 am – 4 pm, played in a loop">Monsoon</button>
   </div>
   <div class="acts">
     <button id="tourBtn" class="act tour">▶ Start demo</button>
@@ -35,25 +34,16 @@
   </div>
   <div class="tools">
     <label class="chk" title="Strip curtain in the doorway (E = 0.85)"><input type="checkbox" id="curtain" checked> Curtain</label>
-    <label class="chk only-model" title="Engineering dimension lines"><input type="checkbox" id="dims" checked> Dimensions</label>
     <label class="chk" title="For slow laptops"><input type="checkbox" id="lowgfx"> Low graphics</label>
-    <label class="chk" title="Photo view only, no 3D (safest on a weak laptop)"><input type="checkbox" id="flat2d"> 2D mode</label>
   </div>
 </header>
 
-<section id="today" class="today" aria-label="Today in Visakhapatnam">
-  <div class="tdrow tdtop">
-    <b id="tdDate">–</b><span id="tdClock" class="tdclock">–</span>
-    <span id="tdLive" class="tdlive"></span><span id="tdOffline" class="tdoff" hidden></span>
-    <span id="tdWarn" class="tdwarn" hidden></span>
-    <button class="tdtoggle" aria-expanded="true">▴ less</button>
-  </div>
-  <div class="tdrow tdwx" id="tdWx"></div>
-  <div class="tdrow tdtwin"><span id="tdTwin" class="tdtwinv"></span><span id="tdTom" class="tdtom"></span></div>
-  <div class="tdrow tdnote">Weather = real (Open-Meteo). Room values = digital twin simulation for this hour.
-    <span class="tdkey"><span class="tag W">W</span> real weather <span class="tag S">S</span> twin simulation <span class="tag C">C</span> calculated <span class="tag L">L</span> live sensor</span></div>
-  <div class="tdrow tdhl" id="tdHeadline"></div>
-</section>
+<aside id="outside" class="sidemenu" aria-label="Outside conditions now" aria-hidden="true">
+  <div class="smhead"><b>Outside now</b><button id="outsideClose" class="x" aria-label="Close">×</button></div>
+  <div class="smdate"><b id="tdDate">–</b><span id="tdClock" class="tdclock">–</span></div>
+  <div id="tdWx" class="smwx"></div>
+  <div class="smfoot"><span id="tdLive"></span><span id="tdOffline" class="tdoff" hidden></span><span id="tdWarn" class="tdwarn" hidden></span></div>
+</aside>
 
 <main id="stage">
   <section id="photoView" class="view on" aria-label="Photo view">
@@ -64,11 +54,6 @@
       <button id="nextScene" aria-label="Next scene">›</button>
     </div>
     <div id="caption" class="caption"></div>
-  </section>
-  <section id="modelView" class="view" aria-label="3D model">
-    <div id="three"></div>
-    <div class="hint">Drag to turn · scroll to zoom · click a glowing dot</div>
-    <button class="enterbtn" id="enter3d">Enter the cold room ▸</button>
   </section>
 
   <aside id="panel" class="panel" aria-live="polite">
@@ -153,7 +138,6 @@
     <button id="tourNext" aria-label="Next">▶</button><button id="tourStop" aria-label="Stop tour">■</button></div>
   <div class="tprog"><i id="tourProg"></i></div>
 </div>
-<div id="simnote" class="simnote"><b>STATIC BACKUP (no Python, saved demo days)</b> · Simulated – digital twin on real 2026 Visakhapatnam weather (Open-Meteo, sunlight corrected to NASA level)</div>
 
 <script src="vendor/qrcode/qrcode.js"></script>
 <script src="vendor/chartjs/chart.umd.js"></script>

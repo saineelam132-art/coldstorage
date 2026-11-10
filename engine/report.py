@@ -189,7 +189,7 @@ def main(argv=None):
     ap.add_argument("--rh", type=float, default=None, help="outside RH, %")
     a = ap.parse_args(argv)
     rows = design_point(T_out_C=a.tout, rh_out_pct=a.rh, crop_key=a.crop)
-    print("ColdTrust Twin - design-point calculations (all values computed, none typed in)")
+    print("KoolKisaan - design-point calculations (all values computed, none typed in)")
     print_table(rows)
     if a.csv:
         with open(a.csv, "w", newline="", encoding="utf-8") as f:

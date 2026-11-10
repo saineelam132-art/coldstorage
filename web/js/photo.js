@@ -16,8 +16,7 @@ export class PhotoView {
     }
     this.story = scenes.story.filter(n => manifest.A[n]);          // skip missing pictures
     this.doorOpen = false;
-    this.concept = document.createElement('div'); this.concept.className = 'concepttag';
-    root.parentElement.appendChild(this.concept);
+
     this.idx = 0; this.mode = 'day'; this.layers = {}; this.low = false; this.flows = {};
     this.caption = document.getElementById('caption');
     this.dots = document.getElementById('storyDots');
@@ -289,9 +288,7 @@ export class PhotoView {
     if (this.hl) this.highlight({ ...this.hl, move: false });
     const outside = (this.hot[name] || []).some(h => h.sensor === 't_out');
     this.enterBtn.style.display = outside ? '' : 'none';
-    const real = (this.scenes.real_photos || []).includes(name);
-    this.concept.textContent = real ? 'Real photo' : 'Concept illustration (AI-generated picture)';
-    this.concept.classList.toggle('real', real);
+
   }
 
   // colour the dots of out-of-range values

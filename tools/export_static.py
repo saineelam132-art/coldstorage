@@ -151,11 +151,11 @@ def main():
         shutil.rmtree(OUT)
     (OUT / "js").mkdir(parents=True)
     with open(OUT / "js" / "data.js", "w", encoding="utf-8") as f:
-        f.write("// ColdTrust Twin - STATIC BACKUP data, made by tools/export_static.py from the digital twin.\n")
+        f.write("// KoolKisaan - STATIC BACKUP data, made by tools/export_static.py from the digital twin.\n")
         f.write("window.STATIC_DATA = ")
         json.dump(data, f, separators=(",", ":"), allow_nan=False)
         f.write(";\n")
-    for sub in ("assets/img", "assets/cutouts", "assets/tex", "css", "vendor/qrcode", "vendor/chartjs", "live"):
+    for sub in ("assets/img", "assets/cutouts", "public", "css", "vendor/qrcode", "vendor/chartjs", "live"):
         src = ROOT / "web" / sub
         if src.exists():
             shutil.copytree(src, OUT / sub)
@@ -163,10 +163,8 @@ def main():
     for b in ("app.bundle.js", "buyer.bundle.js"):
         shutil.copy(ROOT / "web" / "static" / b, OUT / "js" / b)
     html = (ROOT / "web/index.html").read_text(encoding="utf-8")
-    html = html.replace('<script type="importmap">', '<!-- importmap not needed in the static backup -->\n<script type="text/plain">')
     html = html.replace('<script type="module" src="js/main.js"></script>',
                         '<script src="js/data.js"></script>\n<script src="js/app.bundle.js"></script>')
-    html = html.replace('<div id="simnote" class="simnote">', '<div id="simnote" class="simnote"><b>STATIC BACKUP (no Python, saved demo days)</b> · ')
     (OUT / "index.html").write_text(html, encoding="utf-8")
     bh = (ROOT / "web/buyer.html").read_text(encoding="utf-8")
     bh = bh.replace('<script type="module" src="js/buyer/buyer.js"></script>',
@@ -175,12 +173,12 @@ def main():
     # the Live Year Run page is a plain script page: it works from a folder as it is
     shutil.copy(ROOT / "web" / "live.html", OUT / "live.html")
     (OUT / "README.txt").write_text(
-        "ColdTrust Twin - STATIC BACKUP (no Python needed)\n\n"
+        "KoolKisaan - STATIC BACKUP (no Python needed)\n\n"
         "Double-click index.html (Chrome or Edge). Everything runs from these files.\n"
         f"Saved demo days: {', '.join(f'day {a + 1}-{b + 1} of 2025' for a, b in merged)} (the clock jumps between them).\n"
         "All numbers come from the same digital twin as the full version (exported by tools/export_static.py).\n"
         "Limits: phones cannot open the buyer QR page (no server); new batches and the ledger are saved in this\n"
-        "browser only. If the 3D view is slow or blank, tick '2D mode'.\n", encoding="utf-8")
+        "browser only. If the pictures are slow, tick 'Low graphics'.\n", encoding="utf-8")
     size = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file()) / 1e6
     print(f"Static backup written to {OUT} ({size:.1f} MB, {k} saved 5-min steps in {len(windows)} windows)")
 

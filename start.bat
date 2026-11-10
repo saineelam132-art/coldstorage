@@ -1,5 +1,5 @@
 @echo off
-REM ColdTrust Twin - double-click to start.
+REM KoolKisaan - double-click to start.
 REM Uses Python 3.12 first (CoolProp needs it), via the Windows launcher "py -3.12".
 REM Falls back to "python" only if Python 3.12 is not found.
 REM If the Python version fails, the STATIC BACKUP (no Python) opens instead.
@@ -13,7 +13,7 @@ if %errorlevel%==0 (
   set "PY=python"
 )
 
-echo Starting ColdTrust Twin with: %PY%
+echo Starting KoolKisaan with: %PY%
 %PY% run.py
 if errorlevel 1 (
   echo.

@@ -19,8 +19,8 @@ const WORKER_SVG = `<svg viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg"
 const SPOT = [50, 86];
 
 export class Batches {
-  constructor({ cfg, manifest, photo, getModel, clock, feed, ledgerUI }) {
-    Object.assign(this, { cfg, manifest, photo, getModel, clock, feed, ledgerUI });
+  constructor({ cfg, manifest, photo, clock, feed, ledgerUI }) {
+    Object.assign(this, { cfg, manifest, photo, clock, feed, ledgerUI });
     const sel = $('cropSel');
     Object.entries(cfg.crops).forEach(([k, c]) => sel.insertAdjacentHTML('beforeend', `<option value="${k}">${c.label} (best ${c.T_opt[0]}–${c.T_opt[1]} °C)</option>`));
     sel.value = 'pomegranate';
@@ -49,9 +49,7 @@ export class Batches {
     data.t = this.clock.t;
     const b = await postJSON('api/batch', data);
     this.feed.poll();
-    const view = document.body.classList.contains('model') ? 'model' : 'photo';
-    if (view === 'model') await this.getModel()?.walkIn(b.id);
-    else await this.walkPhoto(b);
+    await this.walkPhoto(b);
     this.showCard(b.id, true);
     this.ledgerUI.open(`New batch ${b.id} is in the room. It will be sealed in the next hourly block (watch a new block appear on the right).`);
   }

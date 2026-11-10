@@ -1,4 +1,4 @@
-# ColdTrust Twin
+# KoolKisaan
 
 Demo website and digital twin for the REFCOLD India 2026 poster
 **"Blockchain-Secured Hybrid Solar–PCM Cold Storage with Natural-Refrigerant (R290) VCR System"**
@@ -90,15 +90,17 @@ address printed in the window.
 - **Photo view** – the Gemini pictures with slow zoom, glowing dots on every sensor and part.
   Hover a dot for the live value, click it for the detail panel. ‹ › or the arrow keys move
   through the story; scrolling also works.
-- **3D model** – true size from `config/design.json`; drag to turn, scroll to zoom,
-  dimension lines on/off, click any glowing dot.
-- **Day / Night / Monsoon** move the simulated clock to a real matching moment, so the
-  picture and the numbers always agree.
+- **Auto / Day / Night / Monsoon** – Auto follows the clock and the weather by itself. Day,
+  Night and Monsoon **stay** until another button is clicked: the clock plays a real stretch of
+  2026 of that kind in a loop (sunniest day 9 am–4 pm; 8 pm–5 am; rainiest day 9 am–4 pm), so the
+  picture and every number belong to that mode.
+- **☰ (top left)** opens the "Outside now" menu: date, IST clock and this hour's measured
+  outside weather (air temperature, humidity, wind, solar irradiance, sky) from Open-Meteo.
 - **Curtain** switches the strip curtain: the door heat changes at once.
 - **Low graphics** for a slow laptop.
-- **Enter the cold room ▸** (photo and 3D): walks to the door, the door opens, and the
+- **Enter the cold room ▸**: walks to the door, the door opens, and the
   warm-air-in / cold-air-out flow is drawn with the live "Heat entering now" value.
-- **Inside** (photo A8–A10 and 3D): wax panels turn blue/clear with the live battery %, the
+- **Inside** (pictures A8–A10): wax panels turn blue/clear with the live battery %, the
   evaporator fan spins with the compressor, click the evaporator (live R290 cycle + P–h chart),
   the wax panels (battery, backup, FTCS melt-front graph) or a crate (shelf life from the room's
   real temperature history, chilling warning).
@@ -159,22 +161,22 @@ Weather data by Open-Meteo.com (CC BY 4.0). The ISHRAE design-year file is **not
 git (its licence forbids sharing); it is downloaded where it is used and only our simulation
 results are published.
 
-## Home page "Today", judge mode and the picture editor
+## Home page, judge mode and the picture editor
 
-* The home page opens on **today in Visakhapatnam** (IST): date, ticking clock, the real weather of this
-  hour (Open-Meteo, tag **W**), the twin's room / wax / power source for this hour (tag **S**), ₹ saved
-  today so far (**C**) and tomorrow's prediction. **● Now** (bottom right) brings the clock back to the
-  present. If the data files are older than 24 h it says "Showing data from … – live update pending".
-* It works **offline**: everything is on the laptop (no internet fonts or libraries). With no internet a
-  badge says "Offline – using data from …".
+* Header: the **KoolKisaan** logo, name and tagline "Cold from the sun, wax for the night, truth in the
+  ledger." (logo file `web/public/koolkisaan-logo.png`, also the browser-tab icon).
+* The home page opens on **today in Visakhapatnam** (IST); **● Now** (bottom right) brings the clock back
+  to the present. **☰** opens the "Outside now" menu with the measured outside weather (tag **W**);
+  calculated room values are in the data bar, the detail cards and Control centre → Sensors.
+* It works **offline**: everything is on the laptop (no internet fonts or libraries). With no internet
+  the menu says "Offline – using data from …".
 * `?judge=1` (e.g. `http://localhost:8000/?judge=1`): full screen, big fonts, the demo plays slowly and
   loops; click on the picture to pause / resume.
 * `?edit=1`: click on a picture and its x, y in % appears on screen and in the browser console – copy it
   into `web/assets/hotspots.json` to move a dot exactly onto its sensor.
-* **Real photo:** put it in `web/assets/images/real/` and tell us the file name. It is converted to
-  `web/assets/img/`, set as `"home_photo"` in `web/assets/scenes.json`, and gets its own entry in
-  `hotspots.json`. All other pictures are labelled "Concept illustration (AI-generated picture)".
-* The GitHub Action now runs **every 3 hours** (weather + twin + static site).
+* **Real photo:** put it in `web/assets/images/real/` and tell us the file name; it becomes the
+  `"home_photo"` in `web/assets/scenes.json` with its own entry in `hotspots.json`.
+* The GitHub Action runs **every 3 hours** (weather + twin + static site).
 
 ## At the stall
 
@@ -187,7 +189,7 @@ py -3.12 -m pip install -r requirements.txt
 ```
 
 **Static backup (no Python at all):** open `static_site/index.html` in Chrome or Edge
-(double-click). Everything works from saved files: photo view, 3D, tour, Control centre,
+(double-click). Everything works from saved files: photo view, demo, Control centre,
 batches, QR, ledger, tamper, sensor fault. Limits: only the saved demo days (hottest,
 sunniest, rainiest, most-grid days and their neighbours; the clock jumps between them), and
 phones cannot open the QR buyer page (no server) – open it on the laptop.
@@ -212,8 +214,6 @@ accuracy, location, protocol).
 **⛓ Ledger** shows the hash-chain; *Tamper with an old reading* turns it red from that block;
 *Inject sensor fault* makes the room sensor read +3 °C → flagged after 15 min and sealed.
 
-**2D mode** (tick box) = photos only, no 3D: the safest choice on a weak laptop.
-
 ## Where things are
 
 | Folder / file | What it holds |
@@ -225,7 +225,7 @@ accuracy, location, protocol).
 | `data/weather_vizag_2025.csv` | Real NASA POWER hourly weather for 2025. |
 | `results/`, `figures/` | Outputs of `twin.run_all` and `make_poster_figures.py`. |
 | `server/` | FastAPI server: runs the twin and answers "what does every sensor read now". |
-| `web/` | The website (HTML/CSS/JS, three.js saved locally in `web/vendor/`). |
+| `web/` | The website (HTML/CSS/JS; Chart.js and the QR library saved locally in `web/vendor/`; logo and icons in `web/public/`). |
 | `config/sensors.json` | Every sensor: type, range, accuracy, location, protocol, position, M/C/E/AI tag. |
 | `tools/prepare_images.py` | Compresses pictures, removes white backgrounds, makes textures. |
 | `static_site/` | The static backup (opens without Python). |

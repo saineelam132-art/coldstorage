@@ -1,6 +1,7 @@
-// Home page "TODAY in Visakhapatnam": the real date and IST clock, the REAL weather for this hour
-// (Open-Meteo) and the digital twin's state for this hour, read from the Live Year Run files
-// (live/data/summary.js + live/data/h_current_YYYY-MM.js, written by the GitHub Action).
+// Left side menu "Outside now" (opened with the ☰ button): today's date, the IST clock and the OUTSIDE
+// conditions for this hour from Open-Meteo (air temperature, humidity, wind, solar irradiance, sky),
+// read from the Live Year Run files (live/data/summary.js + live/data/h_current_YYYY-MM.js).
+// Only measured weather here – calculated room values are on the Sensors page.
 // Works offline: the files are on the laptop; if they are old it says so and uses the newest hour.
 import { tagChip } from './ui.js';
 
@@ -57,21 +58,21 @@ const ICON = { sunny: '☀️', clear: '🌙', night: '🌙', 'partly cloudy': '
 export class Today {
   constructor(cfg) {
     this.cfg = cfg; this.rows = null; this.S = null; this.i = -1; this.listeners = [];
-    this.el = $('today');
-    this.el.querySelector('.tdtoggle').onclick = () => this.toggle();
-    if (innerWidth < 760) this.toggle(true);
+    this.el = $('outside');
+    $('menuBtn').onclick = e => { e.stopPropagation(); this.open(!this.el.classList.contains('on')); };
+    $('outsideClose').onclick = () => this.open(false);
+    document.addEventListener('click', e => { if (this.el.classList.contains('on') && !this.el.contains(e.target)) this.open(false); });
+    addEventListener('keydown', e => { if (e.key === 'Escape') this.open(false); });
     addEventListener('online', () => { this.badge(); this.refresh(); });
     addEventListener('offline', () => this.badge());
     setInterval(() => this.tick(), 1000);
     setInterval(() => this.refresh(), 30 * 60e3);            // new data every 30 min when online
   }
   on(fn) { this.listeners.push(fn); }
-  toggle(force) {
-    const c = force ?? !this.el.classList.contains('small');
-    this.el.classList.toggle('small', c);
-    this.el.querySelector('.tdtoggle').textContent = c ? '▾ more' : '▴ less';
-    this.el.querySelector('.tdtoggle').setAttribute('aria-expanded', String(!c));
-    dispatchEvent(new Event('resize'));
+  open(on) {
+    this.el.classList.toggle('on', on);
+    this.el.setAttribute('aria-hidden', String(!on));
+    $('menuBtn').setAttribute('aria-expanded', String(on));
   }
 
   async load(bust = false) {
@@ -127,12 +128,6 @@ export class Today {
     return kwh < (this.cfg.design.day_classes?.cloudy_min_kWh_m2 ?? 2.5);
   }
 
-  saving(ix) {
-    const tariff = this.S?.money?.defaults?.grid_tariff_INR_kWh ?? 8;
-    if (!this.rows.gonly_kWh) return null;
-    return ix.reduce((a, j) => a + ((this.rows.gonly_kWh[j] || 0) - (this.rows.P_grid[j] || 0)), 0) * tariff;
-  }
-
   tick() {
     const now = istNow();
     $('tdDate').textContent = `${DAYS[now.getUTCDay()]}, ${now.getUTCDate()} ${MONTHS[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
@@ -144,56 +139,33 @@ export class Today {
     const off = !navigator.onLine;
     const b = $('tdOffline');
     b.hidden = !off;
-    b.textContent = `Offline – using data from ${this.gen ? niceDate(this.gen) : 'the laptop copy'}`;
+    b.textContent = `Offline – using data from ${this.gen ? niceDate(this.gen) : 'the copy on this laptop'}`;
   }
 
   render() {
     this.tick(); this.badge();
-    const live = $('tdLive'), warn = $('tdWarn');
+    const live = $('tdLive'), warn = $('tdWarn'), box = $('tdWx');
     if (this.missing) {
-      live.innerHTML = '<span class="dot off"></span>No live data file';
-      warn.hidden = false; warn.textContent = 'Live data not found – showing the simulation only (run python -m twin.live_run).';
-      ['tdWx', 'tdTwin', 'tdTom'].forEach(id => ($(id).innerHTML = ''));
+      live.textContent = 'No weather data file found';
+      warn.hidden = true; box.innerHTML = '';
       return;
     }
     const r = this.row(this.i), when = this.rows.t[this.i];
     const day = when.slice(0, 10), hh = +when.slice(11, 13);
     const dd = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)));
     const st = sunTimes(dd), mins = hh * 60 + 30;
-    const sunUp = mins > st.rise && mins < st.set;
-    const sky = skyOf(r, sunUp);
-    const ix = this.dayRows(day), Tday = ix.map(j => this.rows.T_out[j]).filter(x => x !== null);
-    live.innerHTML = this.stale
-      ? `<span class="dot old"></span>Updated ${this.gen ? niceDate(this.gen) : '—'}`
-      : `<span class="dot"></span>Live · updated ${this.gen ? niceDate(this.gen) : '—'}`;
+    const sky = skyOf(r, mins > st.rise && mins < st.set);
+    live.textContent = `Data updated ${this.gen ? niceDate(this.gen) : '—'}`;
     warn.hidden = !this.stale;
     warn.textContent = `Showing data from ${day} ${pad(hh)}:00 – live update pending`;
-    const fc = r.pred ? ' <i class="fc">forecast</i>' : '';
-    const W = tagChip('W'), S = tagChip('S'), C = tagChip('C');
-    $('tdWx').innerHTML = `
-      <span class="sky" title="${sky}">${ICON[sky] || ''} <b>${sky}</b></span>
-      <span><b>${r.T_out?.toFixed(1)} °C</b> outside${W}${fc}</span>
-      <span>RH <b>${r.RH_out?.toFixed(0)} %</b>${W}</span>
-      <span>Wind <b>${(r.wind * 3.6).toFixed(0)} km/h</b>${W}</span>
-      <span>Sun on panel <b>${(r.poa ?? 0).toFixed(0)} W/m²</b>${S}</span>
-      <span>🌅 ${hm(st.rise)} · 🌇 ${hm(st.set)}${C}</span>
-      <span>Today <b>${Math.min(...Tday).toFixed(1)} – ${Math.max(...Tday).toFixed(1)} °C</b>${W}</span>`;
-    const src = r.grid_on > 0.5 ? 'Grid' : r.P_solar_used > 0.01 ? 'Solar' : 'Wax';
-    const done = ix.filter(j => j <= this.i), sav = this.saving(done);
-    $('tdTwin').innerHTML = `
-      <span>Room <b>${r.T_room?.toFixed(1)} °C</b>${S}</span>
-      <span>Wax <b>${r.pcm_pct?.toFixed(0)} %</b> charged${S}</span>
-      <span>Power now <b class="src ${src.toLowerCase()}">${src}</b>${S}</span>
-      <span>Saved today so far <b>${sav === null ? '—' : '₹' + Math.max(0, sav).toFixed(0)}</b>${C}</span>`;
-    const tmw = new Date(+dd + 864e5), tk = dateOf(tmw), tx = this.dayRows(tk);
-    if (tx.length >= 20) {
-      const tmax = Math.max(...tx.map(j => this.rows.T_out[j]));
-      const noon = this.row(tx[Math.min(tx.length - 1, 12)]);
-      const tst = sunTimes(tmw);
-      const rainT = tx.reduce((a, j) => a + (this.rows.rain_mm?.[j] || 0), 0);
-      const skyT = rainT >= 2 ? 'rain' : skyOf(noon, 12 * 60 > tst.rise && 12 * 60 < tst.set);
-      const sT = this.saving(tx);
-      $('tdTom').innerHTML = `Tomorrow: max <b>${tmax.toFixed(0)} °C</b>, ${ICON[skyT] || ''} ${skyT}, expected saving <b>${sT === null ? '—' : '₹' + Math.max(0, sT).toFixed(0)}</b> <i class="fc">prediction</i>`;
-    } else $('tdTom').innerHTML = 'Tomorrow: forecast pending (next data update)';
+    const ghi = (r.ghi ?? 0) / (this.S?.sun_factor || 1);          // Open-Meteo value (the files store the ×0.88 model value)
+    const W = tagChip('W'), fc = r.pred ? '<i class="fc">forecast</i>' : '';
+    box.innerHTML = `
+      <div class="om"><span>Outside air temperature${W}</span><b>${r.T_out?.toFixed(1)} °C</b>${fc}</div>
+      <div class="om"><span>Outside relative humidity${W}</span><b>${r.RH_out?.toFixed(0)} %</b></div>
+      <div class="om"><span>Wind speed${W}</span><b>${(r.wind * 3.6).toFixed(0)} km/h</b></div>
+      <div class="om"><span>Solar irradiance (horizontal)${W}</span><b>${ghi.toFixed(0)} W/m²</b></div>
+      <div class="om"><span>Sky${W}</span><b class="sky">${ICON[sky] || ''} ${sky}</b></div>
+      <div class="omnote">Hour ${pad(hh)}:00–${pad((hh + 1) % 24)}:00 IST. Weather data by Open-Meteo.com.</div>`;
   }
 }

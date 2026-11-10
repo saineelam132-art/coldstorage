@@ -13,6 +13,6 @@ import '../js/static_api.js';
 import '../js/buyer/buyer.js';
 JS
 npx --yes esbuild@0.24.0 static/entry_app.js --bundle --format=iife --minify --target=es2020 \
-  --alias:three/addons=./vendor/three/addons --alias:three=./vendor/three/three.module.min.js --outfile=static/app.bundle.js
+  --outfile=static/app.bundle.js
 npx --yes esbuild@0.24.0 static/entry_buyer.js --bundle --format=iife --minify --target=es2020 --outfile=static/buyer.bundle.js
 echo "bundles written to web/static/"

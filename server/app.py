@@ -1,4 +1,4 @@
-"""ColdTrust Twin web server (FastAPI).
+"""KoolKisaan web server (FastAPI).
 
     python run.py          then open http://localhost:8000
 
@@ -19,7 +19,7 @@ from server.ledger_service import lan_ip
 from server.twin_state import TwinState, _strip, geometry
 
 ROOT = Path(__file__).resolve().parent.parent
-app = FastAPI(title="ColdTrust Twin")
+app = FastAPI(title="KoolKisaan")
 TWIN = None
 
 

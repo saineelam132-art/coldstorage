@@ -67,3 +67,4 @@ table.t th{background:#eaf3fb;font-weight:700;position:sticky;top:0}
 .jarrow{align-self:center;font-size:22px;color:#8a8984}
 .warnc{color:#b45309}
 @media (max-width:700px){.jarrow{display:none}}
+.back .backlogo{height:30px;vertical-align:middle;margin-right:4px}
