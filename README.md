@@ -178,6 +178,19 @@ results are published.
   `"home_photo"` in `web/assets/scenes.json` with its own entry in `hotspots.json`.
 * The GitHub Action runs **every 3 hours** (weather + twin + static site).
 
+## How sure are we? (expected site error – not measured)
+
+* `config/site_error_budget.json` holds the expected differences between Open-Meteo grid data and a
+  sensor at our exact site, from published studies (temperature, dew point, humidity, sunlight, wind,
+  pressure, PV energy), each with its source. **They are not our measurements.**
+* On the website they appear as grey "expected at site: …" text and shaded bands, tag **W±**
+  (☰ menu, weather sensor cards and graphs, "Outside" in the data bar). Wind is shown at **2 m**
+  (FAO-56: 0.748 × the 10 m value); dew point is shown next to humidity.
+* `python -m twin.uncertainty_2026` re-runs the twin with those errors (base, hot site, cool site,
+  200 random sites, fixed seed) on the frozen study weather `data/uncertainty/weather_2026_study.csv`
+  → `results/live/uncertainty_2026.json`; the base case reproduces `design_study_2026.json` exactly.
+  Control centre → **How sure are we?** shows it; poster chart `figures/final_10_uncertainty.png`.
+
 ## At the stall
 
 **Normal start:** double-click `start.bat`. It uses **Python 3.12** first (`py -3.12`, because

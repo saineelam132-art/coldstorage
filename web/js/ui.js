@@ -1,5 +1,5 @@
 // Formatting, tooltip, side panel, data bar, small graphs.
-import { getJSON } from './api.js';
+import { U2, SiteError } from './siteerr.js';
 
 const DEC = { '°C': 1, '%': 0, 'kW': 2, 'm/s': 2, 'Pa': 2, 'h': 1, '°': 0, 'ppm': 0, '': 2, 'W/m²': 0 };
 export function fmt(v, unit = '') {
@@ -13,11 +13,13 @@ export function sensorValue(sensor, state) {
   if (sensor.quantity === 'door_open') return v ? 'OPEN' : 'CLOSED';
   if (sensor.quantity === 'grid_on') return v ? 'GRID' : 'SOLAR / PCM';
   if (sensor.quantity === 'gas_ppm' && (v === null || v === undefined)) return 'no sensor connected';
+  if (sensor.quantity === 'wind') return `${fmt(v * U2, sensor.unit)} <small>at 2 m</small>`;      // FAO-56: 2 m = 0.748 × 10 m
   return fmt(v, sensor.unit);
 }
 const TAGS = { M: 'Measured by a sensor', C: 'Calculated by a formula', E: 'Estimated / design value', AI: 'Prediction',
-  W: 'Real weather (Open-Meteo)', S: 'Digital-twin simulation', L: 'Live sensor reading' };
-export const tagChip = t => `<span class="tag ${t}" title="${TAGS[t] || ''}">${t}</span>`;
+  W: 'Real weather (Open-Meteo)', S: 'Digital-twin simulation', L: 'Live sensor reading',
+  Wpm: 'Expected range from published studies – not measured' };
+export const tagChip = t => `<span class="tag ${t}" title="${TAGS[t] || ''}">${t === 'Wpm' ? 'W±' : t}</span>`;
 export function sourceBadge(state) {
   return state?.source === 'LIVE' ? '<span class="badge live">LIVE sensor</span>' : '<span class="badge sim">SIMULATED</span>';
 }
@@ -75,33 +77,35 @@ const hoverLine = {
 };
 let histChart = null;
 // opts: {quantity, t, unit, yTitle, today: {labels, values} | null, note}
-export async function drawHistory(canvas, { quantity, t, unit, yTitle, today = null }) {
-  let labels, values, src;
-  if (today) { labels = today.labels; values = today.values; src = 'Real weather today (Open-Meteo, hourly)'; }
-  else {
-    const d = await getJSON(`api/series?q=${quantity}&t=${t.toFixed(0)}&hours=24`);
-    labels = d.t; values = d.v.map(x => (x === null ? null : (typeof x === 'boolean' ? +x : x)));
-    src = 'Last 24 h of the digital twin (15-min points)';
-  }
+// opts: {labels, values, src, unit, yTitle, band: {lo:[], hi:[], label, source} | null}
+export function drawHistory(canvas, { labels, values, src = '', unit, yTitle, band = null }) {
   if (histChart) { histChart.destroy(); histChart = null; }
   const box = canvas.parentElement, note = box.parentElement.querySelector('.histsrc');
-  if (note) note.textContent = src;
+  if (note) note.innerHTML = src + (band ? `<br><span class="bandsrc">Shaded: ${band.label}. Source: ${band.source}</span>` : '');
   if (!window.Chart || !values.some(v => v !== null && !Number.isNaN(v))) {
     box.innerHTML = '<div class="histnone">No history for this value</div>'; return;
   }
-  const dec = DEC[unit] ?? 2;
+  const dec = DEC[unit] ?? 2, u = unit ? ' ' + unit : '', f = v => (v === null || v === undefined ? '—' : Number(v).toFixed(dec));
+  const ds = [{ label: `${yTitle} (Open-Meteo / twin)`, data: values, borderColor: '#2a78d6', backgroundColor: 'rgba(42,120,214,.10)',
+    fill: !band, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#ef4444', borderWidth: 2, tension: 0.25, spanGaps: true, order: 0 }];
+  if (band) {
+    ds.push({ label: '_lo', data: band.lo, borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, fill: false, tension: 0.25, spanGaps: true, order: 2 });
+    ds.push({ label: band.label, data: band.hi, borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, backgroundColor: 'rgba(14,116,144,.18)',
+      borderColor: 'rgba(14,116,144,.5)', fill: '-1', tension: 0.25, spanGaps: true, order: 1 });
+  }
   histChart = new window.Chart(canvas, {
     type: 'line',
-    data: { labels, datasets: [{ label: yTitle, data: values, borderColor: '#2a78d6', backgroundColor: 'rgba(42,120,214,.12)',
-      fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#ef4444', borderWidth: 2, tension: 0.25, spanGaps: true }] },
+    data: { labels, datasets: ds },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
-        tooltip: { displayColors: false, callbacks: {
+        legend: { display: !!band, position: 'bottom', labels: { boxWidth: 14, font: { size: 11 }, filter: it => !it.text.startsWith('_') } },
+        tooltip: { displayColors: false, filter: it => it.datasetIndex === 0, callbacks: {
           title: it => `${it[0].label} IST`,
-          label: c => `${yTitle}: ${c.parsed.y === null ? '—' : c.parsed.y.toFixed(dec)}${unit ? ' ' + unit : ''}` } },
+          label: c => `${yTitle}: ${f(c.parsed.y)}${u}`,
+          afterLabel: c => (band ? [`Expected at site: ${f(band.lo[c.dataIndex])}–${f(band.hi[c.dataIndex])}${u}`,
+            '(published studies – not measured)', band.source.length > 90 ? band.source.slice(0, 88) + '…' : band.source] : []) } },
       },
       scales: {
         x: { title: { display: true, text: 'Time (IST)', color: '#41566b', font: { weight: '600' } },
@@ -122,6 +126,11 @@ export function updateDataBar(s, cfg) {
   room.innerHTML = fmt(Tr, '°C') + (v.fault_active ? `<small class="flag">${v.sensor_suspicious ? '⚠ SENSOR SUSPICIOUS' : 'sensor ≠ physics…'}</small>` : '');
   room.className = v.sensor_suspicious ? 'bad' : (Tr < sp.band_low_C || Tr > sp.band_high_C ? 'bad' : (Tr > sp.band_high_C - 0.5 ? 'warn' : 'good'));
   $('d_out').textContent = fmt(v.T_out, '°C');
+  const E = (updateDataBar.E ||= new SiteError(cfg.site_error_budget));
+  if (E.ok) {
+    const b = E.temp(v.T_out, s.time ? +s.time.slice(11, 13) : 12, (v.poa || 0) / (cfg.design.live_run?.sun_factor || 1), v.wind);
+    $('d_out').title = `Open-Meteo ${fmt(v.T_out, '°C')} · expected at site ${b[0].toFixed(1)}–${b[1].toFixed(1)} °C (W±: ${E.B.label})`;
+  }
   $('d_load').textContent = fmt(v.Q_total, 'kW');
   $('d_pv').textContent = fmt(v.P_pv, 'kW');
   const pcm = $('d_pcm');

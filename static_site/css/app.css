@@ -71,7 +71,7 @@ body.lowgfx .hot::after{animation:none;display:none}
 .tip .v{font-size:22px;font-weight:700;display:block;margin-top:2px}
 .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;color:#fff;margin-left:6px;vertical-align:2px}
 .tag.M{background:var(--tagM)}.tag.C{background:var(--tagC)}.tag.E{background:var(--tagE)}.tag.AI{background:var(--tagAI)}
-.tag.W{background:#0e7490}.tag.S{background:#b45309}.tag.L{background:#15803d}
+.tag.W{background:#0e7490}.tag.Wpm{background:transparent;color:#0e7490;border:1px solid #0e7490}.tag.S{background:#b45309}.tag.L{background:#15803d}
 .badge{display:inline-block;width:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.3px}
 .badge.sim{background:#2b3f55;color:#ffd68a;border:1px solid #6b5a2a}
 .badge.live{background:#0f3d2a;color:#7ff0b0;border:1px solid #2b8f5f}
@@ -388,3 +388,18 @@ body.judge .hllabel{font-size:16px}
 @media (prefers-reduced-motion: reduce){.sidemenu{transition:none}}
 @media (max-width:760px){.sidemenu{bottom:0}}
 @media (max-width:1300px){.topbar{padding-top:4px;padding-bottom:4px}}
+.sidemenu .om small.band{display:block;font-size:11.5px;color:#8fa3b5;margin-top:1px}
+.sidemenu .om small.band .tag.Wpm{color:#7fd3e6;border-color:#3b8ea3;font-size:10px;padding:0 4px}
+.sidemenu .om .sub{font-size:12.5px;color:#9fb3c4;margin-top:4px}.sidemenu .om .sub b{font-size:15px;color:#e8f1f8}
+.sidemenu .omnote.band{color:#8fa3b5;line-height:1.35}.sidemenu .omnote .tag.Wpm{color:#7fd3e6;border-color:#3b8ea3;font-size:10px}
+.panel .bandnow{font-size:13px;color:#41566b;margin:-4px 0 6px}.panel .bandnow small{color:#7b8a99}
+.panel .tag.Wpm{background:#fff;color:#0e7490;border:1px solid #0e7490}
+.panel .histsrc .bandsrc{color:#0e7490}
+/* ---------- How sure are we? ---------- */
+.hs-statement{background:#e6f4f8;border-left:4px solid #0e7490;padding:8px 12px;border-radius:6px;margin-bottom:10px;color:#0d1b2a}
+.hs-statement .tag.Wpm,.hs .tag.Wpm{background:#fff;color:#0e7490;border:1px solid #0e7490}
+.hs-head{display:flex;flex-wrap:wrap;gap:8px 26px;font-size:16px;margin:6px 0}
+.hs-head b{font-size:24px;color:#0e7490}.hs-head span{color:#7b8a99;font-size:14px}
+.hs-verdict{font-size:16px;font-weight:600;color:#0d1b2a;background:#f3f8fc;border-radius:6px;padding:8px 12px}
+.hs-fig{margin:10px 0}.hs-fig img{width:100%;max-width:980px;border:1px solid var(--line);border-radius:8px}
+.hs-budget td{vertical-align:top}.hs-budget td.src{font-size:12px;color:#41566b}

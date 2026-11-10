@@ -3,10 +3,13 @@
 import { fmt, sensorValue, tagChip, sourceBadge, openPanel, drawHistory } from './ui.js';
 import { getJSON } from './api.js';
 import { lineChart, phChart } from './charts.js';
+import { SiteError, U2, pmTag, dewpoint } from './siteerr.js';
 
+let ERR = new SiteError(null);
 let CFG = null, SENSORS = {}, MANIFEST = null, SCENES = null, getState = () => null, getT = () => 0, todaySeries = () => null;
 export function initDetails(cfg, sensors, manifest, scenes, stateFn, tFn, todayFn) {
   CFG = cfg; MANIFEST = manifest; SCENES = scenes; getState = stateFn; getT = tFn; if (todayFn) todaySeries = todayFn;
+  ERR = new SiteError(cfg.site_error_budget);
   sensors.sensors.forEach(s => (SENSORS[s.id] = s));
 }
 export const sensorById = id => SENSORS[id];
@@ -64,6 +67,7 @@ export function openSensor(id) {
     return `<h2>${s.name} ${tagChip(tagFor(s, st))}</h2><div class="sub">${sourceBadge(st)}</div>
       ${cutoutImg('sensors', s.id)}
       <div class="big" data-live="v">${sensorValue(s, st)}</div>
+      <div class="bandnow" data-live="band">${bandNow(s, st)}</div>
       ${s.tag === 'C' ? `<div class="note">In the twin this value is <b>calculated</b> from the door physics (ASHRAE Gosney–Olama). With the real sensor fitted it becomes a measurement (M) that checks the formula.</div>` : ''}
       ${extraFor(s, st)}
       ${hasHistory ? '<div class="hist"><div class="histbox"><canvas id="hist"></canvas></div><div class="histsrc"></div></div>' : ''}
@@ -78,11 +82,55 @@ export function openSensor(id) {
   };
   const el = openPanel(render);
   document.dispatchEvent(new CustomEvent('highlight', { detail: { kind: 'sensor', id, label: `${s.name} sensor` } }));
-  if (hasHistory) {
-    const yTitle = { T_out: 'Outside temperature', RH_out: 'Outside humidity', wind: 'Wind speed' }[s.quantity] || s.name;
-    drawHistory(el.querySelector('#hist'), { quantity: s.quantity, t: getT(), unit: s.unit, yTitle,
-      today: WEATHER_Q.includes(s.quantity) ? todaySeries(s.quantity, getT()) : null });
+  if (hasHistory) historyFor(s, el.querySelector('#hist'));
+}
+
+// ---- expected SITE range (published studies – not measured) for the weather-based sensors
+const BAND_Q = { T_out: 'temp_C', RH_out: 'rh_pct', wind: 'wind_ms', P_pv: 'pv_energy_rel' };
+const sunFactor = () => CFG?.design?.live_run?.sun_factor || 1;
+function bandAt(q, v, x) {          // x = {T, RH, ghi (Open-Meteo), wind10, hour, Td}
+  if (!ERR.ok || v === null || v === undefined) return null;
+  if (q === 'T_out') return ERR.temp(v, x.hour, x.ghi, x.wind10);
+  if (q === 'RH_out') { const [, , dT] = ERR.temp(x.T, x.hour, x.ghi, x.wind10); return ERR.rh(x.T, v, dT, x.Td ?? null); }
+  if (q === 'wind') return ERR.wind2(v);
+  if (q === 'P_pv') return ERR.pv(v);
+  return null;
+}
+function bandNow(s, st) {
+  const q = s.quantity, v = st?.values;
+  if (!BAND_Q[q] || !v || !ERR.ok) return '';
+  const hour = st.time ? +st.time.slice(11, 13) : 12;
+  const val = q === 'wind' ? v.wind * U2 : v[q];
+  const b = bandAt(q, val, { T: v.T_out, ghi: (v.poa || 0) / sunFactor(), wind10: v.wind, hour });
+  if (!b) return '';
+  const d = { T_out: 1, RH_out: 0, wind: 1, P_pv: 2 }[q];
+  let txt = `Expected at site: ${b[0].toFixed(d)}–${b[1].toFixed(d)} ${s.unit} ${pmTag()}<br><small>${ERR.B.label} (source under the graph)</small>`;
+  if (q === 'RH_out') txt += `<br><small>Dew point ${dewpoint(v.T_out, v.RH_out).toFixed(1)} °C (from temperature + humidity), expected at site ±${ERR.band('dewpoint_C').hourly} °C</small>`;
+  if (q === 'wind') txt += '<br><small>Wind at 2 m (converted from 10 m, FAO-56: × 0.748).</small>';
+  return txt;
+}
+async function historyFor(s, canvas) {
+  const q = s.quantity, t = getT();
+  const yTitle = { T_out: 'Outside temperature', RH_out: 'Outside humidity', wind: 'Wind at 2 m', P_pv: 'Solar PV power' }[q] || s.name;
+  const today = WEATHER_Q.includes(q) ? todaySeries(q, t) : null;
+  let labels, values, src, ctx;
+  if (today) {
+    labels = today.labels; values = today.values; src = 'Real weather today (Open-Meteo, hourly)';
+    ctx = today.labels.map((l, i) => ({ T: today.ctx.T_out[i], ghi: today.ctx.ghi[i], wind10: today.ctx.wind[i], Td: today.ctx.dew_C[i] ?? null, hour: +l.slice(0, 2) }));
+  } else {
+    const need = BAND_Q[q] ? ['T_out', 'wind', 'poa'] : [];
+    const [d, ...extra] = await Promise.all([q, ...need].map(x => getJSON(`api/series?q=${x}&t=${t.toFixed(0)}&hours=24`)));
+    labels = d.t; values = d.v.map(x => (x === null ? null : (typeof x === 'boolean' ? +x : x)));
+    src = BAND_Q[q] ? 'Last 24 h of the twin\'s Open-Meteo weather (15-min points)' : 'Last 24 h of the digital twin (15-min points)';
+    if (need.length) ctx = labels.map((l, i) => ({ T: extra[0].v[i], wind10: extra[1].v[i], ghi: (extra[2].v[i] || 0) / sunFactor(), hour: +l.slice(0, 2) }));
   }
+  if (q === 'wind') values = values.map(v => (v === null ? null : v * U2));            // 10 m -> 2 m
+  let band = null;
+  if (BAND_Q[q] && ERR.ok && ctx) {
+    const b = values.map((v, i) => bandAt(q, v, ctx[i]) || [null, null]);
+    band = { lo: b.map(x => x[0]), hi: b.map(x => x[1]), label: 'Expected site range (published studies) – not measured', source: ERR.src(BAND_Q[q]) };
+  }
+  drawHistory(canvas, { labels, values, src, unit: s.unit, yTitle, band });
 }
 
 function extraFor(s, st) {

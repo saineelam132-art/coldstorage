@@ -1,0 +1,79 @@
+{
+  "_about": "Expected site error budget: how far a sensor at OUR exact site may differ from the Open-Meteo grid data. Used by the website (shaded bands, tag 'W±') and by twin/uncertainty_2026.py. One place for all numbers.",
+  "statement": "These are expected differences between Open-Meteo grid data and a sensor at our exact site, taken from published studies. They are not our measurements.",
+  "label": "expected range from published studies – not measured",
+  "bands": {
+    "temp_C": {
+      "name": "Outside air temperature",
+      "hourly": 1.5,
+      "hourly_sunny_calm": 3.0,
+      "sunny_calm_rule": {"hours": [11, 16], "ghi_min_W_m2": 600, "wind2m_max_m_s": 1.0},
+      "daily": 1.0,
+      "unit": "°C",
+      "source": "ERA5 vs weather stations: hourly RMSE about 1–2 °C (WeatherReal benchmark 2024; IMD 458-station evaluation 2025); coastal Tmax/Tmin biases are larger (J. Earth Syst. Sci. 131:179, 2022).",
+      "why": "Open-Meteo gives the average of a grid box about 25–30 km wide; our sensor sits at one spot. On sunny, calm afternoons the ground and the sheet-metal walls heat the air near the sensor, so the error can double."
+    },
+    "dewpoint_C": {
+      "name": "Dew point",
+      "hourly": 1.5,
+      "daily": 1.0,
+      "unit": "°C",
+      "source": "WeatherReal benchmark (ERA5 vs stations), 2024.",
+      "why": "Humidity near the coast changes over short distances (sea breeze); the grid box mixes sea and land air."
+    },
+    "rh_pct": {
+      "name": "Outside relative humidity",
+      "hourly": "derived",
+      "daily_range": [3, 8],
+      "unit": "%RH",
+      "rule": "Not a flat %: the band is worked out from the temperature band and the dew-point band (RH = e(Td)/e(T)). Typically ±5–15 %RH per hour, ±3–8 %RH per day.",
+      "source": "Follows from the temperature and dew-point errors above.",
+      "why": "Relative humidity depends on the air temperature: a small temperature error moves RH a lot."
+    },
+    "ghi_rel": {
+      "name": "Solar irradiance (sunlight)",
+      "hourly": 0.25,
+      "hourly_overcast": 0.40,
+      "overcast_rule": {"clearness_index_below": 0.4},
+      "daily_clear": 0.10,
+      "daily_cloudy": 0.30,
+      "clear_day_rule": {"daily_clearness_index_at_least": 0.5},
+      "unit": "relative",
+      "source": "ERA5 daily RMSE about 21 W/m² over India (Atmosphere 2025); hourly relative RMSE about 41 % in the humid tropics (Remote Sensing 2026).",
+      "why": "The model can put a cloud in the wrong hour or the wrong place; on clear days it is close, on cloudy days much less so."
+    },
+    "wind_ms": {
+      "name": "Wind speed at 2 m",
+      "hourly": 1.5,
+      "daily": 1.0,
+      "unit": "m/s",
+      "height_conversion": {"u2_over_u10": 0.748, "source": "FAO-56 (Allen et al. 1998), eq. 47, open ground: u2 = u10 × 4.87 / ln(67.8 × 10 − 5.42) = 0.748 × u10"},
+      "source": "ERA5 10 m wind compared with stations; converted to 2 m with FAO-56.",
+      "why": "Open-Meteo gives wind at 10 m height over a smooth grid box; at 2 m beside a building, trees and the room itself slow and gust the wind."
+    },
+    "pressure_hPa": {
+      "name": "Air pressure",
+      "hourly": 1.0,
+      "daily": 1.0,
+      "unit": "hPa",
+      "source": "BME280 sensor specification (±1 hPa) and the height correction between the grid box and the site.",
+      "why": "Pressure is smooth in space; the only differences are the height of the site and the sensor's own accuracy."
+    },
+    "pv_energy_rel": {
+      "name": "Solar electricity (PV)",
+      "hourly": 0.25,
+      "daily_clear": 0.08,
+      "daily_cloudy": 0.30,
+      "monthly": 0.04,
+      "unit": "relative",
+      "source": "Follows the sunlight error above, plus dust (soiling) on the panels.",
+      "why": "Solar power is almost proportional to sunlight, and dust on the glass takes a few per cent more."
+    }
+  },
+  "random_runs": {
+    "n": 200,
+    "seed": 2026,
+    "correlation_hours": 6,
+    "note": "Each hour's error is drawn from a normal distribution whose standard deviation is the hourly band, correlated over about 6 hours (AR(1), phi = exp(-1/6)) so errors persist like real weather errors."
+  }
+}

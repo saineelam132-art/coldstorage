@@ -35,13 +35,18 @@ def _startup():
     twin()
 
 
+def _site_budget():
+    from twin.site_error import load_budget
+    return load_budget()
+
+
 @app.get("/api/config")
 def api_config():
     tw = twin()
     from server.twin_state import wax_hx_info
     wax_hx = wax_hx_info(tw.final_totals)
     return {"design": _strip(tw.cfg), "geometry": geometry(tw.cfg), "lan_ip": lan_ip(), "wax_hx": wax_hx,
-            "time": tw.time_info(), "crops": {
+            "time": tw.time_info(), "site_error_budget": _site_budget(), "crops": {
         k: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]], "T_ref_C": v["T_ref_C"],
             "SL_ref_days": v["SL_ref_days"], "Q10": v["Q10"], "chill_injury_below_C": v.get("chill_injury_below_C")}
         for k, v in tw.crops.items()},

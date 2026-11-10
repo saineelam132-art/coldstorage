@@ -4,6 +4,7 @@
 // Only measured weather here – calculated room values are on the Sensors page.
 // Works offline: the files are on the laptop; if they are old it says so and uses the newest hour.
 import { tagChip } from './ui.js';
+import { SiteError, pmTag, u2, dewpoint, clearSky } from './siteerr.js';
 
 const LAT = 17.69, LON = 83.22, IST_MIN = 330;
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -58,6 +59,7 @@ const ICON = { sunny: '☀️', clear: '🌙', night: '🌙', 'partly cloudy': '
 export class Today {
   constructor(cfg) {
     this.cfg = cfg; this.rows = null; this.S = null; this.i = -1; this.listeners = [];
+    this.err = new SiteError(cfg.site_error_budget);
     this.el = $('outside');
     $('menuBtn').onclick = e => { e.stopPropagation(); this.open(!this.el.classList.contains('on')); };
     $('outsideClose').onclick = () => this.open(false);
@@ -160,12 +162,24 @@ export class Today {
     warn.textContent = `Showing data from ${day} ${pad(hh)}:00 – live update pending`;
     const ghi = (r.ghi ?? 0) / (this.S?.sun_factor || 1);          // Open-Meteo value (the files store the ×0.88 model value)
     const W = tagChip('W'), fc = r.pred ? '<i class="fc">forecast</i>' : '';
+    const E = this.err, f = (x, d) => Number(x).toFixed(d);
+    const band = (lo, hi, d, u) => E.ok ? `<small class="band">expected at site: ${f(lo, d)}–${f(hi, d)} ${u} ${pmTag()}</small>` : '';
+    const w2 = u2(r.wind);
+    const omTd = r.dew_C !== null && r.dew_C !== undefined;
+    const Td = omTd ? r.dew_C : dewpoint(r.T_out, r.RH_out);
+    const [tl, th, dT] = E.ok ? E.temp(r.T_out, hh, ghi, r.wind) : [0, 0, 0];
+    const [hl, hhi] = E.ok ? E.rh(r.T_out, r.RH_out, dT, Td) : [0, 0];
+    const [dl, dh] = E.ok ? E.dew(Td) : [0, 0];
+    const [gl, gh] = E.ok ? E.ghi(ghi, clearSky(day, hh)) : [0, 0];
+    const [wl, wh] = E.ok ? E.wind2(w2) : [0, 0];
     box.innerHTML = `
-      <div class="om"><span>Outside air temperature${W}</span><b>${r.T_out?.toFixed(1)} °C</b>${fc}</div>
-      <div class="om"><span>Outside relative humidity${W}</span><b>${r.RH_out?.toFixed(0)} %</b></div>
-      <div class="om"><span>Wind speed${W}</span><b>${(r.wind * 3.6).toFixed(0)} km/h</b></div>
-      <div class="om"><span>Solar irradiance (horizontal)${W}</span><b>${ghi.toFixed(0)} W/m²</b></div>
+      <div class="om"><span>Outside air temperature${W}</span><b>${r.T_out?.toFixed(1)} °C</b>${fc}${band(tl, th, 1, '°C')}</div>
+      <div class="om"><span>Outside relative humidity${W}</span><b>${r.RH_out?.toFixed(0)} %</b>${band(hl, hhi, 0, '%')}
+        <span class="sub">Dew point <b>${Td.toFixed(1)} °C</b>${omTd ? '' : ' (from temperature + humidity)'}</span>${band(dl, dh, 1, '°C')}</div>
+      <div class="om"><span>Wind at 2 m (converted from 10 m)${W}</span><b>${(w2 * 3.6).toFixed(0)} km/h</b>${band(wl * 3.6, wh * 3.6, 0, 'km/h')}</div>
+      <div class="om"><span>Solar irradiance (horizontal)${W}</span><b>${ghi.toFixed(0)} W/m²</b>${band(gl, gh, 0, 'W/m²')}</div>
       <div class="om"><span>Sky${W}</span><b class="sky">${ICON[sky] || ''} ${sky}</b></div>
+      ${E.ok ? `<div class="omnote band">${pmTag()} ${E.B.statement}</div>` : ''}
       <div class="omnote">Hour ${pad(hh)}:00–${pad((hh + 1) % 24)}:00 IST. Weather data by Open-Meteo.com.</div>`;
   }
 }

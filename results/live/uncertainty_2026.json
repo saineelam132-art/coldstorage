@@ -1,0 +1,146 @@
+{
+ "about": "Uncertainty study: digital-twin results (S) on the 2026 weather with the EXPECTED site errors from published studies (config/site_error_budget.json). Not measured.",
+ "statement": "These are expected differences between Open-Meteo grid data and a sensor at our exact site, taken from published studies. They are not our measurements.",
+ "label": "expected range from published studies \u2013 not measured",
+ "weather": "data/uncertainty/weather_2026_study.csv",
+ "period": [
+  "2026-01-01 00:00:00",
+  "2026-11-06 14:00:00"
+ ],
+ "hottest_night_start": "2026-05-22 19:00:00",
+ "cases": {
+  "base": {
+   "days": 310,
+   "days_full_solar_wax": 291,
+   "grid_h_per_year": 163.46505376344086,
+   "comp_kWh_day": 2.995550471314072,
+   "wax_sunset_mean_pct": 96.81931788370777,
+   "wax_sunset_worst_pct": 20.53296279038621,
+   "hottest_night_room_max_C": 7.096394009429066,
+   "h_outside_2_8_loading": 496,
+   "h_outside_2_8_other": 0,
+   "saved_vs_grid_INR_yr": 10625.734558721482,
+   "saved_vs_diesel_INR_yr": 26502.60672690575,
+   "energy_balance_error_pct": 8.920785577772062e-14
+  },
+  "hot_site": {
+   "days": 310,
+   "days_full_solar_wax": 247,
+   "grid_h_per_year": 667.6948924731183,
+   "comp_kWh_day": 3.357687825699432,
+   "wax_sunset_mean_pct": 93.35118226824142,
+   "wax_sunset_worst_pct": 3.378662186970171,
+   "hottest_night_room_max_C": 5.0,
+   "h_outside_2_8_loading": 584,
+   "h_outside_2_8_other": 0,
+   "saved_vs_grid_INR_yr": 10867.410279517793,
+   "saved_vs_diesel_INR_yr": 27981.34787627817,
+   "energy_balance_error_pct": 9.586327142442988e-13
+  },
+  "cool_site": {
+   "days": 310,
+   "days_full_solar_wax": 303,
+   "grid_h_per_year": 60.34274193548387,
+   "comp_kWh_day": 2.7131037961277404,
+   "wax_sunset_mean_pct": 97.94604645680542,
+   "wax_sunset_worst_pct": 38.65516783047823,
+   "hottest_night_room_max_C": 6.974414377591089,
+   "h_outside_2_8_loading": 392,
+   "h_outside_2_8_other": 0,
+   "saved_vs_grid_INR_yr": 9931.905901597305,
+   "saved_vs_diesel_INR_yr": 24699.225819474526,
+   "energy_balance_error_pct": 6.134589313253756e-13
+  }
+ },
+ "random": {
+  "n": 200,
+  "seed": 2026,
+  "correlation_hours": 6,
+  "median": {
+   "days_full_solar_wax": 266.0,
+   "grid_h_per_year": 347.633064516129,
+   "comp_kWh_day": 3.018569724938528,
+   "wax_sunset_mean_pct": 96.03326995782659,
+   "wax_sunset_worst_pct": 15.87863468089917,
+   "hottest_night_room_max_C": 7.086995589791998,
+   "h_outside_2_8_loading": 497.0,
+   "h_outside_2_8_other": 0.0,
+   "saved_vs_grid_INR_yr": 10424.423323603798,
+   "saved_vs_diesel_INR_yr": 26346.35750073003
+  },
+  "p5": {
+   "days_full_solar_wax": 256.0,
+   "grid_h_per_year": 266.0280913978495,
+   "comp_kWh_day": 2.995494969271304,
+   "wax_sunset_mean_pct": 95.40775953096973,
+   "wax_sunset_worst_pct": 3.236194855459292,
+   "hottest_night_room_max_C": 5.0,
+   "h_outside_2_8_loading": 482.0,
+   "h_outside_2_8_other": 0.0,
+   "saved_vs_grid_INR_yr": 10309.810114749564,
+   "saved_vs_diesel_INR_yr": 26184.13332200492
+  },
+  "p95": {
+   "days_full_solar_wax": 275.0,
+   "grid_h_per_year": 445.2754704301076,
+   "comp_kWh_day": 3.0416585843376907,
+   "wax_sunset_mean_pct": 96.65369853621172,
+   "wax_sunset_worst_pct": 30.53251194041069,
+   "hottest_night_room_max_C": 7.2344048204180575,
+   "h_outside_2_8_loading": 515.0,
+   "h_outside_2_8_other": 0.0,
+   "saved_vs_grid_INR_yr": 10534.376067992473,
+   "saved_vs_diesel_INR_yr": 26505.61875857733
+  }
+ },
+ "range": {
+  "days_full_solar_wax": [
+   247,
+   303
+  ],
+  "grid_h_per_year": [
+   60.34274193548387,
+   667.6948924731183
+  ],
+  "comp_kWh_day": [
+   2.7131037961277404,
+   3.357687825699432
+  ],
+  "wax_sunset_mean_pct": [
+   93.35118226824142,
+   97.94604645680542
+  ],
+  "wax_sunset_worst_pct": [
+   3.236194855459292,
+   38.65516783047823
+  ],
+  "hottest_night_room_max_C": [
+   5.0,
+   7.2344048204180575
+  ],
+  "h_outside_2_8_loading": [
+   392,
+   584
+  ],
+  "h_outside_2_8_other": [
+   0,
+   0
+  ],
+  "saved_vs_grid_INR_yr": [
+   9931.905901597305,
+   10867.410279517793
+  ],
+  "saved_vs_diesel_INR_yr": [
+   24699.225819474526,
+   27981.34787627817
+  ]
+ },
+ "range_rule": "range = lowest to highest of: hot site, cool site, and the 5\u201395 % band of the random runs",
+ "verdict": "Even with the worst expected site error, the room stays fully on solar + wax on 247 of 310 days (base 291), grid backup stays at or below 668 h/yr (base 163), and the room is outside 2\u20138 \u00b0C for 0 h outside the morning loading hours.",
+ "wind_note": "The room model does not use wind (the fins are inside the room and the condenser COP depends on the air temperature), so wind errors do not change these results. Wind is still converted to 2 m for display.",
+ "case_rules": {
+  "hot_site": "temperature +1.5 \u00b0C all hours (+3 \u00b0C on sunny calm hours 11\u201316 h), dew point +1.0 \u00b0C, sunlight \u221210 % on clear days and \u221230 % on cloudy days, wind at 2 m \u00d70.75 and \u22121 m/s (min 0)",
+  "cool_site": "temperature \u22121.5 \u00b0C, dew point \u22121.0 \u00b0C, sunlight +10 % clear / +30 % cloudy days (capped at clear sky), wind +1 m/s",
+  "random": "each hour drawn from a normal distribution with the hourly bands, correlated over ~6 h; median and 5\u201395 %"
+ }
+}

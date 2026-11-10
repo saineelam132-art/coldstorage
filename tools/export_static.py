@@ -126,6 +126,7 @@ def main():
     from server.twin_state import wax_hx_info
     wax_hx = wax_hx_info(tw.final_totals)
     api_config = {"design": _strip(cfg), "geometry": geometry(cfg), "lan_ip": "", "wax_hx": wax_hx, "time": tw.time_info(),
+                  "site_error_budget": json.loads((ROOT / "config/site_error_budget.json").read_text(encoding="utf-8")),
                   "crops": {kk: {"label": v["label"], "T_opt": [v["T_opt_low_C"], v["T_opt_high_C"]], "T_ref_C": v["T_ref_C"],
                                  "SL_ref_days": v["SL_ref_days"], "Q10": v["Q10"], "chill_injury_below_C": v.get("chill_injury_below_C")}
                             for kk, v in crops_full.items()},
@@ -143,6 +144,7 @@ def main():
             "results/design_point.json": json.loads((ROOT / "results/design_point.json").read_text()),
             "results/whatif.json": json.loads((ROOT / "results/whatif.json").read_text()),
             "results/live/design_study_2026.json": json.loads((ROOT / "results/live/design_study_2026.json").read_text()),
+            "results/live/uncertainty_2026.json": json.loads((ROOT / "results/live/uncertainty_2026.json").read_text()),
         },
     }
 

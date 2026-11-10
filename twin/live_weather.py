@@ -38,12 +38,12 @@ LIVE = ROOT / "data" / "live"
 ISHRAE_DIR = LIVE / "ishrae"
 LAT, LON = 17.69, 83.22
 TZ = "Asia/Kolkata"
-VARS = "temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m,precipitation,cloud_cover"
+VARS = "temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m,precipitation,cloud_cover,dew_point_2m"
 EPW_URL = ("https://climate.onebuilding.org/WMO_Region_2_Asia/IND_India/AP_Andhra_Pradesh/"
            "IND_AP_Vishakhapatnam.431500_ISHRAE2014.zip")
 EPW_NAME = "IND_AP_Vishakhapatnam.431500_ISHRAE2014.epw"
 COLS = ["time_ist", "T_out", "RH_out", "ps_Pa", "ghi", "wind", "source"]
-EXTRA = ["rain_mm", "cloud_pct"]          # for the website only (sky icon); the physics never uses them
+EXTRA = ["rain_mm", "cloud_pct", "dew_C"]   # for the website only (sky icon, dew point); the physics never uses them
 CREDIT = "Weather data by Open-Meteo.com"
 
 
@@ -72,6 +72,7 @@ def _om_frame(js, source):
     # precipitation is the total of the hour BEFORE the time stamp (like radiation); cloud cover is instantaneous
     df["rain_mm"] = pd.Series(h.get("precipitation", [None] * len(df)), dtype=float).shift(-1)
     df["cloud_pct"] = pd.Series(h.get("cloud_cover", [None] * len(df)), dtype=float)
+    df["dew_C"] = pd.Series(h.get("dew_point_2m", [None] * len(df)), dtype=float)        # instantaneous, like temperature
     return df[COLS + EXTRA]
 
 

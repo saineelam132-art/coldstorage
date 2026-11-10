@@ -3,10 +3,11 @@ import { getJSON } from './api.js';
 import { fmt, tagChip } from './ui.js';
 import { splitHTML, splitUpdate } from './split.js';
 import { cutoutSrc } from './details.js';
+import { howSureHTML } from './howsure.js';
 
 const $ = id => document.getElementById(id);
 const FINAL = [
-  ['final_00_design_journey', 'Design journey: plain → baffle + fans → fins'], ['final_01_fins_hottest_night', 'Hottest night: plain vs finned panels'],
+  ['final_10_uncertainty', 'How sure are we? Expected site weather error (studies)'], ['final_00_design_journey', 'Design journey: plain → baffle + fans → fins'], ['final_01_fins_hottest_night', 'Hottest night: plain vs finned panels'],
   ['final_02_fin_calculation', 'Fin calculation: depth, gap, UA'], ['final_07_fin_panel_drawing', 'Finned panel + drip tray (drawing)'],
   ['final_03_loading_options', 'When should the 150 kg come in?'], ['final_04_wax_115_vs_172', '115 kg vs 172 kg wax'],
   ['final_05_monthly_energy_2026', 'Monthly energy 2026'], ['final_06_money_co2', 'Money and CO₂ saved'], ['final_08_payback', 'Payback estimate (prices GUESS)'],
@@ -38,6 +39,7 @@ export class Control {
     [...$('ccTabs').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const body = $('ccBody');
     if (tab === 'how') { body.innerHTML = splitHTML(cutoutSrc('B17_split_valve_manifold')); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg); }
+    if (tab === 'sure') body.innerHTML = await howSureHTML(this.cfg);
     if (tab === 'calc') body.innerHTML = await this.calc();
     if (tab === 'whatif') { body.innerHTML = await this.whatifHTML(); this.whatifWire(); }
     if (tab === 'rooms') body.innerHTML = this.roomsHTML();

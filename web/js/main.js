@@ -1,7 +1,7 @@
 // Wires the page together: clock, live state, photo view, outside menu, data bar, controls.
 import { getJSON, SimClock, StateFeed } from './api.js';
 import { updateDataBar, refreshPanel } from './ui.js';
-import { initDetails } from './details.js';
+import { initDetails, openSensor } from './details.js';
 import { PhotoView } from './photo.js';
 import { LedgerUI } from './ledgerui.js';
 import { Batches } from './batch.js';
@@ -54,9 +54,12 @@ async function boot() {
   const todaySeries = q => {
     if (!today.rows || today.stale || !isLive() || !today.rows[q]) return null;
     const day = today.rows.t[today.i].slice(0, 10), ix = today.dayRows(day).filter(j => j <= today.i);
-    return { labels: ix.map(j => `${today.rows.t[j].slice(11)}:00`), values: ix.map(j => today.rows[q][j]) };
+    const R = today.rows, sf = today.S?.sun_factor || 1, col = f => ix.map(j => (R[f] ? R[f][j] : null));
+    return { labels: ix.map(j => `${R.t[j].slice(11)}:00`), values: col(q),
+      ctx: { T_out: col('T_out'), wind: col('wind'), dew_C: col('dew_C'), ghi: ix.map(j => (R.ghi[j] ?? 0) / sf) } };
   };
   initDetails(cfg, sensors, manifest, scenes, () => feed.state, () => clock.t, todaySeries);
+  window.__openSensor = openSensor;                     // for automated page checks
 
   const photo = new PhotoView($('photoFrame'), manifest, scenes, hotspots);
   let mode = 'auto', win = null;

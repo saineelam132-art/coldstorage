@@ -397,6 +397,35 @@ def fig_payback():
            f"diesel room needs a genset (₹{pb['diesel_genset_INR']:,.0f} GUESS); subsidy on our extra cost.\n" + NOTE)
 
 
+def fig_uncertainty():
+    """A1 poster: how sure are we? Base / hot site / cool site, whisker = random sites 5–95 %."""
+    u = json.loads((LIVE / "uncertainty_2026.json").read_text())
+    C, R = u["cases"], u["random"]
+    days = C["base"]["days"]
+    with plt.rc_context({"font.size": 17, "axes.titlesize": 20, "axes.labelsize": 17, "xtick.labelsize": 16, "ytick.labelsize": 15}):
+        fig, axes = plt.subplots(1, 2, figsize=(16, 7.2))
+        for ax, k, title, fmt in ((axes[0], "days_full_solar_wax", f"Days fully on solar + wax (of {days})", "{:.0f}"),
+                                  (axes[1], "grid_h_per_year", "Grid backup hours per year", "{:.0f}")):
+            vals = [C["base"][k], C["hot_site"][k], C["cool_site"][k]]
+            bars = ax.bar(["base\n(Open-Meteo)", "hot site", "cool site"], vals, color=[BLUE, ORANGE, AQUA], width=0.6)
+            for bb in bars:
+                ax.annotate(fmt.format(bb.get_height()), (bb.get_x() + bb.get_width() / 2, bb.get_height()), xytext=(0, 4),
+                            textcoords="offset points", ha="center", fontsize=18, fontweight="bold", color=P.INK)
+            lo, med, hi = R["p5"][k], R["median"][k], R["p95"][k]
+            ax.errorbar([0], [med], yerr=[[med - lo], [hi - med]], fmt="o", color=P.INK, ms=8, capsize=12, lw=2.5,
+                        label=f"{R['n']} random sites: median and 5–95 %")
+            ax.annotate(f"random {lo:.0f}–{hi:.0f}", (0, hi), xytext=(16, 16), textcoords="offset points", fontsize=15, color=P.INK)
+            ax.set_title(title)
+            ax.set_ylim(0, max(vals + [hi]) * 1.22)
+            ax.legend(loc="upper left", fontsize=13)
+        fig.suptitle("How sure are we? The same twin with the expected site weather error from published studies",
+                     fontweight="bold", fontsize=19)
+        fig.text(0.5, -0.02, u["verdict"], ha="center", fontsize=14, color=INK2, wrap=True)
+        fig.tight_layout()
+        P.save(fig, "final_10_uncertainty", "Digital-twin results (S) on real 2026 Vizag weather with EXPECTED site errors "
+               "(config/site_error_budget.json) – expected range from published studies, not measured.")
+
+
 def write_summary(cfg):
     p = ROOT / "results" / "results_summary.csv"
     S = pd.read_csv(p)
