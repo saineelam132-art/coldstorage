@@ -1,0 +1,8 @@
+{
+  "name": "kk-firebase-bundle",
+  "private": true,
+  "description": "Builds web/vendor/firebase/kk-firebase.js (Firebase JS SDK, bundled locally - no CDN at runtime).",
+  "scripts": { "build": "esbuild entry.js --bundle --format=iife --minify --target=es2020 --outfile=../../web/vendor/firebase/kk-firebase.js" },
+  "dependencies": { "firebase": "10.14.1" },
+  "devDependencies": { "esbuild": "0.24.0" }
+}

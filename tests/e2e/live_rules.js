@@ -1,0 +1,31 @@
+// Two devices on the Firestore emulator: live sync + the security rules refuse non-owner / ledger edits.
+const { chromium } = require('playwright');
+const B = process.argv[2], Q = process.argv[3];
+(async () => {
+  const b = await chromium.launch(), out = { errs: [] };
+  const mk = async (role) => { const ctx = await b.newContext(); const p = await ctx.newPage(); p.on('pageerror', e => out.errs.push(role + ': ' + e));
+    await p.goto(B + 'trust.html?role=' + role + Q); await p.waitForFunction(() => window.__tt, null, { timeout: 40000 }); await p.waitForTimeout(1500); return p; };
+  const owner = await mk('farmer'), phone = await mk('buyer');
+  out.ownerAdmin = await owner.evaluate(() => window.__tt.store().isAdmin()); out.phoneAdmin = await phone.evaluate(() => window.__tt.store().isAdmin());
+  await owner.click('#fGo'); const t0 = Date.now();
+  await phone.waitForFunction(() => Object.keys(window.__tt.store().batches).length > 0, null, { timeout: 15000 }); out.syncMs = Date.now() - t0;
+  await owner.evaluate(() => window.__tt.advance(3)); await phone.waitForTimeout(2000);
+  out.phoneStep = await phone.evaluate(() => window.__tt.step()); out.ownerStep = await owner.evaluate(() => window.__tt.step());
+  out.rules = await phone.evaluate(async () => { const s = window.__tt.store(), id = Object.keys(s.batches)[0], r = {};
+    r.editBlock = await s.tryEditBlock(id, 1, { hacked: true });
+    const tryIt = async (k, f) => { try { await f(); r[k] = 'ACCEPTED'; } catch (e) { r[k] = 'refused'; } };
+    await tryIt('overwriteBlock', () => s.F.setDoc(s.ref('batches', id, 'blocks', '1'), { index: 1, slipId: id, type: 'READING', hash: 'a'.repeat(64), prevHash: 'b'.repeat(64) }));
+    await tryIt('makeAdmin', () => s.F.updateDoc(s.ref('chambers', 'CH-DEMO'), { admins: [s.uid] }));
+    await tryIt('overfill', () => s.F.updateDoc(s.ref('chambers', 'CH-DEMO'), { stored_kg: 999 }));
+    await tryIt('voidAsFarmer', () => s.appendBlock(id, 'VOID', 'owner', { reason: 'x' }, { phi: 0, flags: [] }, '2026-05-22T03:00:00Z', { status: 'void' }));
+    await tryIt('resetAsFarmer', () => s.F.updateDoc(s.ref('chambers', 'CH-DEMO'), { epoch: s.ch.epoch + 1 }));
+    await tryIt('fakeAlert', () => s.createAlert({ kind: 'physics', sensors: [], reason: 'fake' }));
+    await tryIt('checkoutOwnBatch', () => s.checkout(id, 5, 'farmer', '2026-05-22T03:00:00Z'));
+    return r; });
+  out.ownerSeesCheckout = await owner.evaluate(() => Object.values(window.__tt.store().batches)[0].kg_stored);
+  out.phoneReset = await phone.evaluate(async () => { try { await window.__tt.store().resetDemo(); return 'ACCEPTED'; } catch (e) { return 'refused'; } });
+  await owner.evaluate(() => window.__tt.store().resetDemo()); await phone.waitForTimeout(2500);
+  out.afterReset = await phone.evaluate(() => ({ epoch: window.__tt.store().ch.epoch, batches: Object.keys(window.__tt.store().batches).length, stored: window.__tt.store().ch.stored_kg }));
+  out.oldBlocksKept = await owner.evaluate(async () => (await window.__tt.store().loadBlocks('CT-260522-001')).length);
+  console.log(JSON.stringify(out)); await b.close();
+})().catch(e => { console.error(e); process.exit(1); });

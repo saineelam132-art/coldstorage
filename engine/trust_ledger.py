@@ -18,8 +18,8 @@ import os
 import secrets
 
 GENESIS_PREV = "0" * 64
-TYPES = ("CHECKIN", "READING", "HANDOVER_OUT", "TRANSIT", "HANDOVER_IN", "SALE")
-ACTORS = ("farmer", "owner", "transporter", "buyer")
+TYPES = ("CHECKIN", "READING", "HANDOVER_OUT", "TRANSIT", "HANDOVER_IN", "SALE", "CHECKOUT", "VOID", "FLAG", "REVIEW")
+ACTORS = ("farmer", "owner", "transporter", "buyer", "system")
 
 
 def _norm(x):
@@ -106,7 +106,8 @@ def verify_chain(blocks, reading_interval_s=300):
         holder = "farmer"
         for b in blocks[: first_bad + 1]:
             holder = {"CHECKIN": "owner", "READING": "owner", "HANDOVER_OUT": "transporter", "TRANSIT": "transporter",
-                      "HANDOVER_IN": "buyer", "SALE": "buyer"}[b["type"]]
+                      "HANDOVER_IN": "buyer", "SALE": "buyer", "CHECKOUT": "owner", "VOID": "owner", "FLAG": "owner",
+                      "REVIEW": "owner"}[b["type"]]
         custody = holder
     flags = [f for b in blocks for f in b.get("physics", {}).get("flags", [])]
     return {"valid": first_bad is None, "first_bad": first_bad, "why": why, "custody_at_break": custody,

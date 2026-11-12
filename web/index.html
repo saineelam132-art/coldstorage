@@ -30,7 +30,7 @@
     <button id="ccBtn" class="act">☰ Control centre</button>
     <a class="act" id="liveLink" href="live.html" title="The system on real 2026 weather, today and tomorrow">📅 Live 2026</a>
     <a class="act" href="trust.html" title="Farmer check-in, signed slip, hash-chain ledger, physics check and buyer settlement">🤝 Trust &amp; Trade</a>
-    <button id="newBatchBtn" class="act">+ New batch</button>
+    <a class="act" id="newBatchBtn" href="trust.html?role=farmer" title="Farmer check-in (shared, saved)">+ New batch</a>
     <button id="ledgerBtn" class="act">⛓ Ledger <span id="ledgerBadge" class="lb ok">✓</span></button>
   </div>
   <div class="tools">
@@ -145,6 +145,9 @@
 </div>
 
 <script src="vendor/qrcode/qrcode.js"></script>
+<script src="trust/trust_core.js"></script>
+<script src="vendor/firebase/kk-firebase.js"></script>
+<script src="kk/kkstore.js"></script>
 <script src="vendor/chartjs/chart.umd.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>

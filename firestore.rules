@@ -1,0 +1,131 @@
+rules_version = '2';
+// KoolKisaan – Cloud Firestore security rules (browser writes with Anonymous Auth, no backend yet).
+// * Everyone signed in (anonymous is fine) may read and may do farmer / transporter / buyer actions.
+// * Owner-only actions need the device's uid in chambers/{ch}.admins (the first device that opens the site
+//   creates the chamber and becomes admin; add more uids in the Firebase console).
+// * Ledger blocks are APPEND-ONLY: a block can only be created at head + 1 with prevHash = the previous block's
+//   hash; nobody can update or delete a block. Only CH-DEMO can be "reset" (a new epoch – old data stays).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function chPath(ch) { return /databases/$(database)/documents/chambers/$(ch); }
+    function chamber(ch) { return get(chPath(ch)).data; }
+    function isAdmin(ch) { return signedIn() && request.auth.uid in chamber(ch).admins; }
+    function onlyChanges(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+    function baysOk(d) {
+      return d.bays.B1 >= 0 && d.bays.B1 <= d.bay_limit_kg && d.bays.B2 >= 0 && d.bays.B2 <= d.bay_limit_kg
+          && d.bays.B3 >= 0 && d.bays.B3 <= d.bay_limit_kg && d.bays.B4 >= 0 && d.bays.B4 <= d.bay_limit_kg
+          && d.bays.B5 >= 0 && d.bays.B5 <= d.bay_limit_kg && d.bays.B6 >= 0 && d.bays.B6 <= d.bay_limit_kg;
+    }
+    function sameEpoch(ch) { return request.resource.data.epoch == chamber(ch).epoch; }
+
+    // ---------------------------------------------------------------- chamber (bays, capacity, epoch, controller)
+    match /chambers/{ch} {
+      allow read: if true;
+      allow create: if signedIn() && ch == 'CH-DEMO'
+        && request.resource.data.admins == [request.auth.uid]
+        && request.resource.data.capacity_kg == 150 && request.resource.data.stored_kg == 0 && request.resource.data.epoch == 1;
+      // check-in / check-out move kg between bays: totals must stay within the limits; admins and capacity never change
+      allow update: if signedIn()
+        && request.resource.data.admins == resource.data.admins
+        && request.resource.data.capacity_kg == resource.data.capacity_kg
+        && request.resource.data.bay_limit_kg == resource.data.bay_limit_kg
+        && request.resource.data.stored_kg >= 0 && request.resource.data.stored_kg <= resource.data.capacity_kg
+        && baysOk(request.resource.data)
+        && (request.resource.data.epoch == resource.data.epoch
+            || (ch == 'CH-DEMO' && isAdmin(ch) && request.resource.data.epoch == resource.data.epoch + 1))
+        && (onlyChanges(['bays', 'stored_kg', 'seq', 'updated']) || isAdmin(ch));
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------- batches (one per slip) and their ledger
+    match /batches/{slipId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.slipId == slipId
+        && request.resource.data.chamberId == 'CH-DEMO'
+        && sameEpoch(request.resource.data.chamberId)
+        && request.resource.data.kg > 0 && request.resource.data.kg <= 150
+        && request.resource.data.kg_stored == request.resource.data.kg
+        && request.resource.data.status == 'stored'
+        && request.resource.data.head.index == 0
+        && existsAfter(/databases/$(database)/documents/batches/$(slipId)/blocks/0);
+      allow update: if signedIn()
+        && request.resource.data.slipId == resource.data.slipId
+        && request.resource.data.chamberId == resource.data.chamberId
+        && request.resource.data.epoch == resource.data.epoch
+        && request.resource.data.kg == resource.data.kg
+        && request.resource.data.genesisHash == resource.data.genesisHash
+        && request.resource.data.kg_stored >= 0 && request.resource.data.kg_stored <= resource.data.kg_stored
+        && request.resource.data.status in ['stored', 'partly_removed', 'removed', 'void', 'sold', 'in_transit', 'delivered']
+        && (request.resource.data.status != 'void' || resource.data.status == 'void' || isAdmin(resource.data.chamberId))
+        // the head may only move forward by one block, and that block must exist with the same hash
+        && (request.resource.data.head == resource.data.head
+            || (request.resource.data.head.index == resource.data.head.index + 1
+                && getAfter(/databases/$(database)/documents/batches/$(slipId)/blocks/$(string(request.resource.data.head.index))).data.hash
+                   == request.resource.data.head.hash));
+      allow delete: if false;
+
+      match /blocks/{idx} {
+        allow read: if true;
+        allow create: if signedIn()
+          && idx == string(request.resource.data.index)
+          && request.resource.data.slipId == slipId
+          && request.resource.data.type in ['CHECKIN', 'READING', 'HANDOVER_OUT', 'TRANSIT', 'HANDOVER_IN', 'SALE', 'CHECKOUT', 'VOID', 'FLAG', 'REVIEW']
+          && request.resource.data.hash is string && request.resource.data.hash.size() == 64
+          && ((request.resource.data.index == 0
+               && request.resource.data.type == 'CHECKIN'
+               && request.resource.data.prevHash == '0000000000000000000000000000000000000000000000000000000000000000')
+              || (request.resource.data.index > 0
+                  && get(/databases/$(database)/documents/batches/$(slipId)/blocks/$(string(request.resource.data.index - 1))).data.hash
+                     == request.resource.data.prevHash))
+          && (!(request.resource.data.type in ['VOID', 'REVIEW']) || isAdmin('CH-DEMO'));
+        allow update, delete: if false;          // append-only: no edits, no deletes, for anyone
+      }
+    }
+
+    // ---------------------------------------------------------------- sensor readings (written by the chamber controller)
+    match /telemetry/{ch}/readings/{rid} {
+      allow read: if true;
+      allow create: if isAdmin(ch) && request.resource.data.epoch == chamber(ch).epoch;
+      allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------- daily anchors, alerts, reservations, audit
+    match /anchors/{id} {
+      allow read: if true;
+      allow create: if isAdmin(request.resource.data.chamberId);
+      allow update, delete: if false;
+    }
+    match /alerts/{id} {
+      allow read: if true;
+      allow create: if isAdmin(request.resource.data.chamberId) && sameEpoch(request.resource.data.chamberId);
+      // the detector extends an active alert; 'reviewed' is set by the owner. An alert is never deleted.
+      allow update: if isAdmin(resource.data.chamberId)
+        && request.resource.data.chamberId == resource.data.chamberId && request.resource.data.kind == resource.data.kind
+        && request.resource.data.created == resource.data.created;
+      allow delete: if false;
+    }
+    match /reservations/{id} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.chamberId == 'CH-DEMO' && sameEpoch('CH-DEMO')
+        && request.resource.data.kg > 0 && request.resource.data.kg <= 150 && request.resource.data.days >= 1 && request.resource.data.days <= 60
+        && request.resource.data.status == 'booked' && request.resource.data.by == request.auth.uid;
+      allow update: if isAdmin(resource.data.chamberId) && onlyChanges(['status', 'decided'])
+        && request.resource.data.status in ['accepted', 'rejected'];
+      allow delete: if false;
+    }
+    match /audit/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.by == request.auth.uid;
+      allow update, delete: if false;
+    }
+    // "Demo: edit an old stored reading": the ledger itself refuses edits, so the demo records here the edit someone
+    // with direct database access WOULD make; the verifiers apply it and show the broken hash.
+    match /demo_edits/{id} {
+      allow read: if true;
+      allow create: if isAdmin(request.resource.data.chamberId) && request.resource.data.chamberId == 'CH-DEMO';
+      allow update, delete: if false;
+    }
+  }
+}

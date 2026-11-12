@@ -26,6 +26,7 @@
     <button id="resetBtn" class="ghost" title="Delete all demo slips and start again">Demo: reset</button>
   </div>
 </header>
+<div id="kkBanner" class="kkbanner"></div>
 <div id="keyNote" class="keynote" hidden></div>
 
 <main>
@@ -39,6 +40,7 @@
         <label>Quantity (kg) – <span id="fFree"></span> kg free in the room<input id="fKg" type="number" min="1" step="1" value="40"></label>
         <label>Agreed base price (₹/kg, at 100 % freshness)<input id="fBase" type="number" min="1" step="1" value="120"></label>
         <label>Harvested how many hours before check-in?<input id="fHarv" type="number" min="0" step="0.5"></label>
+        <label>Expected take-out date<input id="fOut" type="date"></label>
         <div id="fMsg" class="msg"></div>
         <button id="fGo" class="primary">Check in &amp; print slip</button>
         <p class="note">Rules: at most <b id="fCap"></b> kg in the room in total (payload limit) and never more than the free space.
@@ -59,6 +61,22 @@
         <h3>4 · My produce now <span class="chip S">S</span> <span class="chip C">C</span></h3>
         <div id="fMine" class="muted">Nothing stored yet.</div>
       </div>
+      <div class="card">
+        <h3>5 · Take out produce</h3>
+        <label>Slip<select id="coSlip"></select></label>
+        <label>kg to take out (≤ stored)<input id="coKg" type="number" min="1" step="1"></label>
+        <button id="coGo" class="primary">Take out</button>
+        <div id="coMsg" class="msg"></div>
+        <p class="note">Writes a CHECKOUT block; the bay space is free again at once for everyone.</p>
+      </div>
+      <div class="card">
+        <h3>6 · Book space for later</h3>
+        <label>I will bring (kg)<input id="rsKg" type="number" min="1" step="1" value="40"></label>
+        <label>on (date)<input id="rsDate" type="date"></label>
+        <label>for (days)<input id="rsDays" type="number" min="1" max="60" step="1" value="7"></label>
+        <button id="rsGo">Check &amp; book</button>
+        <div id="rsMsg" class="msg"></div>
+      </div>
     </div>
   </section>
 
@@ -66,13 +84,17 @@
   <section id="v-owner" class="view">
     <div class="grid">
       <div class="card">
-        <h3>Twin clock <span class="chip S">S</span></h3>
+        <h3>Chamber clock <span class="chip S">S</span></h3>
         <p class="note" id="scenarioNote"></p>
+        <div id="ctrlBox"></div>
         <div class="row">
-          <button data-adv="12">+1 h</button><button data-adv="72">+6 h</button><button data-adv="288">+24 h</button><button data-adv="9999">to the end</button>
+          <button id="playBtn">▶ Run</button>
+          <select id="speedSel" title="Twin speed"><option value="300">1× real time</option><option value="5" selected>60× (5 min in 5 s)</option><option value="1">300× (5 min / s)</option></select>
+          <button data-adv="12">+1 h</button><button data-adv="72">+6 h</button>
         </div>
-        <p class="note">Each 5-minute step writes one READING block (all four nodes) into every stored slip's chain.
-          The owner can read the ledger but has no button to change it.</p>
+        <p class="note">Each 5-minute reading of the four nodes goes into the shared telemetry and one READING block into every stored
+          slip's chain. The owner can read the ledger but has no button to change it.</p>
+        <div id="adminBox" class="note"></div>
       </div>
       <div class="card">
         <h3>Physics check Φ <span class="chip C">C</span></h3>
@@ -92,18 +114,32 @@
         <h3>Alarms</h3>
         <div id="alarms"></div>
       </div>
-      <div class="card">
-        <h3>Demo: what if the owner cheats?</h3>
-        <button id="dEdit" class="danger">Demo: Edit an old reading</button>
-        <p class="note">Changes one old warm reading in the stored ledger to 5.0 °C without re-making the hashes – like someone editing the database.</p>
-        <button id="dFake" class="danger">Demo: Report fake readings from now on</button>
-        <p class="note">From the next step the nodes report <b id="fakeC"></b> °C for the air and the core. Every new block is hashed correctly –
-          the chain stays valid. Only the physics check Φ can see it.</p>
-        <div id="cheatState" class="msg"></div>
+      <div class="card tamper">
+        <h3>Demo: tamper a sensor</h3>
+        <label>Sensor<select id="tpSensor"></select></label>
+        <label>Action<select id="tpAction"></select></label>
+        <button id="tpStart" class="danger">Demo: Start tampering</button><button id="tpStop">Stop tampering</button>
+        <div id="tpState" class="msg"></div>
+        <p class="note">The twin keeps calculating the TRUE physics. Every reading is checked automatically (Φ, missing readings,
+          outside vs weather, stuck values, the hash chain); an alert and a FLAG block are written by themselves. Speed the clock up to see it sooner.</p>
       </div>
       <div class="card wide">
         <h3>Ledger (read-only) <select id="oSlip"></select></h3>
         <div id="ledger" class="ledger"></div>
+      </div>
+      <div class="card wide">
+        <h3>Batches <span class="hint">(active and history)</span></h3>
+        <div id="oBatches"></div>
+      </div>
+      <div class="card wide">
+        <h3>Space calendar – next 30 days <span class="chip C">C</span></h3>
+        <div id="spaceCal"></div>
+        <div class="row"><label style="flex:1">Answer a farmer: on<input id="ansDate" type="date"></label><button id="ansGo">You can bring up to … kg</button></div>
+        <div id="ansOut" class="msg"></div>
+      </div>
+      <div class="card wide">
+        <h3>Reservations</h3>
+        <div id="oRes" class="muted">None.</div>
       </div>
       <div class="card wide">
         <h3>Daily anchors</h3>
@@ -196,6 +232,9 @@
 <script src="vendor/chartjs/chart.umd.js"></script>
 <script src="trust/data/trust_data.js"></script>
 <script src="trust/trust_core.js"></script>
+<script src="trust/detector.js"></script>
+<script src="vendor/firebase/kk-firebase.js"></script>
+<script src="kk/kkstore.js"></script>
 <script src="trust/trust.js"></script>
 </body>
 </html>

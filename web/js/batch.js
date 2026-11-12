@@ -24,7 +24,7 @@ export class Batches {
     const sel = $('cropSel');
     Object.entries(cfg.crops).forEach(([k, c]) => sel.insertAdjacentHTML('beforeend', `<option value="${k}">${c.label} (best ${c.T_opt[0]}–${c.T_opt[1]} °C)</option>`));
     sel.value = 'pomegranate';
-    $('newBatchBtn').onclick = () => $('batchModal').classList.add('on');
+    if ($('newBatchBtn').tagName !== 'A') $('newBatchBtn').onclick = () => $('batchModal').classList.add('on');   // now a link to the shared farmer check-in
     $('batchCancel').onclick = () => $('batchModal').classList.remove('on');
     $('batchForm').onsubmit = e => { e.preventDefault(); this.create(new FormData(e.target)); };
     $('cardModal').onclick = e => { if (e.target.id === 'cardModal') $('cardModal').classList.remove('on'); };

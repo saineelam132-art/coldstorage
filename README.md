@@ -191,6 +191,20 @@ results are published.
   → `results/live/uncertainty_2026.json`; the base case reproduces `design_study_2026.json` exactly.
   Control centre → **How sure are we?** shows it; poster chart `figures/final_10_uncertainty.png`.
 
+## Shared data, tamper detection, check-out and space planning
+
+Trust & Trade, the alert page and the home tiles share one saved database (Cloud Firestore on Firebase Hosting,
+offline demo elsewhere) – see **docs/firebase_setup.md** for the console clicks and deploy commands.
+* Owner page → **Demo: tamper a sensor** (room air, core, door, outside, humidity × freeze / offset / stop / edit an old
+  reading). Every reading is checked automatically (`web/trust/detector.js`: Φ, missing readings, stuck values, humidity
+  pair, outside vs weather, hash chain); an alert and a FLAG block are written by themselves; the home ROOM tile turns
+  red and opens `alert.html?id=…` (reported vs physics, failed checks, Φ timeline, hash evidence, consequences, Mark reviewed).
+* Farmer: expected take-out date, **Take out produce** (CHECKOUT block), **Book space for later**.
+  Owner: Void (VOID block, history kept), **Space calendar** (30 days), reservations accept/reject, one-click
+  "on <date> you can bring up to … kg" (WhatsApp text), **Demo: reset (admin)** for CH-DEMO only.
+* Tests: tests/test_tamper.py (every action ≤ 30 min, normal days no alert), tests/test_shared_data.py (browser flow;
+  live sync + security rules when the Firestore emulator runs).
+
 ## Money audit and Tomorrow's plan
 
 * `python -m engine.economics` → `results/live/economics_2026.json` + page **money.html** ("Money: how we calculate", linked

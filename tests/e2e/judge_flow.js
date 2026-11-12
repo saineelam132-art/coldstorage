@@ -1,0 +1,33 @@
+// Judge demo flow in a real browser. Usage: node judge_flow.js <base url> [extra query, e.g. &emu=127.0.0.1:8080&authemu=127.0.0.1:9099]
+const { chromium } = require('playwright');
+const B = process.argv[2], Q = process.argv[3] || '';
+(async () => {
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1366, height: 900 } });
+  const out = { errs: [] };
+  const mk = async u => { const p = await ctx.newPage(); p.on('pageerror', e => out.errs.push(u + ': ' + e)); p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'typed 545 instead of 45' : undefined)); await p.goto(B + u); return p; };
+  const t = await mk('trust.html?role=farmer' + Q); await t.waitForFunction(() => window.__tt, null, { timeout: 40000 }); await t.waitForTimeout(1000);
+  out.mode = await t.evaluate(() => window.__tt.store().mode);
+  await t.click('#fGo'); await t.waitForTimeout(1500); out.checkin = await t.textContent('#fMsg');
+  const home = await mk('index.html' + (Q ? '?' + Q.slice(1) : '')); await home.waitForFunction(() => window.__kk, null, { timeout: 40000 }); await home.waitForTimeout(2500);
+  out.tileBefore = await home.getAttribute('.databar .cell:first-child', 'class');
+  await t.click('[data-role=owner]'); await t.waitForTimeout(500);
+  await t.selectOption('#tpSensor', 'room_air'); await t.selectOption('#tpAction', 'offset'); await t.click('#tpStart'); await t.evaluate(() => window.__tt.play(false));
+  const s0 = await t.evaluate(() => window.__tt.step());
+  await t.click('[data-adv="12"]'); await t.waitForTimeout(9000);
+  out.alerts = await t.evaluate(s0 => Object.values(window.__tt.store().alerts).map(a => ({ kind: a.kind, minutes: (a.raised_step - s0) * 5 })), s0);
+  await home.waitForTimeout(2500);
+  out.tileAfter = await home.getAttribute('.databar .cell:first-child', 'class');
+  out.tileText = await home.textContent('#d_room');
+  await home.click('.databar .cell.alerted'); await home.waitForTimeout(3500);
+  out.alertPage = (await home.textContent('main')).replace(/\s+/g, ' ').slice(0, 120);
+  await t.click('[data-role=buyer]'); await t.click('#bCheck'); await t.waitForTimeout(2000);
+  out.buyer = (await t.textContent('#bVerdict')).replace(/\s+/g, ' ');
+  await t.click('[data-role=farmer]'); await t.fill('#coKg', '15'); await t.click('#coGo'); await t.waitForTimeout(2000);
+  out.checkout = await t.textContent('#coMsg'); out.storedAfter = await t.evaluate(() => window.__tt.store().ch.stored_kg);
+  await t.fill('#coKg', '99'); await t.click('#coGo'); await t.waitForTimeout(800); out.overdraw = await t.textContent('#coMsg');
+  await t.click('[data-role=owner]'); await t.waitForTimeout(500); await t.click('[data-void]'); await t.waitForTimeout(2000);
+  out.afterVoid = await t.evaluate(() => ({ stored: window.__tt.store().ch.stored_kg, status: Object.values(window.__tt.store().batches)[0].status }));
+  await t.reload(); await t.waitForFunction(() => window.__tt, null, { timeout: 40000 }); await t.waitForTimeout(2000);
+  out.afterReload = await t.evaluate(() => ({ batches: Object.keys(window.__tt.store().batches).length, alerts: Object.keys(window.__tt.store().alerts).length }));
+  console.log(JSON.stringify(out)); await b.close();
+})().catch(e => { console.error(e); process.exit(1); });

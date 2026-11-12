@@ -11,3 +11,7 @@ data/live/ishrae/
 # Firebase CLI cache and logs
 .firebase/
 firebase-debug.log
+
+# Firebase SDK bundle build folder
+tools/firebase_bundle/node_modules/
+tools/firebase_bundle/package-lock.json

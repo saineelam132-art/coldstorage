@@ -54,8 +54,8 @@
 
   // ---------------------------------------------------------------- blocks (same as engine/trust_ledger.py)
   const GENESIS_PREV = '0'.repeat(64);
-  const TYPES = ['CHECKIN', 'READING', 'HANDOVER_OUT', 'TRANSIT', 'HANDOVER_IN', 'SALE'];
-  const ACTORS = ['farmer', 'owner', 'transporter', 'buyer'];
+  const TYPES = ['CHECKIN', 'READING', 'HANDOVER_OUT', 'TRANSIT', 'HANDOVER_IN', 'SALE', 'CHECKOUT', 'VOID', 'FLAG', 'REVIEW'];
+  const ACTORS = ['farmer', 'owner', 'transporter', 'buyer', 'system'];
   function norm(x) {                                // numbers: 4 decimals; whole numbers as integers
     if (x === null || x === undefined) return null;
     if (typeof x === 'number') { if (!isFinite(x)) return null; const v = Math.round(x * 1e4) / 1e4; return v === 0 ? 0 : v; }
@@ -83,7 +83,8 @@
   const signMsg = (slipId, bay, gen) => `${slipId}|${bay}|${gen}`;
   const sign = (key, slipId, bay, gen) => hmacHex(key, signMsg(slipId, bay, gen));
   const verifySig = (key, qr) => safeEqual(sign(key, qr.slipId, qr.bay, qr.genesisHash), qr.sig);
-  const CUSTODY = { CHECKIN: 'owner', READING: 'owner', HANDOVER_OUT: 'transporter', TRANSIT: 'transporter', HANDOVER_IN: 'buyer', SALE: 'buyer' };
+  const CUSTODY = { CHECKIN: 'owner', READING: 'owner', HANDOVER_OUT: 'transporter', TRANSIT: 'transporter', HANDOVER_IN: 'buyer', SALE: 'buyer',
+    CHECKOUT: 'owner', VOID: 'owner', FLAG: 'owner', REVIEW: 'owner' };
   function verifyChain(blocks, intervalS = 300) {
     let firstBad = null, why = null;
     for (let i = 0; i < blocks.length; i++) {

@@ -137,7 +137,7 @@ async function boot() {
       <span>Wax <b>${fmt(v.pcm_pct, '%')}</b></span><span>Power <b>${src}</b></span>
       ${info && info.saved !== null ? `<span><b>₹${Math.round(info.saved)}</b> saved that day</span>` : ''}
       <span class="badge sim">SIMULATED</span><span class="wx">WEATHER: ${fc ? 'forecast' : 'real'} (Open-Meteo)</span>
-      ${headline}${planChip}
+      ${headline}${planChip}${kk ? (kk.mode === 'live' ? '<span class="kklivechip" title="Batches, ledger and alerts are shared and saved">● Live data</span>' : '<span class="kkoffchip" title="Firestore not reachable: batches and alerts stay in this browser">Offline demo</span>') : ''}
       ${SA && SA.isRebuilt && SA.isRebuilt(day) ? '<span class="rebuilt" title="This day has no saved 5-minute steps in the offline copy: they are rebuilt from the hourly Live Year Run results (same twin run).">5-min detail from hourly results</span>' : ''}`;
     $('liveLink').href = live ? 'live.html' : `live.html?d=${date}`;
     today.focus(live ? null : `${date} ${String(tb.date(s.t).getUTCHours()).padStart(2, '0')}`);
@@ -246,8 +246,33 @@ async function boot() {
     return s.day_class === 'rainy' ? 'monsoon' : 'day';
   }
 
+  // shared alerts (Firestore or the offline demo): the affected tiles turn red and open the investigation page
+  let kk = null, alertTiles = {};
+  if (window.KKStore) window.KKStore.get().then(st => {
+    kk = st;
+    const upd = () => {
+      alertTiles = {};
+      for (const a of Object.values(st.alerts)) {
+        if (a.status === 'reviewed') continue;
+        const tiles = (a.sensors || []).map(x => (x === 'outside' ? 'd_out' : 'd_room'));
+        for (const t of tiles) if (!alertTiles[t] || a.created > alertTiles[t].created) alertTiles[t] = a;
+      }
+      applyAlerts();
+    };
+    st.on(upd); upd();
+  });
+  function applyAlerts() {
+    for (const t of ['d_room', 'd_out']) {
+      const el = $(t), a = alertTiles[t], cell = el.closest('.cell');
+      cell.classList.toggle('alerted', !!a);
+      cell.onclick = a ? () => { location.href = window.KKStore.link(`alert.html?id=${encodeURIComponent(a.id)}`); } : null;
+      cell.title = a ? `${a.label}: ${a.reason} – click to investigate` : '';
+      if (a) { el.className = 'bad'; if (!el.querySelector('.flag')) el.insertAdjacentHTML('beforeend', '<small class="flag">⚠ SENSOR SUSPICIOUS</small>'); }
+    }
+  }
   feed.on(s => {
     updateDataBar(s, cfg);
+    applyAlerts();
     photo.update(s);
     photo.setMode(mode === 'auto' ? autoMode(s) : mode);
     refreshPanel();

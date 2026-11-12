@@ -1,12 +1,11 @@
 // Calendar + time picker in the bottom time bar. Pick any day of 2026 (1 Jan -> today; tomorrow only as a
-// forecast) and a time (5-minute steps): the whole site jumps there through goTo(t). Dots and tooltips come
+// forecast) and a time (5-minute steps): the whole site jumps there through goTo(t). Dots come
 // from the Live Year Run results (yeardata.js). Keyboard: arrows move days, PgUp/PgDn months, Enter picks,
 // Esc closes. On a phone it opens as a bottom sheet.
 import { MON3, MONTHS } from './yeardata.js';
 
 const pad = n => String(n).padStart(2, '0');
 const hhmm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
-const inr = v => '₹' + Math.round(v).toLocaleString('en-IN');
 const KIND_TXT = { full: 'fully on solar + wax', grid: 'some grid use', dull: 'rainy / cloudy day (no grid)' };
 
 // which days can be picked. ctx: {lastDataDay, todayDay, forecastDay|null, canShow(day)}
@@ -56,17 +55,16 @@ export class TimeNav {
       </div>
       <div class="calwd" aria-hidden="true">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(w => `<span>${w}</span>`).join('')}</div>
       <div id="calGrid" class="calgrid" role="grid" aria-label="Days"></div>
-      <div id="calInfo" class="calinfo">Point at a day to see its numbers.</div>
       <div class="caltime"><label for="calTime">Time</label><input id="calTime" type="range" min="0" max="287" step="1"><b id="calTimeTx">00:00</b>
         <button id="calGo" class="calsmall">Show</button></div>
       <div class="calquick"><span>Quick links</span><div id="calLinks"></div></div>
       <div class="calleg"><span><i class="dot full"></i>fully on solar + wax</span><span><i class="dot grid"></i>some grid use</span>
         <span><i class="dot dull"></i>rainy / cloudy day</span><span><i class="fc">forecast</i> tomorrow</span><span class="muted">grey number = no data</span></div>
-      <div id="calTip" class="caltip" role="tooltip" hidden></div>`;
+`;
     document.body.appendChild(p);
     this.pop = p;
     const $ = id => p.querySelector('#' + id);
-    this.grid = $('calGrid'); this.info = $('calInfo'); this.tip = $('calTip'); this.mon = $('calMon');
+    this.grid = $('calGrid'); this.mon = $('calMon');
     this.time = $('calTime'); this.timeTx = $('calTimeTx');
     p.querySelectorAll('.calnav').forEach(b => (b.onclick = () => this.month(+b.dataset.m)));
     $('calClose').onclick = () => { this.toggle(false); this.btn.focus(); };
@@ -80,9 +78,7 @@ export class TimeNav {
     $('calLinks').onclick = e => { const b = e.target.closest('.calq'); if (b) { this.toggle(false); this.goTo(+b.dataset.t); } };
     this.grid.addEventListener('keydown', e => this.key(e));
     this.grid.addEventListener('click', e => { const b = e.target.closest('.cday'); if (b) this.pick(+b.dataset.day); });
-    this.grid.addEventListener('mouseover', e => { const b = e.target.closest('.cday'); if (b) this.hover(b, true); });
-    this.grid.addEventListener('mouseleave', () => (this.tip.hidden = true));
-    this.grid.addEventListener('focusin', e => { const b = e.target.closest('.cday'); if (b) { this.focusDay = +b.dataset.day; this.hover(b, false); } });
+    this.grid.addEventListener('focusin', e => { const b = e.target.closest('.cday'); if (b) this.focusDay = +b.dataset.day; });
   }
 
   toggle(on) {
@@ -95,7 +91,7 @@ export class TimeNav {
       this.time.value = String(Math.floor((t % 86400) / 300));
       this.timeTx.textContent = hhmm(+this.time.value * 5);
       this.render(true);
-    } else this.tip.hidden = true;
+    }
   }
 
   sync() {                                     // the bar follows the clock
@@ -137,25 +133,8 @@ export class TimeNav {
     this.grid.innerHTML = html;
     if (focus) {
       const b = this.grid.querySelector(`[data-day="${this.focusDay}"]`);
-      if (b) { b.focus({ preventScroll: true }); this.hover(b, false); }
+      if (b) b.focus({ preventScroll: true });
     }
-  }
-
-  hover(b, near) {
-    const day = +b.dataset.day, date = b.dataset.date, st = dayState(day, this.ctx()), i = this.days.info(date);
-    const when = `${this.tb.nice(day * 86400, false)}`;
-    let txt;
-    if (!st.ok) txt = `<b>${when}</b> – ${st.why === 'future' ? 'not happened yet' : 'no data for this day'}`;
-    else if (!i) txt = `<b>${when}</b>${st.forecast ? ' (forecast)' : ''}`;
-    else txt = `<b>${when}</b>${st.forecast ? ' <i class="fc">forecast</i>' : ''}<br>Max outside <b>${i.maxT.toFixed(1)} °C</b> · Sun <b>${i.sun.toFixed(1)} kWh/m²</b>
-      · Grid <b>${i.grid_h.toFixed(1)} h</b> · Saved <b>${i.saved === null ? '— (day not over)' : inr(i.saved)}</b>`;
-    this.info.innerHTML = txt;
-    if (!near) { this.tip.hidden = true; return; }
-    this.tip.innerHTML = txt; this.tip.hidden = false;
-    const r = b.getBoundingClientRect(), pr = this.pop.getBoundingClientRect();
-    const w = this.tip.offsetWidth;
-    this.tip.style.left = `${Math.max(4, Math.min(pr.width - w - 4, r.left - pr.left + r.width / 2 - w / 2))}px`;
-    this.tip.style.top = `${r.top - pr.top - this.tip.offsetHeight - 6}px`;
   }
 
   key(e) {

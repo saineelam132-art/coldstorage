@@ -215,7 +215,7 @@ def main():
         f.write("window.STATIC_DATA = ")
         json.dump(data, f, separators=(",", ":"), allow_nan=False)
         f.write(";\n")
-    for sub in ("assets/img", "assets/cutouts", "public", "css", "vendor/qrcode", "vendor/chartjs", "live"):
+    for sub in ("assets/img", "assets/cutouts", "public", "css", "vendor/qrcode", "vendor/chartjs", "vendor/firebase", "kk", "live"):
         src = ROOT / "web" / sub
         if src.exists():
             shutil.copytree(src, OUT / sub)
@@ -235,6 +235,7 @@ def main():
     shutil.copy(ROOT / "web" / "money.html", OUT / "money.html")
     # Trust & Trade: plain script page too (demo signing key, ledger in the browser)
     shutil.copy(ROOT / "web" / "trust.html", OUT / "trust.html")
+    shutil.copy(ROOT / "web" / "alert.html", OUT / "alert.html")
     shutil.copytree(ROOT / "web" / "trust", OUT / "trust")
     (OUT / "README.txt").write_text(
         "KoolKisaan - STATIC BACKUP (no Python needed)\n\n"

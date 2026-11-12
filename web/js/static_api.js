@@ -198,6 +198,9 @@ function load() {
 }
 function save() { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) { /* storage blocked */ } }
 load();
+// the "Inject sensor fault (+3 °C)" demo lasts only while the page is open: a fault saved by an earlier visit
+// used to come back on every reload and showed "SENSOR SUSPICIOUS" in normal operation
+if (S.fault) { S.fault = null; save(); }
 const TH = D.design.physics_check.threshold_K, PERSIST = D.design.physics_check.persist_minutes * 60;
 const offset = t => (S.fault && t >= S.fault.since ? S.fault.offset : 0);
 
