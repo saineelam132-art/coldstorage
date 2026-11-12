@@ -191,6 +191,17 @@ results are published.
   → `results/live/uncertainty_2026.json`; the base case reproduces `design_study_2026.json` exactly.
   Control centre → **How sure are we?** shows it; poster chart `figures/final_10_uncertainty.png`.
 
+## Money audit and Tomorrow's plan
+
+* `python -m engine.economics` → `results/live/economics_2026.json` + page **money.html** ("Money: how we calculate", linked
+  from the Live page): grid-only, diesel-only (2 kVA genset part-load curve), grid + diesel in cuts, and our room on the same
+  weather and load; every formula with its numbers, editable inputs, payback with/without produce value and subsidy, a check
+  section and the list of assumptions.
+* `python -m twin.advisor` → `web/live/data/advisor.js`: **Tomorrow's plan** (and the day after, lower confidence) in the
+  home page ☰ menu, a chip in the top strip and on the Live page Today/Tomorrow tabs. Rules: normal / low sun / storm
+  (thunderstorm or heavy-rain code, gusts > 60 km/h, sun < 1 kWh/m², or ≥ 64.5 mm rain) with the link to IMD warnings.
+Both run in the 3-hourly GitHub Action.
+
 ## Room & capacity, Reality check, best daily load
 
 ```

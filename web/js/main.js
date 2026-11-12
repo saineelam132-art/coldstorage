@@ -100,6 +100,15 @@ async function boot() {
 
   // ---- calendar + time picker (bottom bar) and the "Showing:" strip
   const days = await new YearDays().load();
+  // Tomorrow's plan (twin/advisor.py -> live/data/advisor.js): in the side menu + a chip in the strip
+  let planChip = '';
+  const loadPlain = src => new Promise(ok => { const sc = document.createElement('script'); sc.src = src; sc.onload = sc.onerror = () => { sc.remove(); ok(); }; document.head.appendChild(sc); });
+  Promise.all([loadPlain('live/data/advisor.js'), loadPlain('live/advisor_card.js')]).then(() => {
+    if (!window.renderAdvisor) return;
+    window.renderAdvisor($('tdPlan'));
+    const d = window.LIVE?.advisor?.days?.[0];
+    if (d) planChip = `<button class="planchip ${d.rule}" onclick="document.getElementById('menuBtn').click()" title="${d.advice.replace(/"/g, '')}">🗓 Tomorrow: ${{ normal: '☀ solar + wax only', low_sun: '⛅ grid may be needed', storm: '⛈ storm – prepare' }[d.rule]}</button>`;
+  });
   let headline = '';                                     // best case vs realistic (results/live/stress_2026.json)
   getJSON('results/live/stress_2026.json').then(S => {
     const h = S.headline;
@@ -128,7 +137,7 @@ async function boot() {
       <span>Wax <b>${fmt(v.pcm_pct, '%')}</b></span><span>Power <b>${src}</b></span>
       ${info && info.saved !== null ? `<span><b>₹${Math.round(info.saved)}</b> saved that day</span>` : ''}
       <span class="badge sim">SIMULATED</span><span class="wx">WEATHER: ${fc ? 'forecast' : 'real'} (Open-Meteo)</span>
-      ${headline}
+      ${headline}${planChip}
       ${SA && SA.isRebuilt && SA.isRebuilt(day) ? '<span class="rebuilt" title="This day has no saved 5-minute steps in the offline copy: they are rebuilt from the hourly Live Year Run results (same twin run).">5-min detail from hourly results</span>' : ''}`;
     $('liveLink').href = live ? 'live.html' : `live.html?d=${date}`;
     today.focus(live ? null : `${date} ${String(tb.date(s.t).getUTCHours()).padStart(2, '0')}`);

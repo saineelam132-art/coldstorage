@@ -35,6 +35,9 @@ jobs:
       - name: Download weather and run the twin
         run: python -m twin.live_run --fetch
 
+      - name: Tomorrow advisor (forecast -> plan card)
+        run: python -m twin.advisor
+
       - name: Money audit (same weather, four ways to run the room)
         run: python -m engine.economics
 

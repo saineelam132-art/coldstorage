@@ -43,7 +43,8 @@ EPW_URL = ("https://climate.onebuilding.org/WMO_Region_2_Asia/IND_India/AP_Andhr
            "IND_AP_Vishakhapatnam.431500_ISHRAE2014.zip")
 EPW_NAME = "IND_AP_Vishakhapatnam.431500_ISHRAE2014.epw"
 COLS = ["time_ist", "T_out", "RH_out", "ps_Pa", "ghi", "wind", "source"]
-EXTRA = ["rain_mm", "cloud_pct", "dew_C"]   # for the website only (sky icon, dew point); the physics never uses them
+EXTRA = ["rain_mm", "cloud_pct", "dew_C", "gust_kmh", "wcode"]   # website / advisor only (sky, dew point, storm rule); the physics never uses them
+VARS_FC = VARS + ",wind_gusts_10m,weather_code"            # the forecast also gives gusts and the weather code (storm advice)
 CREDIT = "Weather data by Open-Meteo.com"
 
 
@@ -73,6 +74,8 @@ def _om_frame(js, source):
     df["rain_mm"] = pd.Series(h.get("precipitation", [None] * len(df)), dtype=float).shift(-1)
     df["cloud_pct"] = pd.Series(h.get("cloud_cover", [None] * len(df)), dtype=float)
     df["dew_C"] = pd.Series(h.get("dew_point_2m", [None] * len(df)), dtype=float)        # instantaneous, like temperature
+    df["gust_kmh"] = pd.Series(h.get("wind_gusts_10m", [None] * len(df)), dtype=float).shift(-1)   # max of the hour before
+    df["wcode"] = pd.Series(h.get("weather_code", [None] * len(df)), dtype=float).shift(-1)        # WMO code of the hour before
     return df[COLS + EXTRA]
 
 
@@ -91,7 +94,7 @@ def fetch_archive(start="2026-01-01", end=None):
 
 def fetch_forecast():
     url = (f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}"
-           f"&hourly={VARS}&past_days=7&forecast_days=3&timezone=Asia%2FKolkata")
+           f"&hourly={VARS_FC}&past_days=7&forecast_days=3&timezone=Asia%2FKolkata")
     return _om_frame(_get_json(url), "Open-Meteo forecast"), url
 
 

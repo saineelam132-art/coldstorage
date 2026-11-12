@@ -221,6 +221,8 @@
       <p class="lead">Hours before now use the latest Open-Meteo estimate of what happened; hours after now are the forecast run through our twin (shaded). The red line moves with the real clock.
       ${stale ? `<br><b class="check">These results are from ${S.generated}. They refresh every day at 6 am (or run <code>python -m twin.live_run --fetch</code>).</b>` : ''}</p>
       <div id="dayBox"></div>`;
+    const adv = document.createElement('div'); adv.id = 'advBox'; main.appendChild(adv);
+    if (window.renderAdvisor) window.renderAdvisor(adv);
     const draw = () => { killCharts(); const now = istNow(); dayView(date, $('dayBox'), { now: now.date === date ? Math.min(23, now.hour) : null }); };
     draw();
     clearInterval(window.__todayTimer); window.__todayTimer = setInterval(() => tab === 'today' && draw(), 60000);
@@ -238,6 +240,8 @@
         ${tile('Wax at the end of the day', `${fmt(t.pcm_end, 0)} %`, `lowest ${fmt(t.pcm_min, 0)} %`)}
         ${tile('Room lowest / highest', `${fmt(t.T_room_min, 1)} / ${fmt(t.T_room_max, 1)} °C`, `fresh batch cooled in ${fmt(t.batch_cool_h, 1)} h`)}
       </div><div id="dayBox"></div>`;
+    const adv = document.createElement('div'); adv.id = 'advBox'; main.insertBefore(adv, main.children[1] || null);
+    if (window.renderAdvisor) window.renderAdvisor(adv);
     dayView(date, $('dayBox'));
   }
 
