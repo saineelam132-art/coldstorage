@@ -291,19 +291,27 @@ class TwinState:
                 "assess": a, "history_T": [round(float(x), 3) for x in hourly],
                 "chill_now": shelf_life.chilling_warning_now(crop, float(T[-1]))}
 
-    def series(self, quantity, t, hours=24.0, step_min=15):
-        """History of one quantity (for the small graph in a sensor panel)."""
+    def series(self, quantity, t, hours=24.0, step_min=15, day=False):
+        """History of one quantity (for the small graph in a sensor panel).
+        day=True: the whole calendar day of t (00:00-24:00) and 'mark' = the point at time t."""
         if quantity == "T_room_sensor":          # the room sensor reads the twin's room air (+ any injected fault)
             quantity = "T_room"
         if quantity not in self.cols:
             return {"quantity": quantity, "t": [], "v": []}
         i1 = self.index(t)
         k = int(step_min * 60 // self.dt)
-        i0 = i1 - int(hours * 3600 // self.dt)
-        idx = np.arange(i0, i1 + 1, k) % self.n
+        if day:
+            spd = int(86400 // self.dt)
+            d0 = (i1 // spd) * spd
+            idx = np.arange(d0, min(d0 + spd, self.n), k)
+            mark = int((i1 - d0) // k)
+        else:
+            i0 = i1 - int(hours * 3600 // self.dt)
+            idx = np.arange(i0, i1 + 1, k) % self.n
+            mark = len(idx) - 1
         vals = self.cols[quantity][idx].astype(float)
         times = [(self.t0 + pd.Timedelta(seconds=float(j * self.dt))).strftime("%H:%M") for j in idx]
-        return {"quantity": quantity, "t": times,
+        return {"quantity": quantity, "t": times, "mark": mark,
                 "v": [None if math.isnan(v) else round(v, 4) for v in vals]}
 
     def demo_days(self):
@@ -319,7 +327,22 @@ class TwinState:
         mk = lambda day, h, why: {"t": day * 86400 + h * 3600, "why": why,
                                   "date": (self.t0 + pd.Timedelta(days=day)).strftime("%d %b")}
         h0 = max(0, self.cfg["live_run"]["loading"][0]["hour"] - 1)
-        return [mk(hot, h0, "Hottest day of 2026 – 150 kg batch arrives at 6 am"),
-                mk(sunny, h0, "Sunniest day – wax refreezes by noon"),
-                mk(rainy, h0, "Dullest (rainy) day – wax carries the room"),
-                mk(gridday, 0, "Day with the most grid backup")]
+        # hottest night: highest mean outside temperature from 19:00 to 06:00 (dated by its evening)
+        T = d["T_out"]
+        night = T[(T.index.hour >= 19) | (T.index.hour < 6)]
+        nm = night.groupby((night.index - pd.Timedelta(hours=7)).normalize()).mean()
+        nm = nm[(nm.index >= self.t0) & (nm.index + pd.Timedelta(hours=30) <= self.t0 + pd.Timedelta(seconds=self.year_s))]
+        hot_night = int((nm.idxmax() - self.t0).days)
+        # a monsoon day: the dullest day of July-August (peak monsoon) (else the dullest day of the run)
+        dates = [self.t0 + pd.Timedelta(days=j) for j in range(len(self.day_poa))]
+        mons = [j for j, x in enumerate(dates) if 7 <= x.month <= 8]
+        monsoon = min(mons, key=lambda j: self.day_poa[j]) if mons else rainy
+        out = [mk(hot, h0, "Hottest day of 2026 – 150 kg batch arrives at 6 am"),
+               mk(sunny, h0, "Sunniest day – wax refreezes by noon"),
+               mk(rainy, h0, "Dullest (rainy) day – wax carries the room"),
+               mk(gridday, 0, "Day with the most grid backup"),
+               mk(hot_night, 21, "Hottest night of 2026 – the wax holds the room"),
+               mk(monsoon, 10, "A monsoon day – little sun, the wax carries the room")]
+        for o, key in zip(out, ("hot_day", "sunny_day", "dull_day", "grid_day", "hot_night", "monsoon_day")):
+            o["key"] = key
+        return out

@@ -10,6 +10,12 @@
   const C = { s1: '#2a78d6', s2: '#eb6834', s3: '#1baf7a', s4: '#eda100', s5: '#e87ba4', s6: '#008300', s7: '#6250d6', s8: '#e34948', grey: '#8a8984' };
   let design = 'current', tab = 'year', charts = [], selDay = null;
   try { design = localStorage.getItem('live-design') || 'current'; } catch (e) { /* ignore */ }
+  // ?d=2026-05-22 (link from the main site's calendar): open that day in the Calendar tab
+  const dParam = new URLSearchParams(location.search).get('d');
+  if (dParam && /^\d{4}-\d\d-\d\d$/.test(dParam) && S.designs.current.daily.index.includes(dParam)) {
+    tab = 'calendar'; selDay = dParam;
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === 'calendar'));
+  }
 
   // ------------------------------------------------------------------ helpers
   const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v) ? '—' : Number(v).toFixed(d));
@@ -201,7 +207,9 @@
             return `<button class="day ${cls} ${d.status === 'today' ? 'today' : ''} ${d._ === selDay ? 'sel' : ''}" data-d="${d._}" title="${d._}: compressor ${fmt(d.comp_kWh, 2)} kWh, grid ${fmt(d.grid_h, 1)} h">${+d._.slice(8)}</button>`; }).join('')}</div></div>`;
       }).join('')}</div><div id="dayBox"></div>`;
     main.querySelector('.cal').onclick = e => { const b = e.target.closest('.day'); if (!b) return; selDay = b.dataset.d; calendar(); };
-    if (selDay) dayView(selDay, $('dayBox'));
+    if (selDay) dayView(selDay, $('dayBox')).then(() => {
+      if (dParam === selDay && !calendar.scrolled) { calendar.scrolled = true; $('dayBox').scrollIntoView({ block: 'start' }); }
+    });
   }
 
   // ------------------------------------------------------------------ today

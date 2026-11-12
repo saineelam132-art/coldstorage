@@ -36,6 +36,59 @@ def r(x, nd=4):
     return float(f"{float(x):.{nd}g}")
 
 
+def year_extras(tw):
+    """For days WITHOUT saved 5-minute steps the browser rebuilds the day from the hourly Live Year Run
+    files (live/data/h_current_*.js, the same twin run). These are the few hourly values and exact events
+    those files do not have (door formula, wax temperature, sun position, plain-panel room, door / grid / loading
+    times). No new simulation: everything is read from the twin run the server uses."""
+    import pandas as pd
+    from engine import pv
+    from engine.pcm import PCMBattery
+    from twin.live_sim import cycle_table
+    cfg, df, dt = tw.cfg, tw.df, tw.dt
+    Tt, CT = cycle_table(cfg)
+    nh = tw.n // 12
+    H = df.iloc[: nh * 12].resample("h").mean(numeric_only=True)
+    base = {k: np.asarray(v[: nh * 12], float).reshape(nh, 12).mean(axis=1) for k, v in tw.base.items()}
+    rh_in = cfg["setpoint"]["rh_room_pct"]
+    site = cfg["site"]
+    out = {k: [] for k in ("T_pcm", "E_rem_kJ", "hio_on", "hio_off", "vio_on", "vio_off", "lat_frac", "dp_top",
+                           "sun_elev", "sun_az", "n_T_room", "n_pcm_pct")}
+    b = PCMBattery(cfg)
+    for j, (ts, row) in enumerate(H.iterrows()):
+        on = tw.doorway(row.T_out, row.RH_out, row.T_room, rh_in, True, True)
+        off = tw.doorway(row.T_out, row.RH_out, row.T_room, rh_in, False, True)
+        b.h = float(row.pcm_h)
+        mid = ts + pd.Timedelta(minutes=30)
+        el, az = pv.sun_angles(mid.dayofyear, mid.hour + mid.minute / 60, site["lat_deg"], site["lon_deg"], site["utc_offset_h"])
+        for k, v in (("T_pcm", row.T_pcm), ("E_rem_kJ", b.energy_remaining_kJ), ("hio_on", on["heat_if_open_kW"]),
+                     ("hio_off", off["heat_if_open_kW"]), ("vio_on", on["v_door_if_open"]), ("vio_off", off["v_door_if_open"]),
+                     ("lat_frac", on["heat_latent_now_kW"] / on["heat_now_kW"] if on["heat_now_kW"] else 0.0),
+                     ("dp_top", on["dp_top"]), ("sun_elev", el), ("sun_az", az),
+                     ("n_T_room", base["T_room"][j]), ("n_pcm_pct", base["pcm_pct"][j])):
+            out[k].append(r(v))
+
+    def runs(on):
+        on = np.asarray(on, bool)
+        d = np.diff(np.r_[0, on.astype(int), 0])
+        return [[int(a), int(z)] for a, z in zip(np.where(d == 1)[0], np.where(d == -1)[0])]
+    door = np.asarray(tw.cols["door_s"], float)
+    tb = np.asarray(tw.cols["T_batch"], float)
+    loads_i = np.where(np.diff(np.r_[tb[0], tb]) > 1.0)[0]
+    return {"hours": nh, "cols": out,
+            "day_class": [["sunny", "cloudy", "rainy"].index(str(c)) for c in tw.day_class],
+            "day_poa": [r(x) for x in tw.day_poa],
+            "door": [[int(i), r(door[i])] for i in np.where(door > 0)[0]],
+            "loading": [int(i) for i in loads_i],
+            "grid_s": runs(tw.smart["grid_on"]), "grid_n": runs(tw.base["grid_on"]),
+            "pv": {"kWp": cfg["live_run"]["designs"]["current"]["pv_kWp"], **{k: cfg["pv"][k] for k in ("NOCT_C", "performance_ratio", "temp_coeff_per_C")}},
+            "batch": {"kg": sum(e["kg"] for e in cfg["live_run"]["loading"]), "cp": cfg["product"]["cp_kJ_kgK"],
+                      "tau_s": cfg["product"]["pulldown_hours"] * 3600.0 / math.log(8.0)},
+            "design_capacity_kW": cfg["refrigeration"]["design_capacity_kW"],
+            "curtain": bool(cfg["live_run"]["curtain_installed"]),
+            "cop_T": [r(x) for x in Tt], "cop": [r(x, 6) for x in CT["COP_elec"]]}
+
+
 def main():
     tw = TwinState()
     cfg = tw.cfg
@@ -136,9 +189,12 @@ def main():
         "day_classes": classes, "design": _strip(cfg), "crops": crops_full, "compare_year": compare_year,
         "cycles": cycles, "cycle_T": [float(f"{lo:.2f}"), float(f"{hi:.2f}")],
         "dome": r290.saturation_dome(), "cycle_design": {kk: r(vv, 6) for kk, vv in r290.cycle_from_config(cfg).items()},
+        "year": year_extras(tw),
         "ledger_note": "Demo uses a local hash-chain. Real deployment: permissioned ledger (Hyperledger Fabric) with farmer, transporter and buyer nodes.",
         "files": {
             "api/config": api_config, "api/sensors": sensors, "api/slab": tw.slab(),
+            "api/day_classes": {"classes": [str(c) for c in tw.day_class], "poa_kWh_m2": [round(float(x), 3) for x in tw.day_poa],
+                                "t_end": tw.year_s, "t0": tw.time_info()["t0"]},
             "api/demo_days": [d for d in demo],
             "assets/manifest.json": manifest, "assets/scenes.json": scenes, "assets/hotspots.json": hotspots,
             "results/design_point.json": json.loads((ROOT / "results/design_point.json").read_text()),

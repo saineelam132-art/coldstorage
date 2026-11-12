@@ -6,7 +6,7 @@ Serves the website in web/ and these JSON APIs:
     /api/config      design values + 3D geometry (from config/design.json)
     /api/sensors     sensor list (config/sensors.json)
     /api/state?t=    every sensor value at simulated time t (seconds from 1 Jan 00:00)
-    /api/series?q=&t=&hours=   history of one value (for small graphs)
+    /api/series?q=&t=&hours=&day=   history of one value (for small graphs); day=1: the whole day of t
     /api/demo_days   interesting moments of the simulated year
     /api/trust/info, /api/trust/sign, /api/trust/verify   slip signing for Trust & Trade (web/trust.html).
         The HMAC key lives only here, read from the environment variable KOOLKISAAN_HMAC_KEY.
@@ -81,8 +81,8 @@ def api_state(t: float = 0.0, curtain: int = Query(-1)):
 
 
 @app.get("/api/series")
-def api_series(q: str, t: float, hours: float = 24.0):
-    return twin().series(q, t, hours)
+def api_series(q: str, t: float, hours: float = 24.0, day: int = 0):
+    return twin().series(q, t, hours, day=bool(day))
 
 
 @app.get("/api/cycle")
@@ -126,6 +126,14 @@ def api_batch(bid: str, t: float = -1):
     if v is None:
         raise HTTPException(404, "batch not found")
     return v
+
+
+@app.get("/api/day_classes")
+def api_day_classes():
+    """Twin's class of every day (sunny / cloudy / rainy, by panel sunlight) - for the calendar dots."""
+    tw = twin()
+    return {"classes": [str(c) for c in tw.day_class], "poa_kWh_m2": [round(float(x), 3) for x in tw.day_poa],
+            "t_end": tw.year_s, "t0": tw.time_info()["t0"]}
 
 
 @app.get("/api/trust/info")

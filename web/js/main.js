@@ -1,7 +1,7 @@
 // Wires the page together: clock, live state, photo view, outside menu, data bar, controls.
 import { getJSON, SimClock, StateFeed } from './api.js';
 import { updateDataBar, refreshPanel } from './ui.js';
-import { initDetails, openSensor } from './details.js';
+import { initDetails, openSensor, followClock } from './details.js';
 import { PhotoView } from './photo.js';
 import { LedgerUI } from './ledgerui.js';
 import { Batches } from './batch.js';
@@ -9,6 +9,9 @@ import { Control } from './control.js';
 import { Tour } from './tour.js';
 import { Today } from './today.js';
 import { door } from './door.js';
+import { TimeBase, YearDays } from './yeardata.js';
+import { TimeNav } from './calendar.js';
+import { fmt } from './ui.js';
 
 const $ = id => document.getElementById(id);
 
@@ -22,6 +25,12 @@ async function boot() {
   let topH = 0;
   const fitTop = () => { if (top.offsetHeight !== topH) { topH = top.offsetHeight; document.documentElement.style.setProperty('--topH', `${topH}px`); dispatchEvent(new Event('resize')); } };
   new ResizeObserver(fitTop).observe(top); fitTop();
+  // the bottom bar grows when its controls wrap; the 'Showing:' strip pushes the caption down on phones
+  const bar = document.querySelector('.databar'), strip = $('showing');
+  const fitBar = () => document.documentElement.style.setProperty('--barH', `${bar.offsetHeight}px`);
+  const fitStrip = () => document.documentElement.style.setProperty('--stripH', `${strip.offsetHeight ? strip.offsetHeight + 4 : 0}px`);
+  new ResizeObserver(fitBar).observe(bar); fitBar();
+  new ResizeObserver(fitStrip).observe(strip); fitStrip();
 
   // left menu (☰): today's date, IST clock and the OUTSIDE weather of this hour (live/data files)
   const today = new Today(cfg);
@@ -32,16 +41,44 @@ async function boot() {
   const tinfo = cfg.time || {};
   const nowT = () => (Date.now() + 5.5 * 3600e3 - Date.parse((tinfo.t0 || '2026-01-01T00:00:00') + 'Z')) / 1000;
   const hasNow = () => tinfo.t_end && nowT() >= 0 && nowT() < tinfo.t_end;
-  const startLive = hasNow() && new URLSearchParams(location.search).get('judge') !== '1';
-  const clock = new SimClock(startLive ? nowT() : demo[0].t, startLive ? 1 : 720);
-  if (window.STATIC_API && startLive && Math.abs(window.STATIC_API.clamp(clock.t) - clock.t) > 3600) { clock.t = demo[0].t; clock.speed = 720; }
+  const SA = window.STATIC_API;
+  const tb = new TimeBase(tinfo.t0);
+  const tEnd = () => (SA ? SA.range().days * 86400 : (tinfo.t_end || 365 * 86400));
+  const params = new URLSearchParams(location.search);
+  const judge = params.get('judge') === '1';
+  // ?t=2026-05-22T14:00 opens the site at that moment (shareable link; judge mode can open on a fixed day)
+  let tParam = params.has('t') ? tb.fromParam(params.get('t')) : null;
+  if (tParam !== null && !(tParam >= 0 && tParam < tEnd())) { console.warn('?t= is outside the data range:', params.get('t')); tParam = null; }
+  if (tParam !== null && SA && !(await SA.prepare(tParam))) tParam = null;
+  const startLive = tParam === null && hasNow() && !judge;
+  const clock = new SimClock(tParam !== null ? tParam : startLive ? nowT() : demo[0].t, tParam !== null ? (judge ? 720 : 1) : startLive ? 1 : 720);
+  if (SA && startLive && Math.abs(SA.clamp(clock.t) - clock.t) > 3600) { clock.t = demo[0].t; clock.speed = 720; }
   $('speed').value = String(clock.speed);
   const isLive = () => hasNow() && Math.abs(clock.t - nowT()) < 1800;
-  $('liveNow').onclick = () => {
+  $('liveNow').onclick = async () => {
     if (!hasNow()) { alert('The saved data does not reach today yet – the next data update will add it.'); return; }
     setMode('auto', false);
+    if (SA) await SA.prepare(nowT());
     clock.jump(nowT()); clock.speed = 1; clock.playing = true; $('speed').value = '1'; $('play').textContent = '❚❚'; feed.poll();
+    setURL(null);
   };
+  function setURL(t) {                                     // the picked moment goes into the address (shareable)
+    try {
+      const u = new URL(location.href);
+      if (t === null) u.searchParams.delete('t'); else u.searchParams.set('t', tb.toParam(t));
+      history.replaceState(null, '', u.pathname + (u.search || '').replace(/%3A/gi, ':') + u.hash);
+    } catch (e) { /* some browsers block this for file:// pages */ }
+  }
+  // ONE way to move the whole site to a moment: calendar, time slider, quick links and ?t= all use it.
+  // The clock keeps running from there at the selected speed.
+  async function goTo(t) {
+    t = Math.max(0, Math.min(tEnd() - 1, t));
+    setMode('auto', false);
+    if (SA) await SA.prepare(t);
+    clock.jump(t); clock.playing = true; $('play').textContent = '❚❚';
+    feed.poll();
+    setURL(t);
+  }
   setInterval(() => $('liveNow').classList.toggle('on', isLive()), 1000);
   const feed = new StateFeed(clock);
   feed.transform = s => (door.apply(s.values, s.t), s);
@@ -61,6 +98,36 @@ async function boot() {
   initDetails(cfg, sensors, manifest, scenes, () => feed.state, () => clock.t, todaySeries);
   window.__openSensor = openSensor;                     // for automated page checks
 
+  // ---- calendar + time picker (bottom bar) and the "Showing:" strip
+  const days = await new YearDays().load();
+  const calCtx = () => {
+    const last = Math.floor(tEnd() / 86400) - 1, todayDay = Math.floor(nowT() / 86400);
+    const tm = days.tomorrow ? tb.dayOf(days.tomorrow) : null;
+    const forecastDay = tm !== null && tm === todayDay + 1 && tm <= last && days.info(days.tomorrow) ? tm : null;
+    return { lastDataDay: last, todayDay, forecastDay, canShow: SA ? SA.canShow : null };
+  };
+  const nav = new TimeNav({ tb, days, demo, getT: () => clock.t, goTo, ctx: calCtx });
+  window.__kk = { clock, feed, goTo, tb, nav, days };      // for automated page checks
+  if (SA) setTimeout(() => SA.preloadAll(), 1500);      // all months in the background: the clock can play on freely
+  setInterval(followClock, 1000);                        // open sensor graph: red line follows the clock
+  let stripT = 0;
+  function showStrip(s) {
+    if (performance.now() - stripT < 700) return;
+    stripT = performance.now();
+    const v = s.values, live = isLive(), day = tb.dayIndex(s.t), date = tb.dateStr(day), info = days.info(date);
+    const src = v.grid_on ? 'GRID' : (v.P_solar_used > 0 ? 'SOLAR' : 'WAX');
+    const fc = info && (info.status === 'prediction' || (info.status === 'today' && s.t > nowT() + 3600));
+    const room = v.T_room_sensor ?? v.T_room;
+    $('showing').innerHTML = `<span class="when ${live ? '' : 'past'}">${live ? '● Live now' : 'Showing'}: ${tb.nice(s.t)}</span>
+      <span>Outside <b>${fmt(v.T_out, '°C')}</b></span><span>Room <b>${fmt(room, '°C')}</b></span>
+      <span>Wax <b>${fmt(v.pcm_pct, '%')}</b></span><span>Power <b>${src}</b></span>
+      ${info && info.saved !== null ? `<span><b>₹${Math.round(info.saved)}</b> saved that day</span>` : ''}
+      <span class="badge sim">SIMULATED</span><span class="wx">WEATHER: ${fc ? 'forecast' : 'real'} (Open-Meteo)</span>
+      ${SA && SA.isRebuilt && SA.isRebuilt(day) ? '<span class="rebuilt" title="This day has no saved 5-minute steps in the offline copy: they are rebuilt from the hourly Live Year Run results (same twin run).">5-min detail from hourly results</span>' : ''}`;
+    $('liveLink').href = live ? 'live.html' : `live.html?d=${date}`;
+    today.focus(live ? null : `${date} ${String(tb.date(s.t).getUTCHours()).padStart(2, '0')}`);
+  }
+
   const photo = new PhotoView($('photoFrame'), manifest, scenes, hotspots);
   let mode = 'auto', win = null;
 
@@ -70,16 +137,24 @@ async function boot() {
   const tour = new Tour({ photo, clock, feed, demo, ledgerUI, control, batches, toPhoto: () => {}, cfg });
 
   // JUDGE MODE (?judge=1): full screen, big fonts, the demo plays slowly and loops; a click pauses it
-  if (new URLSearchParams(location.search).get('judge') === '1') {
+  if (judge) {
     document.body.classList.add('judge');
     tour.slow = 1.6; tour.loop = true;
     const go = document.createElement('button');
-    go.className = 'judgego'; go.innerHTML = '▶ Start the demo<br><small>full screen · click anywhere to pause / resume</small>';
+    go.className = 'judgego';
+    go.innerHTML = tParam !== null ? `▶ Start – ${tb.nice(tParam, false)}<br><small>full screen · this day plays in a loop · click to pause / resume</small>`
+      : '▶ Start the demo<br><small>full screen · click anywhere to pause / resume</small>';
     document.body.appendChild(go);
     go.onclick = async () => {
       go.remove();
       try { await document.documentElement.requestFullscreen(); } catch (e) { /* not allowed: carry on in the window */ }
       setMode('auto', false);
+      if (tParam !== null) {                               // judge mode on a fixed day (?t=): that day in a loop
+        const d0 = Math.floor(tParam / 86400) * 86400;
+        win = [d0, d0 + 86400]; clock.jump(tParam); clock.speed = 720; $('speed').value = '720'; clock.playing = true;
+        $('stage').addEventListener('click', e => { if (!e.target.closest('#panel,button,a,select,input')) clock.playing = !clock.playing; });
+        return;
+      }
       tour.start();
       $('stage').addEventListener('click', e => {
         if (!tour.running || e.target.closest('#panel,.tourbar,button,a,select,input')) return;
@@ -142,16 +217,6 @@ async function boot() {
   };
   $('play').onclick = () => { clock.playing = !clock.playing; $('play').textContent = clock.playing ? '❚❚' : '▶'; };
   $('speed').onchange = e => (clock.speed = +e.target.value);
-  demo.forEach(d => $('jump').insertAdjacentHTML('beforeend', `<option value="${d.t}">${d.date}: ${d.why}</option>`));
-  $('jump').onchange = e => {
-    if (e.target.value) {
-      setMode('auto', false);
-      clock.jump(+e.target.value);
-      if (clock.speed === 1) { clock.speed = 720; $('speed').value = '720'; }     // demo days play fast
-      feed.poll();
-    }
-    e.target.value = '';
-  };
   addEventListener('keydown', e => {
     if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
     if (e.key === 'ArrowRight') photo.go(photo.idx + 1, true);
@@ -171,11 +236,13 @@ async function boot() {
     photo.update(s);
     photo.setMode(mode === 'auto' ? autoMode(s) : mode);
     refreshPanel();
+    showStrip(s);
   });
   feed.start();
   const loop = () => {
     clock.tick();
     if (win && (clock.t < win[0] || clock.t >= win[1])) clock.jump(win[0]);     // stay inside the chosen mode
+    if (!win && clock.t >= tEnd()) { clock.t = tEnd() - 1; clock.playing = false; $('play').textContent = '▶'; }   // end of the data
     requestAnimationFrame(loop);
   };
   loop();

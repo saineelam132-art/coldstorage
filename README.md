@@ -191,6 +191,17 @@ results are published.
   → `results/live/uncertainty_2026.json`; the base case reproduces `design_study_2026.json` exactly.
   Control centre → **How sure are we?** shows it; poster chart `figures/final_10_uncertainty.png`.
 
+## Calendar: jump to any moment of 2026
+
+Bottom bar: **📅 date** opens a month calendar (1 Jan 2026 → today; tomorrow only as a *forecast*; grey = no data).
+Dots: green = fully on solar + wax, orange = some grid use, grey = rainy/cloudy day. Point at a day for max outside °C,
+sun kWh/m², grid hours and ₹ saved. Quick links inside: hottest day, hottest night, most grid use, a monsoon day.
+The slider next to it sets the time (5-minute steps). The whole site jumps there and the clock keeps running at the
+chosen speed; **● Now** returns to the real time. The moment is in the address, e.g. `index.html?t=2026-05-23T14:00`
+(also `?judge=1&t=…` to open judge mode on a fixed day). Keyboard: arrows move days, PgUp/PgDn months, Enter picks,
+Esc closes. Offline / Firebase / Vercel: days without saved 5-minute steps are rebuilt in the browser from the hourly
+Live Year Run files (same twin run; the strip then says "5-min detail from hourly results").
+
 ## Trust & Trade (farmer → owner → transporter → buyer)
 
 Open **🤝 Trust & Trade** in the top bar (or `trust.html`; works from the static folder and offline too).

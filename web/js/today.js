@@ -58,7 +58,7 @@ const ICON = { sunny: '☀️', clear: '🌙', night: '🌙', 'partly cloudy': '
 
 export class Today {
   constructor(cfg) {
-    this.cfg = cfg; this.rows = null; this.S = null; this.i = -1; this.listeners = [];
+    this.cfg = cfg; this.rows = null; this.S = null; this.i = -1; this.listeners = []; this.focusKey = null;
     this.err = new SiteError(cfg.site_error_budget);
     this.el = $('outside');
     $('menuBtn').onclick = e => { e.stopPropagation(); this.open(!this.el.classList.contains('on')); };
@@ -99,6 +99,26 @@ export class Today {
   }
   refresh() { if (navigator.onLine) this.load(true); }
 
+  // the calendar picked another moment: show the outside weather of THAT hour ('YYYY-MM-DD HH'), null = now
+  async focus(key) {
+    if (key === this.focusKey) return;
+    this.focusKey = key;
+    if (key && this.rows && !this.rows.t.includes(key)) {
+      const k = `h_current_${key.slice(0, 7)}`;
+      try { if (!window.LIVE[k]) await loadScript(`live/data/${k}.js`); } catch (e) { /* no file */ }
+      const h = window.LIVE[k];
+      if (h) {
+        const R = this.rows, have = new Set(R.t), fields = Object.keys(h);
+        fields.forEach(f => { R[f] = R[f] || new Array(R.t.length).fill(null); });
+        const add = h.t.map((t, j) => (have.has(t) ? -1 : j)).filter(j => j >= 0);
+        add.forEach(j => Object.keys(R).forEach(f => R[f].push(h[f] ? h[f][j] : null)));
+        const order = R.t.map((t, i) => i).sort((a, b) => (R.t[a] < R.t[b] ? -1 : 1));
+        Object.keys(R).forEach(f => { const c = R[f]; R[f] = order.map(i => c[i]); });
+      }
+    }
+    if (this.focusKey === key) this.compute();
+  }
+
   row(i) { const R = this.rows, o = {}; Object.keys(R).forEach(f => (o[f] = R[f][i])); return o; }
   dayRows(date) { return this.rows.t.map((t, i) => (t.startsWith(date) ? i : -1)).filter(i => i >= 0); }
 
@@ -106,8 +126,12 @@ export class Today {
     const now = istNow();
     this.stale = false; this.missing = !this.rows;
     if (!this.rows) { this.render(); return; }
-    let i = this.rows.t.indexOf(keyOf(now));
     const gen = parseIST(this.S?.weather?.forecast?.updated || this.S?.generated);
+    if (this.focusKey) {                              // a picked moment (calendar): that hour, no staleness warning
+      const j = this.rows.t.indexOf(this.focusKey);
+      if (j >= 0) { this.i = j; this.gen = gen; this.render(); this.listeners.forEach(fn => fn(this)); return; }
+    }
+    let i = this.rows.t.indexOf(keyOf(now));
     if (gen && now - gen > 24 * 3600e3) this.stale = true;
     if (i < 0) {                                     // newest available hour not after now (or the last one)
       this.stale = true;
@@ -132,6 +156,14 @@ export class Today {
 
   tick() {
     const now = istNow();
+    if (this.focusKey) {
+      const d = new Date(Date.UTC(+this.focusKey.slice(0, 4), +this.focusKey.slice(5, 7) - 1, +this.focusKey.slice(8, 10), +this.focusKey.slice(11, 13)));
+      $('smTitle').textContent = `Outside at ${pad(d.getUTCHours())}:00`;
+      $('tdDate').textContent = `${DAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      $('tdClock').textContent = 'picked in the calendar';
+      return;
+    }
+    $('smTitle').textContent = 'Outside now';
     $('tdDate').textContent = `${DAYS[now.getUTCDay()]}, ${now.getUTCDate()} ${MONTHS[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
     $('tdClock').textContent = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())} IST`;
     if (this.rows && this.i >= 0 && keyOf(now) !== this.rows.t[this.i] && !this.stale) this.compute();   // new hour
@@ -158,7 +190,7 @@ export class Today {
     const st = sunTimes(dd), mins = hh * 60 + 30;
     const sky = skyOf(r, mins > st.rise && mins < st.set);
     live.textContent = `Data updated ${this.gen ? niceDate(this.gen) : '—'}`;
-    warn.hidden = !this.stale;
+    warn.hidden = !this.stale || !!this.focusKey;
     warn.textContent = `Showing data from ${day} ${pad(hh)}:00 – live update pending`;
     const ghi = (r.ghi ?? 0) / (this.S?.sun_factor || 1);          // Open-Meteo value (the files store the ×0.88 model value)
     const W = tagChip('W'), fc = r.pred ? '<i class="fc">forecast</i>' : '';

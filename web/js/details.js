@@ -1,6 +1,6 @@
 // What the detail panel shows for each sensor and each building part.
 // Numbers come only from /api/state (digital twin) and /api/config (design.json).
-import { fmt, sensorValue, tagChip, sourceBadge, openPanel, drawHistory } from './ui.js';
+import { fmt, sensorValue, tagChip, sourceBadge, openPanel, drawHistory, setHistMark } from './ui.js';
 import { getJSON } from './api.js';
 import { lineChart, phChart } from './charts.js';
 import { SiteError, U2, pmTag, dewpoint } from './siteerr.js';
@@ -109,19 +109,31 @@ function bandNow(s, st) {
   if (q === 'wind') txt += '<br><small>Wind at 2 m (converted from 10 m, FAO-56: × 0.748).</small>';
   return txt;
 }
+// the open sensor graph follows the clock: new day -> new graph, same day -> the red line moves
+let openHist = null;
+export function followClock() {
+  if (!openHist || !openHist.canvas.isConnected) { openHist = null; return; }
+  const t = getT(), day = Math.floor(t / 86400);
+  if (openHist.live) return;
+  if (day !== openHist.day) { historyFor(openHist.s, openHist.canvas); return; }
+  setHistMark(Math.floor((t % 86400) / 900));
+}
 async function historyFor(s, canvas) {
   const q = s.quantity, t = getT();
+  openHist = { s, canvas, day: Math.floor(t / 86400), live: false };
   const yTitle = { T_out: 'Outside temperature', RH_out: 'Outside humidity', wind: 'Wind at 2 m', P_pv: 'Solar PV power' }[q] || s.name;
   const today = WEATHER_Q.includes(q) ? todaySeries(q, t) : null;
-  let labels, values, src, ctx;
+  let labels, values, src, ctx, mark;
   if (today) {
-    labels = today.labels; values = today.values; src = 'Real weather today (Open-Meteo, hourly)';
+    labels = today.labels; values = today.values; src = 'Real weather today (Open-Meteo, hourly) · red line = now'; mark = labels.length - 1;
+    openHist.live = true;
     ctx = today.labels.map((l, i) => ({ T: today.ctx.T_out[i], ghi: today.ctx.ghi[i], wind10: today.ctx.wind[i], Td: today.ctx.dew_C[i] ?? null, hour: +l.slice(0, 2) }));
   } else {
     const need = BAND_Q[q] ? ['T_out', 'wind', 'poa'] : [];
-    const [d, ...extra] = await Promise.all([q, ...need].map(x => getJSON(`api/series?q=${x}&t=${t.toFixed(0)}&hours=24`)));
-    labels = d.t; values = d.v.map(x => (x === null ? null : (typeof x === 'boolean' ? +x : x)));
-    src = BAND_Q[q] ? 'Last 24 h of the twin\'s Open-Meteo weather (15-min points)' : 'Last 24 h of the digital twin (15-min points)';
+    const [d, ...extra] = await Promise.all([q, ...need].map(x => getJSON(`api/series?q=${x}&t=${t.toFixed(0)}&hours=24&day=1`)));
+    labels = d.t; values = d.v.map(x => (x === null ? null : (typeof x === 'boolean' ? +x : x))); mark = d.mark;
+    src = (BAND_Q[q] ? 'This day 00:00–24:00 of the twin\'s Open-Meteo weather (15-min points)' : 'This day 00:00–24:00 of the digital twin (15-min points)')
+      + ' · red line = the time shown';
     if (need.length) ctx = labels.map((l, i) => ({ T: extra[0].v[i], wind10: extra[1].v[i], ghi: (extra[2].v[i] || 0) / sunFactor(), hour: +l.slice(0, 2) }));
   }
   if (q === 'wind') values = values.map(v => (v === null ? null : v * U2));            // 10 m -> 2 m
@@ -130,7 +142,7 @@ async function historyFor(s, canvas) {
     const b = values.map((v, i) => bandAt(q, v, ctx[i]) || [null, null]);
     band = { lo: b.map(x => x[0]), hi: b.map(x => x[1]), label: 'Expected site range (published studies) – not measured', source: ERR.src(BAND_Q[q]) };
   }
-  drawHistory(canvas, { labels, values, src, unit: s.unit, yTitle, band });
+  drawHistory(canvas, { labels, values, src, unit: s.unit, yTitle, band, mark });
 }
 
 function extraFor(s, st) {

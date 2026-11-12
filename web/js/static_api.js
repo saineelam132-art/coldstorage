@@ -8,12 +8,166 @@ const C = D.cols, N = D.n, DT = D.dt;
 const SAVE = 'coldtrust-static-v1';
 
 // ---------------------------------------------------------------- time windows
-const W = D.windows;                                  // [[t0, i0, steps], ...]
+const W = D.windows;                                  // [[t0, i0, steps], ...]  (saved demo days + rebuilt days)
 export function clamp(t) {
   for (const [t0, , n] of W) if (t >= t0 && t < t0 + n * DT) return t;
+  const day = Math.floor(t / 86400);
+  if (synthDay(day)) return t;                         // a day rebuilt from the hourly Live Year Run files
+  if (Y && day >= 0 && day < nDays()) {                // its month file is still loading: wait at the edge
+    loadMonth(monthOfHour(day * 24)).then(() => synthDay(day)).catch(() => {});
+    const prev = W.filter(([t0, , n]) => t0 + n * DT <= t).sort((a, b) => b[0] - a[0])[0];
+    if (prev) return prev[0] + prev[2] * DT - DT / 2;
+  }
   const next = W.find(([t0]) => t0 > t);              // jump forward to the next saved window
   return next ? next[0] : W[0][0];
 }
+
+// ---------------------------------------------------------------- days rebuilt from the hourly Live Year Run
+// The twin run behind the website is the SAME run as live/data/h_current_YYYY-MM.js (hourly). For a day with no
+// saved 5-minute steps, the steps are rebuilt here: weather + PV exactly as the twin does it (straight lines
+// between hour points), room / wax / power values from the hourly means, door openings, grid on/off and the
+// 6 am loading at their exact 5-minute steps (data.js 'year'). No new simulation.
+const Y = D.year || null, SPD = Math.round(86400 / DT);
+const nDays = () => (Y ? Math.floor(Y.hours / 24) : 0);
+const live = () => (globalThis.LIVE = globalThis.LIVE || {});
+const monthStartH = {};
+function monthOfHour(h) { const d = new Date(T0 + h * 3600e3); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`; }
+function firstHour(m) {
+  if (!(m in monthStartH)) monthStartH[m] = Math.round((Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1, 1) - T0) / 3600e3);
+  return monthStartH[m];
+}
+function hv(f, h) {                                   // hourly Live Year Run value of field f at hour h (from t0)
+  if (h < 0 || !Y || h >= Y.hours) return undefined;
+  const m = monthOfHour(h), M = live()[`h_current_${m}`];
+  if (!M || !M[f]) return undefined;
+  const v = M[f][h - firstHour(m)];
+  return v === null ? undefined : v;
+}
+const ev = (col, h) => (Y && h >= 0 && h < Y.hours ? Y.cols[col][h] : undefined);
+function lerp(get, th, off) {                         // straight line between hour points (at h + off)
+  const x = th - off, h = Math.floor(x), f = x - h;
+  const a = get(h), b = get(h + 1);
+  if (a === undefined || a === null) return b ?? null;
+  if (b === undefined || b === null) return a;
+  return a + (b - a) * f;
+}
+function lerpAngle(get, th, off) {
+  const x = th - off, h = Math.floor(x), f = x - h;
+  let a = get(h), b = get(h + 1);
+  if (a === undefined || a === null) return b ?? null;
+  if (b === undefined || b === null) return a;
+  if (b - a > 180) a += 360; else if (a - b > 180) b += 360;
+  return ((a + (b - a) * f) % 360 + 360) % 360;
+}
+let doorAt = null, loadAt = null, gridS = null, gridN = null, cumS = null, cumN = null, doorIx = null;
+function events() {
+  if (doorAt) return;
+  const n = Y.hours * 12;
+  doorAt = new Map(Y.door.map(([i, sec]) => [i, sec])); doorIx = Y.door.map(([i]) => i);
+  loadAt = new Set(Y.loading);
+  const bits = runs => { const a = new Uint8Array(n); for (const [i0, i1] of runs) a.fill(1, i0, Math.min(i1, n)); return a; };
+  const cum = a => { const c = new Float64Array(n); let s = 0; for (let i = 0; i < n; i++) { s += a[i]; c[i] = s * DT / 3600; } return c; };
+  gridS = bits(Y.grid_s); gridN = bits(Y.grid_n); cumS = cum(gridS); cumN = cum(gridN);
+}
+function lastDoor(g) {                                // last door opening at or before global step g
+  let lo = 0, hi = doorIx.length - 1, k = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (doorIx[m] <= g) { k = m; lo = m + 1; } else hi = m - 1; }
+  return k < 0 ? null : doorIx[k];
+}
+const interp1 = (x, X, V) => {
+  if (x <= X[0]) return V[0];
+  if (x >= X[X.length - 1]) return V[V.length - 1];
+  let lo = 0, hi = X.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (X[m] <= x) lo = m; else hi = m; }
+  return V[lo] + (V[hi] - V[lo]) * (x - X[lo]) / (X[hi] - X[lo]);
+};
+export function hasDay(day) { return W.some(([t0, , n]) => day * 86400 >= t0 && day * 86400 < t0 + n * DT); }
+export function canShow(day) {                       // true if the day is saved or can be rebuilt (data exists)
+  return hasDay(day) || (!!Y && day >= 0 && day < nDays());
+}
+function synthDay(day) {
+  if (!Y || day < 0 || day >= nDays() || hasDay(day)) return hasDay(day);
+  for (let h = day * 24; h < day * 24 + 24; h++) if (hv('T_room', h) === undefined) return false;
+  events();
+  const t0 = day * 86400, i0 = C.T_room.length, g0 = day * SPD;
+  const P = Y.pv, B = Y.batch, cur = Y.curtain;
+  const prevW = W.find(([w0, wi, wn]) => w0 + wn * DT === t0 && wi + wn === i0);     // yesterday rebuilt just before
+  let Tr_prev = prevW ? C.T_room[i0 - 1] : lerp(h => hv('T_room', h), (g0 + 0.5) / 12, 0.5);
+  let Tb = prevW ? C.T_batch[i0 - 1] : null;
+  if (Tb === null || Tb === undefined || Number.isNaN(Tb)) Tb = lerp(h => hv('T_batch', h), (g0 + 0.5) / 12, 0.5) ?? Tr_prev;
+  let doorToday = 0;
+  const push = row => { for (const k of Object.keys(C)) C[k].push(k in row ? row[k] : null); };
+  for (let j = 0; j < SPD; j++) {
+    const g = g0 + j, th = (g + 0.5) / 12;
+    const H = f => lerp(h => hv(f, h), th, 0.5), E = c => lerp(h => ev(c, h), th, 0.5);
+    const T_out = lerp(h => hv('T_out', h), th, 0), RH_out = lerp(h => hv('RH_out', h), th, 0);
+    const wind = lerp(h => hv('wind', h), th, 0), poa = Math.max(0, H('poa') ?? 0);
+    const T_cell = T_out + (P.NOCT_C - 20) / 800 * poa;
+    const P_pv = Math.max(0, P.kWp * poa / 1000 * P.performance_ratio * (1 + P.temp_coeff_per_C * (T_cell - 25)));
+    const T_room = H('T_room'), pcm_pct = H('pcm_pct');
+    const door_s = doorAt.get(g) || 0;
+    const hio_on = E('hio_on'), hio_off = E('hio_off'), hio = cur ? hio_on : hio_off;
+    const Q_door = hio * Math.min(1, door_s / DT);
+    const Q_wall = H('Q_wall'), Q_int = H('Q_int'), Q_resp = H('Q_resp');
+    if (loadAt.has(g)) Tb = T_out;                     // fresh produce arrives at the outside temperature
+    const Q_batch = B.kg * B.cp / B.tau_s * (Tb - Tr_prev);
+    Tb -= (Tb - Tr_prev) * DT / B.tau_s;
+    const Q_cool = Math.max(0, H('Q_cool')), Q_ch = Math.max(0, Math.min(Q_cool, H('Q_ch') ?? 0));
+    const P_comp = Math.max(0, H('P_comp')), grid = gridS[g] === 1;
+    const P_sol = grid ? Math.min(P_comp, P_pv) : P_comp;
+    const holding = Q_wall + Q_door + Q_int + Q_resp, E_rem = E('E_rem_kJ');
+    const jd = lastDoor(g);
+    push({
+      T_out, RH_out, wind, poa, T_room, T_pcm: E('T_pcm'), pcm_pct, P_pv, P_comp, P_solar_used: P_sol, P_grid: P_comp - P_sol,
+      Q_cool, Q_coil_air: Q_cool - Q_ch, Q_coil_pcm: Q_ch, comp_speed_pct: 100 * Q_cool / Y.design_capacity_kW,
+      cop: interp1(T_out, Y.cop_T, Y.cop), Q_wall, Q_door, Q_int, Q_resp, Q_batch, Q_total: holding + Q_batch,
+      dp_top: E('dp_top'), last_open_s: jd === null ? 0 : doorAt.get(jd), last_open_ago_min: jd === null ? null : (g - jd) * DT / 60,
+      fan_W: H('fan_W') ?? 0, fan_speed_pct: 100 * (H('fan_speed') ?? 0), G_wax_W_K: H('G_wax'), Q_pcm_room: H('Q_pcm_room'),
+      T_batch: Tb, grid_on: grid ? 1 : 0, backup_h: holding > 1e-9 && E_rem !== null ? E_rem / Math.max(holding, 0.05) / 3600 : null,
+      door_s, heat_if_open_on: hio_on, heat_if_open_off: hio_off, v_if_open_on: E('vio_on'), v_if_open_off: E('vio_off'),
+      lat_frac: E('lat_frac'), sun_elev: lerp(h => ev('sun_elev', h), th, 0.5), sun_az: lerpAngle(h => ev('sun_az', h), th, 0.5),
+      day: Y.day_class[day], day_poa: Y.day_poa[day], s_T_room: T_room, s_pcm_pct: pcm_pct, s_grid_on: grid ? 1 : 0,
+      grid_h_n: cumN[g], grid_h_s: cumS[g], n_T_room: E('n_T_room'), n_pcm_pct: E('n_pcm_pct'), n_grid_on: gridN[g],
+      door_before: doorToday,
+    });
+    doorToday += door_s;
+    Tr_prev = T_room;
+  }
+  if (prevW) prevW[2] += SPD; else { W.push([t0, i0, SPD]); W.sort((a, b) => a[0] - b[0]); }
+  rebuilt.add(day);
+  return true;
+}
+const rebuilt = new Set();
+export const isRebuilt = day => rebuilt.has(day);
+const monthLoads = {};
+export function loadMonth(m) {                        // live/data/h_current_YYYY-MM.js (same files as the Live page)
+  if (live()[`h_current_${m}`]) return Promise.resolve();
+  if (typeof document === 'undefined') return Promise.reject(new Error('no document'));
+  return (monthLoads[m] ||= new Promise((ok, bad) => {
+    const s = document.createElement('script');
+    s.src = `live/data/h_current_${m}.js`;
+    s.onload = () => { s.remove(); ok(); };
+    s.onerror = () => { s.remove(); delete monthLoads[m]; bad(new Error(s.src)); };
+    document.head.appendChild(s);
+  }));
+}
+export async function prepare(t) {                    // make sure the day of t (and the next day) can be shown
+  if (!Y) return canShow(Math.floor(t / 86400));
+  const day = Math.floor(t / 86400);
+  for (const d of [day, day + 1]) {
+    if (d < 0 || d >= nDays() || hasDay(d)) continue;
+    const ms = new Set([monthOfHour(d * 24 - 1), monthOfHour(d * 24), monthOfHour(d * 24 + 24)]);
+    for (const m of ms) { try { await loadMonth(m); } catch (e) { /* edge month missing: fine */ } }
+    synthDay(d);
+  }
+  return hasDay(day);
+}
+export function preloadAll() {                        // background: every month, so the clock can play on freely
+  if (!Y) return Promise.resolve();
+  const ms = new Set(); for (let h = 0; h < Y.hours; h += 24 * 28) ms.add(monthOfHour(h)); ms.add(monthOfHour(Y.hours - 1));
+  return Promise.all([...ms].map(m => loadMonth(m).catch(() => {})));
+}
+export function range() { return { days: Y ? nDays() : Math.max(...W.map(([t0, , n]) => Math.ceil((t0 + n * DT) / 86400))) }; }
 function idx(t) {
   t = clamp(t);
   for (const [t0, i0, n] of W) if (t >= t0 && t < t0 + n * DT) return i0 + Math.floor((t - t0) / DT);
@@ -179,11 +333,21 @@ function batchView(id, t) {
     blocks: S.blocks.filter(x => x.batch_ids.includes(id)), chain_valid: verify().valid, now: timeStr(t, false) };
 }
 
-function series(q, t, hours) {
-  const ix = rangeBack(idx(t), Math.round(hours * 3600 / DT)).filter((_, k) => k % 3 === 0);
+function series(q, t, hours, day = false) {
   const col = C[q] || (q === 'T_room_sensor' ? C.T_room : null);
   if (!col) return { quantity: q, t: [], v: [] };
-  return { quantity: q, t: ix.map(j => clockStr(tOf(j)).slice(-5)), v: ix.map(j => col[j]) };
+  let ix, mark;
+  if (day) {                                          // the whole calendar day of t, 15-min points
+    t = clamp(t);
+    const d0 = Math.floor(t / 86400) * 86400, i0 = idx(d0);
+    const [, wi, wn] = windowOf(i0);
+    ix = []; for (let k = i0; k < Math.min(i0 + SPD, wi + wn); k += 3) ix.push(k);
+    mark = Math.floor((t - d0) / DT / 3);
+  } else {
+    ix = rangeBack(idx(t), Math.round(hours * 3600 / DT)).filter((_, k) => k % 3 === 0);
+    mark = ix.length - 1;
+  }
+  return { quantity: q, t: ix.map(j => clockStr(tOf(j)).slice(-5)), v: ix.map(j => col[j]), mark };
 }
 
 // ---------------------------------------------------------------- router
@@ -192,7 +356,7 @@ export async function get(url) {
   const num = (k, d = 0) => (q.has(k) ? +q.get(k) : d);
   if (D.files[path]) return JSON.parse(JSON.stringify(D.files[path]));
   if (path === 'api/state') return state(num('t'), q.has('curtain') && q.get('curtain') !== '-1' ? q.get('curtain') === '1' : null);
-  if (path === 'api/series') return series(q.get('q'), num('t'), num('hours', 24));
+  if (path === 'api/series') return series(q.get('q'), num('t'), num('hours', 24), q.get('day') === '1');
   if (path === 'api/cycle') return cycle(num('t'));
   if (path === 'api/crop') return crop(q.get('key'), num('t'), num('days', 2));
   if (path === 'api/batches') return Object.values(S.batches);
@@ -221,4 +385,4 @@ export async function post(url, data = {}) {
 }
 export function resetAll() { try { localStorage.removeItem(SAVE); } catch (e) { /* ignore */ } load(); }
 
-window.STATIC_API = { get, post, clamp, resetAll };
+window.STATIC_API = { get, post, clamp, resetAll, prepare, preloadAll, canShow, hasDay, range, loadMonth, isRebuilt };

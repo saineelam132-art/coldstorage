@@ -75,10 +75,23 @@ const hoverLine = {
     g.beginPath(); g.moveTo(x, top); g.lineTo(x, bottom); g.stroke(); g.restore();
   },
 };
+// red vertical line at the time being shown (calendar / clock)
+const markLine = {
+  id: 'markLine',
+  afterDatasetsDraw(chart, args, opts) {
+    const i = opts?.index;
+    if (i === null || i === undefined || i < 0) return;
+    const x = chart.scales.x.getPixelForValue(i), { top, bottom } = chart.chartArea, g = chart.ctx;
+    if (!(x >= chart.chartArea.left - 1 && x <= chart.chartArea.right + 1)) return;
+    g.save(); g.strokeStyle = '#e34948'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, top); g.lineTo(x, bottom); g.stroke();
+    g.fillStyle = '#e34948'; g.font = 'bold 11px sans-serif'; g.fillText(chart.data.labels[i] || '', Math.min(x + 3, chart.chartArea.right - 34), top + 11);
+    g.restore();
+  },
+};
 let histChart = null;
 // opts: {quantity, t, unit, yTitle, today: {labels, values} | null, note}
 // opts: {labels, values, src, unit, yTitle, band: {lo:[], hi:[], label, source} | null}
-export function drawHistory(canvas, { labels, values, src = '', unit, yTitle, band = null }) {
+export function drawHistory(canvas, { labels, values, src = '', unit, yTitle, band = null, mark = null }) {
   if (histChart) { histChart.destroy(); histChart = null; }
   const box = canvas.parentElement, note = box.parentElement.querySelector('.histsrc');
   if (note) note.innerHTML = src + (band ? `<br><span class="bandsrc">Shaded: ${band.label}. Source: ${band.source}</span>` : '');
@@ -100,6 +113,7 @@ export function drawHistory(canvas, { labels, values, src = '', unit, yTitle, ba
       responsive: true, maintainAspectRatio: false, animation: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
+        markLine: { index: mark },
         legend: { display: !!band, position: 'bottom', labels: { boxWidth: 14, font: { size: 11 }, filter: it => !it.text.startsWith('_') } },
         tooltip: { displayColors: false, filter: it => it.datasetIndex === 0, callbacks: {
           title: it => `${it[0].label} IST`,
@@ -114,8 +128,13 @@ export function drawHistory(canvas, { labels, values, src = '', unit, yTitle, ba
           ticks: { color: '#41566b', font: { size: 11 } }, grid: { color: '#e3ecf3' } },
       },
     },
-    plugins: [hoverLine],
+    plugins: [hoverLine, markLine],
   });
+}
+
+export function setHistMark(i) {                     // move the red 'time shown' line without re-drawing
+  if (!histChart || histChart.options.plugins.markLine.index === i) return;
+  histChart.options.plugins.markLine.index = i; histChart.update('none');
 }
 
 // ---------------------------------------------------------------- data bar

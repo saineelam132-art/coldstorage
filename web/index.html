@@ -28,7 +28,7 @@
   <div class="acts">
     <button id="tourBtn" class="act tour">▶ Start demo</button>
     <button id="ccBtn" class="act">☰ Control centre</button>
-    <a class="act" href="live.html" title="The system on real 2026 weather, today and tomorrow">📅 Live 2026</a>
+    <a class="act" id="liveLink" href="live.html" title="The system on real 2026 weather, today and tomorrow">📅 Live 2026</a>
     <a class="act" href="trust.html" title="Farmer check-in, signed slip, hash-chain ledger, physics check and buyer settlement">🤝 Trust &amp; Trade</a>
     <button id="newBatchBtn" class="act">+ New batch</button>
     <button id="ledgerBtn" class="act">⛓ Ledger <span id="ledgerBadge" class="lb ok">✓</span></button>
@@ -40,11 +40,13 @@
 </header>
 
 <aside id="outside" class="sidemenu" aria-label="Outside conditions now" aria-hidden="true">
-  <div class="smhead"><b>Outside now</b><button id="outsideClose" class="x" aria-label="Close">×</button></div>
+  <div class="smhead"><b id="smTitle">Outside now</b><button id="outsideClose" class="x" aria-label="Close">×</button></div>
   <div class="smdate"><b id="tdDate">–</b><span id="tdClock" class="tdclock">–</span></div>
   <div id="tdWx" class="smwx"></div>
   <div class="smfoot"><span id="tdLive"></span><span id="tdOffline" class="tdoff" hidden></span><span id="tdWarn" class="tdwarn" hidden></span></div>
 </aside>
+
+<div id="showing" class="showing" role="status" aria-live="polite"></div>
 
 <main id="stage">
   <section id="photoView" class="view on" aria-label="Photo view">
@@ -82,10 +84,11 @@
         <option value="720" selected>1 day / 2 min</option>
         <option value="2880">1 day / 30 s</option>
       </select>
-      <select id="jump" title="Jump to an interesting day"><option value="">Jump to…</option></select>
+      <button id="calBtn" class="calbtn" aria-haspopup="dialog" aria-expanded="false" title="Pick a date (calendar) – quick links to interesting days are inside">📅 –</button>
       <button id="liveNow" class="livenow" title="Back to the real time now (IST)">● Now</button>
     </div>
-    <div class="row"><b id="d_clock">–</b><span id="d_src_label"><span class="badge sim">SIMULATED</span></span></div>
+    <div class="row"><span class="tpick"><input id="timeSlider" type="range" min="0" max="287" step="1" value="0" aria-label="Time of day (5-minute steps)"
+        title="Time of day – drag, then let go to jump"><b id="timeTx">00:00</b></span><b id="d_clock">–</b><span id="d_src_label"><span class="badge sim">SIMULATED</span></span></div>
   </div>
 </footer>
 <div id="fps" class="fps" aria-hidden="true"></div>
