@@ -35,6 +35,9 @@ jobs:
       - name: Download weather and run the twin
         run: python -m twin.live_run --fetch
 
+      - name: Valve study (EEV vs solenoid + TXV, same weather)
+        run: python -m twin.valves_2026
+
       - name: Tomorrow advisor (forecast -> plan card)
         run: python -m twin.advisor
 

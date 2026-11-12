@@ -1,0 +1,376 @@
+{
+ "_about": "Made by tools/photos.py - edit that file, not this one. kind: own = your photo, commons = freely licensed example photo, drawing = design drawing made in code.",
+ "photos": {
+  "condensing_unit": {
+   "kind": "commons",
+   "what": "condensing unit (hermetic compressor + condenser)",
+   "file": "assets/photos/condensing_unit.jpg",
+   "caption": "Example of a condensing unit (hermetic compressor + condenser)",
+   "credit": "Photo: AnyNameWillExpire, CC BY-SA 4.0 (cropped)",
+   "source": "https://commons.wikimedia.org/wiki/File:Condensing_Unit.jpg",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "author": "AnyNameWillExpire",
+   "licence": "CC BY-SA 4.0",
+   "edited": "cropped"
+  },
+  "txv": {
+   "kind": "commons",
+   "what": "thermostatic expansion valve (TXV) with its sensing bulb",
+   "file": "assets/photos/txv.jpg",
+   "caption": "Example of a thermostatic expansion valve (TXV) with its sensing bulb",
+   "credit": "Photo: UL Ospala, CC BY-SA 3.0",
+   "source": "https://commons.wikimedia.org/wiki/File:VET_250px.jpg",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+   "author": "UL Ospala",
+   "licence": "CC BY-SA 3.0",
+   "edited": ""
+  },
+  "wax_panel": {
+   "kind": "drawing",
+   "what": "finned wax (PCM) panel",
+   "drawing": "wax_panel",
+   "caption": "Design drawing – finned wax (PCM) panel"
+  },
+  "pv": {
+   "kind": "commons",
+   "what": "solar PV array on a farm",
+   "file": "assets/photos/pv.jpg",
+   "caption": "Example of a solar PV array on a farm",
+   "credit": "Photo: Shailsh Telang, CC BY-SA 4.0",
+   "source": "https://commons.wikimedia.org/wiki/File:Solar_PV_arrays_for_solar_water_pump.jpg",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "author": "Shailsh Telang",
+   "licence": "CC BY-SA 4.0",
+   "edited": ""
+  },
+  "weather_mast": {
+   "kind": "commons",
+   "what": "small weather station (wind, temperature, humidity)",
+   "file": "assets/photos/weather_mast.jpg",
+   "caption": "Example of a small weather station (wind, temperature, humidity)",
+   "credit": "Photo: Globetrotter19, CC BY-SA 4.0",
+   "source": "https://commons.wikimedia.org/wiki/File:Anemometer,_Solar_plant,_2025_Nagyv%C3%A1zsony.jpg",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "author": "Globetrotter19",
+   "licence": "CC BY-SA 4.0",
+   "edited": ""
+  },
+  "temp_probe": {
+   "kind": "commons",
+   "what": "waterproof temperature probe (DS18B20 type)",
+   "file": "assets/photos/temp_probe.jpg",
+   "caption": "Example of a waterproof temperature probe (DS18B20 type)",
+   "credit": "Photo: Leonardo Postay, CC BY-SA 4.0",
+   "source": "https://commons.wikimedia.org/wiki/File:Sensor_DS18B20.jpg",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "author": "Leonardo Postay",
+   "licence": "CC BY-SA 4.0",
+   "edited": ""
+  },
+  "trh_sensor": {
+   "kind": "commons",
+   "what": "temperature + humidity sensor",
+   "file": "assets/photos/trh_sensor.jpg",
+   "caption": "Example of a temperature + humidity sensor",
+   "credit": "Photo: Suyash Dwivedi, CC BY-SA 4.0",
+   "source": "https://commons.wikimedia.org/wiki/File:AM2302_(DHT22)_digital_temperature_and_humidity_sensor_module.jpg",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "author": "Suyash Dwivedi",
+   "licence": "CC BY-SA 4.0",
+   "edited": ""
+  },
+  "door_switch": {
+   "kind": "commons",
+   "what": "magnetic reed door switch",
+   "file": "assets/photos/door_switch.jpg",
+   "caption": "Example of a magnetic reed door switch",
+   "credit": "Photo: Georg Pik, CC0",
+   "source": "https://commons.wikimedia.org/wiki/File:Alarm_sensor_IO_102-54_(Russia,_2021)_(1).jpg",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "author": "Georg Pik",
+   "licence": "CC0",
+   "edited": ""
+  },
+  "grapes_crate": {
+   "kind": "commons",
+   "what": "crate of grapes",
+   "file": "assets/photos/grapes_crate.jpg",
+   "caption": "Example of a crate of grapes",
+   "credit": "Photo: Gabriele Cantini, CC BY 2.0",
+   "source": "https://commons.wikimedia.org/wiki/File:Le_Torri_-_Harvested_Trebbiano_grapes_in_crates.jpg",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0",
+   "author": "Gabriele Cantini",
+   "licence": "CC BY 2.0",
+   "edited": ""
+  },
+  "milk_can": {
+   "kind": "commons",
+   "what": "milk can",
+   "file": "assets/photos/milk_can.jpg",
+   "caption": "Example of a milk can",
+   "credit": "Photo: Thesupermat, CC BY-SA 3.0",
+   "source": "https://commons.wikimedia.org/wiki/File:Bidons_%C3%A0_lait.JPG",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+   "author": "Thesupermat",
+   "licence": "CC BY-SA 3.0",
+   "edited": ""
+  }
+ },
+ "use": {
+  "how": [
+   "condensing_unit",
+   "solenoid_valve",
+   "txv",
+   "y_split"
+  ],
+  "parts": {
+   "condenser": "condensing_unit",
+   "evaporator": "evaporator",
+   "pcm": "wax_panel",
+   "fins": "wax_panel",
+   "driptray": "wax_panel",
+   "door": "strip_curtain",
+   "solar": "pv",
+   "split": "y_split",
+   "crates": "grapes_crate",
+   "crate_greens": "greens_crate",
+   "crate_grapes": "grapes_crate",
+   "milk": "milk_can",
+   "vaccine": "vaccine_box"
+  },
+  "crops": {
+   "grapes": "grapes_crate",
+   "milk": "milk_can",
+   "leafy_greens": "greens_crate",
+   "vaccines": "vaccine_box"
+  },
+  "sensors": {
+   "t_mid": "trh_sensor",
+   "t_low": "temp_probe",
+   "t_high": "temp_probe",
+   "t_evap": "temp_probe",
+   "t_prod": "temp_probe",
+   "t_pcm": "temp_probe",
+   "door_switch": "door_switch",
+   "gas": "gas_sensor",
+   "t_out": "weather_mast",
+   "wind": "weather_mast",
+   "rh_out": "weather_mast",
+   "pv_power": "pv"
+  }
+ },
+ "commons": {
+  "condensing_unit": {
+   "file": "assets/photos/condensing_unit.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:Condensing_Unit.jpg",
+   "title": "Condensing Unit.jpg",
+   "author": "AnyNameWillExpire",
+   "licence": "CC BY-SA 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "w": 730,
+   "h": 960,
+   "edited": "cropped"
+  },
+  "txv": {
+   "file": "assets/photos/txv.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:VET_250px.jpg",
+   "title": "VET 250px.jpg",
+   "author": "UL Ospala",
+   "licence": "CC BY-SA 3.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+   "w": 250,
+   "h": 258
+  },
+  "pv": {
+   "file": "assets/photos/pv.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:Solar_PV_arrays_for_solar_water_pump.jpg",
+   "title": "Solar PV arrays for solar water pump.jpg",
+   "author": "Shailsh Telang",
+   "licence": "CC BY-SA 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "w": 960,
+   "h": 721
+  },
+  "weather_mast": {
+   "file": "assets/photos/weather_mast.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:Anemometer,_Solar_plant,_2025_Nagyv%C3%A1zsony.jpg",
+   "title": "Anemometer, Solar plant, 2025 Nagyvázsony.jpg",
+   "author": "Globetrotter19",
+   "licence": "CC BY-SA 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "w": 525,
+   "h": 960
+  },
+  "temp_probe": {
+   "file": "assets/photos/temp_probe.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:Sensor_DS18B20.jpg",
+   "title": "Sensor DS18B20.jpg",
+   "author": "Leonardo Postay",
+   "licence": "CC BY-SA 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "w": 960,
+   "h": 720
+  },
+  "trh_sensor": {
+   "file": "assets/photos/trh_sensor.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:AM2302_(DHT22)_digital_temperature_and_humidity_sensor_module.jpg",
+   "title": "AM2302 (DHT22) digital temperature and humidity sensor module.jpg",
+   "author": "Suyash Dwivedi",
+   "licence": "CC BY-SA 4.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "w": 960,
+   "h": 640
+  },
+  "door_switch": {
+   "file": "assets/photos/door_switch.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:Alarm_sensor_IO_102-54_(Russia,_2021)_(1).jpg",
+   "title": "Alarm sensor IO 102-54 (Russia, 2021) (1).jpg",
+   "author": "Georg Pik",
+   "licence": "CC0",
+   "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "w": 960,
+   "h": 960
+  },
+  "grapes_crate": {
+   "file": "assets/photos/grapes_crate.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:Le_Torri_-_Harvested_Trebbiano_grapes_in_crates.jpg",
+   "title": "Le Torri - Harvested Trebbiano grapes in crates.jpg",
+   "author": "Gabriele Cantini",
+   "licence": "CC BY 2.0",
+   "licence_url": "https://creativecommons.org/licenses/by/2.0",
+   "w": 960,
+   "h": 720
+  },
+  "milk_can": {
+   "file": "assets/photos/milk_can.jpg",
+   "source": "https://commons.wikimedia.org/wiki/File:Bidons_%C3%A0_lait.JPG",
+   "title": "Bidons à lait.JPG",
+   "author": "Thesupermat",
+   "licence": "CC BY-SA 3.0",
+   "licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+   "w": 960,
+   "h": 720
+  }
+ },
+ "missing": [
+  {
+   "key": "condensing_unit",
+   "what": "condensing unit (hermetic compressor + condenser)",
+   "expected_file": "web/assets/images/real/condensing_unit.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "txv",
+   "what": "thermostatic expansion valve (TXV) with its sensing bulb",
+   "expected_file": "web/assets/images/real/txv.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "solenoid_valve",
+   "what": "liquid-line solenoid valve",
+   "expected_file": "web/assets/images/real/solenoid_valve.jpg",
+   "has_free_photo": false,
+   "has_drawing": false
+  },
+  {
+   "key": "evaporator",
+   "what": "cold-room air evaporator (unit cooler)",
+   "expected_file": "web/assets/images/real/evaporator.jpg",
+   "has_free_photo": false,
+   "has_drawing": false
+  },
+  {
+   "key": "y_split",
+   "what": "copper Y-split in the liquid line",
+   "expected_file": "web/assets/images/real/y_split.jpg",
+   "has_free_photo": false,
+   "has_drawing": false
+  },
+  {
+   "key": "wax_panel",
+   "what": "finned wax (PCM) panel",
+   "expected_file": "web/assets/images/real/wax_panel.jpg",
+   "has_free_photo": false,
+   "has_drawing": true
+  },
+  {
+   "key": "pv",
+   "what": "solar PV array on a farm",
+   "expected_file": "web/assets/images/real/solar_canopy.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "weather_mast",
+   "what": "small weather station (wind, temperature, humidity)",
+   "expected_file": "web/assets/images/real/weather_mast.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "strip_curtain",
+   "what": "PVC strip curtain in a cold-room door",
+   "expected_file": "web/assets/images/real/strip_curtain.jpg",
+   "has_free_photo": false,
+   "has_drawing": false
+  },
+  {
+   "key": "temp_probe",
+   "what": "waterproof temperature probe (DS18B20 type)",
+   "expected_file": "web/assets/images/real/temp_probe.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "trh_sensor",
+   "what": "temperature + humidity sensor",
+   "expected_file": "web/assets/images/real/trh_sensor.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "door_switch",
+   "what": "magnetic reed door switch",
+   "expected_file": "web/assets/images/real/door_switch.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "gas_sensor",
+   "what": "small gas sensor module",
+   "expected_file": "web/assets/images/real/gas_sensor.jpg",
+   "has_free_photo": false,
+   "has_drawing": false
+  },
+  {
+   "key": "grapes_crate",
+   "what": "crate of grapes",
+   "expected_file": "web/assets/images/real/grapes_crate.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "greens_crate",
+   "what": "crate of leafy greens",
+   "expected_file": "web/assets/images/real/greens_crate.jpg",
+   "has_free_photo": false,
+   "has_drawing": false
+  },
+  {
+   "key": "milk_can",
+   "what": "milk can",
+   "expected_file": "web/assets/images/real/milk_can.jpg",
+   "has_free_photo": true,
+   "has_drawing": false
+  },
+  {
+   "key": "vaccine_box",
+   "what": "vaccine cool box",
+   "expected_file": "web/assets/images/real/vaccine_box.jpg",
+   "has_free_photo": false,
+   "has_drawing": false
+  }
+ ]
+}

@@ -50,7 +50,7 @@ class PhysicsCheck:
 #                water than the return air, nor more than saturation at the coil outlet:
 #                r1 = W_s - min(W_r, W_sat(T_s));  plus RH <= 100 % and dew point <= T (else z1 = 10)
 #  2 Energy    : Q_air = ρ V̇ [c_p (T_r - T_s) + h_fg (W_r - W_s)]   (V̇ = v · coil face area)
-#                Q_ref = COP(T_out, T_evap) · (P_el - P_fan) - Q_wax_branch (EEV-B log)
+#                Q_ref = COP(T_out, T_evap) · (P_el - P_fan) - Q_wax_branch (SV-B on/off log)
 #                r2 = (Q_air - Q_ref) / max(Q_ref, Q_floor)
 #  3 Room heat : r3 = C_room ΔT_air/Δt - [UA (T_out - T_air) + Q_door + Q_produce + Q_int - Q_wax - Q_air]
 #                (our room also has the wax fins Q_wax and fans/lights Q_int, so they are in the balance)

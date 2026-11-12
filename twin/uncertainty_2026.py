@@ -19,7 +19,7 @@ import pandas as pd
 from engine.config import load_config
 from twin import design_study_2026 as DS
 from twin import site_error as SE
-from twin.live_sim import simulate_live
+from twin.live_sim import simulate_live, published_cfg
 
 ROOT = Path(__file__).resolve().parent.parent
 WEATHER = ROOT / "data" / "uncertainty" / "weather_2026_study.csv"
@@ -62,7 +62,7 @@ _G = {}
 
 
 def _init():
-    _G["cfg"] = load_config()
+    _G["cfg"] = published_cfg(load_config())
     _G["B"] = SE.load_budget()
     _G["w"] = study_weather()
     _G["cs"] = SE.clear_sky_ghi(_G["w"]["time_ist"], _G["cfg"])

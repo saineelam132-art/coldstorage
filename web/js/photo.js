@@ -1,4 +1,4 @@
-// Photo view: the Gemini pictures with Ken Burns zoom, light parallax, cross-fades,
+// Photo view (home concept scene): the Gemini pictures, labelled 'Concept illustration (AI-generated)', with Ken Burns zoom, light parallax, cross-fades,
 // and glowing hotspots placed at % positions from assets/hotspots.json.
 import { showTip, hideTip } from './ui.js';
 import { sensorTip, partTip, openSensor, openPart } from './details.js';
@@ -31,6 +31,10 @@ export class PhotoView {
     this.enterBtn.textContent = 'Enter the cold room ▸';
     this.enterBtn.onclick = () => this.enter();
     root.parentElement.appendChild(this.enterBtn);
+    this.conceptTag = document.createElement('div');           // AI pictures stay ONLY here, always labelled
+    this.conceptTag.className = 'concepttag';
+    this.conceptTag.textContent = 'Concept illustration (AI-generated)';
+    root.parentElement.appendChild(this.conceptTag);
     this.layout();
     this.show();
     // highlight the sensor / part whose card is open (red blinking dot + label); cleared when the card closes
@@ -284,6 +288,7 @@ export class PhotoView {
     this.caption.textContent = cap;
     this.caption.style.display = cap ? '' : 'none';
     this.caption.classList.toggle('right', (this.scenes.caption_right || []).includes(name));
+    this.conceptTag.style.display = (this.scenes.real_photos || []).includes(name) ? 'none' : '';
     for (const [n, f] of Object.entries(this.flows)) f.show(n === name);
     if (this.hl) this.highlight({ ...this.hl, move: false });
     const outside = (this.hot[name] || []).some(h => h.sensor === 't_out');

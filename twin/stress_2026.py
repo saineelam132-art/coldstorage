@@ -22,7 +22,7 @@ from engine.config import load_config, load_crops
 from twin import design_study_2026 as DS
 from twin import site_error as SE
 from twin import uncertainty_2026 as U
-from twin.live_sim import DT, simulate_live
+from twin.live_sim import DT, simulate_live, published_cfg
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results" / "live" / "stress_2026.json"
@@ -163,7 +163,7 @@ def produce_8h(S, bt):
 
 def run_one(name_or_spec, cfg=None, w=None, night=None, dwell=1, extra=None, crop_key=None, money=True):
     """Run one case (name or (real, weather kind, crop)) over the study year -> metrics dict."""
-    cfg = cfg or load_config()
+    cfg = cfg or published_cfg(load_config())
     w = U.study_weather() if w is None else w
     night = U.hottest_night(w) if night is None else night
     real, wkind, crop = spec_of(name_or_spec) if isinstance(name_or_spec, str) else name_or_spec
@@ -232,7 +232,7 @@ _G = {}
 
 
 def _init():
-    _G["cfg"] = load_config()
+    _G["cfg"] = published_cfg(load_config())
     _G["w"] = U.study_weather()
     _G["night"] = U.hottest_night(_G["w"])
 

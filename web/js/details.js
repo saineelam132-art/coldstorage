@@ -1,5 +1,6 @@
 // What the detail panel shows for each sensor and each building part.
 // Numbers come only from /api/state (digital twin) and /api/config (design.json).
+import { photoFor, photoFigure } from './photos.js';
 import { fmt, sensorValue, tagChip, sourceBadge, openPanel, drawHistory, setHistMark } from './ui.js';
 import { getJSON } from './api.js';
 import { lineChart, phChart } from './charts.js';
@@ -23,26 +24,15 @@ export function tagFor(s, st) {
   return s.tag === 'C' ? 'C' : 'S';
 }
 
-function closeupImg(key) {
-  const name = SCENES?.closeups?.[key];
-  const a = name && MANIFEST?.A?.[name];
-  return a ? `<img class="closeup" src="${a.small}" alt="${key} close-up">` : '';
-}
+// Close-up pictures in the cards are REAL photos now (assets/photos.json); the AI scene pictures stay in the
+// home concept scene only.
+const CLOSEUP = { solar: 'pv', mast: 'weather_mast', evaporator: 'evaporator' };
+function closeupImg(key) { return CLOSEUP[key] ? photoFigure(CLOSEUP[key]) : ''; }
 
-// B cut-out picture for a sensor / part (assets/scenes.json -> cutouts). Placeholder if not made yet.
+// kept for the batch animation (home concept scene): AI cut-outs of crates and workers
 export function cutoutSrc(name) { return name && MANIFEST?.B?.[name]?.src; }
-function cutoutImg(kind, id) {
-  const name = SCENES?.cutouts?.[kind]?.[id];
-  if (!name) return '';
-  if (name.startsWith('missing:')) {
-    const what = name.slice(8);
-    return `<div class="cutph"><svg viewBox="0 0 80 50" width="80" height="50"><rect x="8" y="8" width="64" height="34" rx="5" fill="#e3ecf3" stroke="#93a8bb"/>
-      <circle cx="26" cy="25" r="7" fill="none" stroke="#93a8bb" stroke-width="2"/><circle cx="54" cy="25" r="7" fill="none" stroke="#93a8bb" stroke-width="2"/>
-      <path d="M33 25h14" stroke="#93a8bb" stroke-width="2"/></svg><span>Picture coming: ${what}</span></div>`;
-  }
-  const src = cutoutSrc(name);
-  return src ? `<img class="cutout" src="${src}" alt="${id}">` : '';
-}
+// card picture: own photo -> free example photo -> design drawing (never an AI picture)
+function cutoutImg(kind, id) { return photoFor(kind, id); }
 
 // ------------------------------------------------------------- tooltips
 export function sensorTip(id) {
@@ -298,9 +288,7 @@ Object.keys(CROPS).forEach(id => (PARTS[id] = cropPart(id)));
 // Fin data box (final design): every number from /api/config -> wax_hx (engine/fins.py) and design.json
 function finBox(c) {
   const f = c.wax_hx || {}, hx = c.design.live_run?.wax_hx || {}, n = (x, d = 0) => (x === null || x === undefined ? '—' : Number(x).toFixed(d));
-  const img = cutoutSrc('B16_finned_panel_cutaway');
   return `<div class="finbox"><b>Finned wax panel (final design)</b>
-    ${img ? `<img src="${img}" alt="Cut-away of a finned wax panel: copper coil in the wax, aluminium fins, drip tray">` : ''}
     <div class="kv"><span>Fins</span><b>${n(f.b_mm)} mm deep · ${n(f.S_mm)} mm gap · ${n(f.t_mm)} mm thick</b>
     <span>Panel height</span><b>${n(f.L_m, 1)} m</b>
     <span>Number of fins</span><b>${n(f.N_fins)}</b>

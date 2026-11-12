@@ -18,7 +18,7 @@ from engine import fan as FAN
 from engine import fins as F
 from engine.config import load_config
 from twin import design_study_2026 as DS
-from twin.live_sim import simulate_live
+from twin.live_sim import simulate_live, published_cfg
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results" / "live" / "fin_study_2026.json"
@@ -62,7 +62,7 @@ def calc_table(cfg, w):
 
 
 def run():
-    cfg = load_config()
+    cfg = published_cfg(load_config())
     w = DS.actual_weather()
     m = cfg["live_run"]["money"]
     ld = cfg["live_run"]["loading"]

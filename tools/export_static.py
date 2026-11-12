@@ -197,12 +197,13 @@ def main():
                                 "t_end": tw.year_s, "t0": tw.time_info()["t0"]},
             "api/demo_days": [d for d in demo],
             "assets/manifest.json": manifest, "assets/scenes.json": scenes, "assets/hotspots.json": hotspots,
+            "assets/photos.json": json.loads((ROOT / "web/assets/photos.json").read_text(encoding="utf-8")),
             "results/design_point.json": json.loads((ROOT / "results/design_point.json").read_text()),
             "results/whatif.json": json.loads((ROOT / "results/whatif.json").read_text()),
             "results/live/design_study_2026.json": json.loads((ROOT / "results/live/design_study_2026.json").read_text()),
             "results/live/uncertainty_2026.json": json.loads((ROOT / "results/live/uncertainty_2026.json").read_text()),
             **{f"results/live/{k}.json": json.loads((ROOT / f"results/live/{k}.json").read_text(encoding="utf-8"))
-               for k in ("space_budget", "stress_2026", "best_load_2026") if (ROOT / f"results/live/{k}.json").exists()},
+               for k in ("space_budget", "stress_2026", "best_load_2026", "valves_2026") if (ROOT / f"results/live/{k}.json").exists()},
         },
     }
 
@@ -215,7 +216,7 @@ def main():
         f.write("window.STATIC_DATA = ")
         json.dump(data, f, separators=(",", ":"), allow_nan=False)
         f.write(";\n")
-    for sub in ("assets/img", "assets/cutouts", "public", "css", "vendor/qrcode", "vendor/chartjs", "vendor/firebase", "kk", "live"):
+    for sub in ("assets/img", "assets/cutouts", "assets/photos", "assets/images/real", "public", "css", "vendor/qrcode", "vendor/chartjs", "vendor/firebase", "kk", "live"):
         src = ROOT / "web" / sub
         if src.exists():
             shutil.copytree(src, OUT / sub)

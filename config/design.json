@@ -59,7 +59,18 @@
     "eta_isentropic": 0.75,
     "eta_motor_drive": 0.85,
     "design_capacity_kW": 1.5,
-    "_note": "Live condensing temperature = ambient + cond_approach_K."
+    "_note": "Live condensing temperature = ambient + cond_approach_K.",
+    "valves": {
+      "type": "sv_txv",
+      "_about": "Each branch: liquid-line solenoid valve (ON/OFF) then a thermostatic expansion valve (TXV). Split in the LIQUID line before the valves. 'eev' = the older two-EEV design (comparison only).",
+      "min_on_min": 3,
+      "txv_superheat_K": 5.0,
+      "txv_min_load_kW_E": 0.15,
+      "txv_superheat_coil_frac_E": 0.10,
+      "price_INR_E": {"solenoid_valve": [1000, 2500], "txv": [2000, 3500], "eev_with_driver": [7500, 17500],
+                      "_note": "E - estimate, quotation pending. Low-high per valve; 2 per room."},
+      "_E": "txv_min_load_kW_E: below about 30 % of a small TXV's rating it hunts, so SV-B opens only when at least this much spare solar cooling exists (E - assumption). txv_superheat_coil_frac_E: share of the wax coil used to superheat the gas by 5 K, so it does not freeze wax (E - assumption)."
+    }
   },
 
   "pv": {

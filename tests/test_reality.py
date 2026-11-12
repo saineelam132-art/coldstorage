@@ -53,7 +53,8 @@ def test_pomegranate_data_has_sources():
 def study():
     from twin import uncertainty_2026 as U
     w = U.study_weather()
-    return load_config(), w, U.hottest_night(w)
+    from twin.live_sim import published_cfg          # the published study used the older EEV split
+    return published_cfg(load_config()), w, U.hottest_night(w)
 
 
 def test_base_case_reproduces_published_results_exactly(study):

@@ -17,6 +17,7 @@ from pathlib import Path
 from engine.config import load_config
 from twin import stress_2026 as ST
 from twin import uncertainty_2026 as U
+from twin.live_sim import published_cfg
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "results" / "live" / "best_load_2026.json"
@@ -27,7 +28,7 @@ _G = {}
 
 
 def _init():
-    _G["cfg"] = load_config()
+    _G["cfg"] = published_cfg(load_config())
     _G["w"] = U.study_weather()
     _G["night"] = U.hottest_night(_G["w"])
 

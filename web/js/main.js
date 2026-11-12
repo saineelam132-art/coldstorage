@@ -1,7 +1,8 @@
 // Wires the page together: clock, live state, photo view, outside menu, data bar, controls.
+import { setPhotos } from './photos.js';
 import { getJSON, SimClock, StateFeed } from './api.js';
 import { updateDataBar, refreshPanel } from './ui.js';
-import { initDetails, openSensor, followClock } from './details.js';
+import { initDetails, openSensor, openPart, followClock } from './details.js';
 import { PhotoView } from './photo.js';
 import { LedgerUI } from './ledgerui.js';
 import { Batches } from './batch.js';
@@ -19,6 +20,7 @@ async function boot() {
   const [cfg, sensors, manifest, scenes, hotspots, demo] = await Promise.all([
     getJSON('api/config'), getJSON('api/sensors'), getJSON('assets/manifest.json'),
     getJSON('assets/scenes.json'), getJSON('assets/hotspots.json'), getJSON('api/demo_days')]);
+  setPhotos(await getJSON('assets/photos.json').catch(() => null), cfg);   // real photos for the cards (tools/photos.py)
 
   // the header may wrap onto two rows on narrow screens: the page starts below it
   const top = document.querySelector('.topbar');
@@ -113,6 +115,11 @@ async function boot() {
   getJSON('results/live/stress_2026.json').then(S => {
     const h = S.headline;
     headline = `<span class="hl" title="Reality check (Control centre): best case vs all loopholes together, of ${h.days} days">☀ ${h.base_days} days best case · ${h.realistic_days} realistic (${h.realistic_fix_days} with smart controller)</span>`;
+    return getJSON('results/live/valves_2026.json');
+  }).then(V => {                                         // chosen valves (solenoid + TXV), same 2026 weather
+    if (!V || !V.headline) return;
+    const v = V.headline, e = V.headline_eev || {};
+    headline += ` <span class="hl" title="2026 twin with the chosen solenoid + TXV valves (two EEVs: ${e.days_full_solar_wax} days, ${Math.round(e.grid_h)} grid h). From results/live/valves_2026.json">🔧 Solenoid + TXV: ${v.days_full_solar_wax} of ${v.days} days on solar + wax · ${Math.round(v.grid_h)} grid h</span>`;
   }).catch(() => {});
   const calCtx = () => {
     const last = Math.floor(tEnd() / 86400) - 1, todayDay = Math.floor(nowT() / 86400);
@@ -121,7 +128,7 @@ async function boot() {
     return { lastDataDay: last, todayDay, forecastDay, canShow: SA ? SA.canShow : null };
   };
   const nav = new TimeNav({ tb, days, demo, getT: () => clock.t, goTo, ctx: calCtx });
-  window.__kk = { clock, feed, goTo, tb, nav, days };      // for automated page checks
+  window.__kk = { clock, feed, goTo, tb, nav, days, control: () => control, openPart, openSensor };      // for automated page checks
   if (SA) setTimeout(() => SA.preloadAll(), 1500);      // all months in the background: the clock can play on freely
   setInterval(followClock, 1000);                        // open sensor graph: red line follows the clock
   let stripT = 0;

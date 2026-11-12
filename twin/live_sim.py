@@ -46,6 +46,16 @@ def _hottest_night(weather):
     return w.groupby(nights).T_out.mean().max()
 
 
+def published_cfg(cfg):
+    """The 2026 studies stored in results/ (design, fins, uncertainty, stress, best load) were made with the
+    older two-EEV split. They keep that model so they still reproduce exactly; twin/valves_2026.py shows
+    the difference to the chosen solenoid + TXV split."""
+    import copy
+    c = copy.deepcopy(cfg)
+    c["refrigeration"].setdefault("valves", {})["type"] = "eev"
+    return c
+
+
 def cycle_table(cfg):
     T = np.arange(-5.0, 55.01, 0.25)
     rows = [r290.cycle_from_config(cfg, T_amb_C=t, Q_evap_kW=1.0) for t in T]
@@ -71,7 +81,7 @@ def door_times(loading):
 
 
 def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_key=None, init=None,
-                  fan_on=None, sun_factor=None, loading=None, steps=False, hx=None, scenario=None, real=None):
+                  fan_on=None, sun_factor=None, loading=None, steps=False, hx=None, scenario=None, real=None, valves=None):
     """Run the live twin. weather: hourly frame with time_ist, T_out, RH_out, ps_Pa, ghi, wind.
     Returns (hourly DataFrame, totals dict, end_state dict, batches DataFrame).
     scenario (Trust & Trade demo faults; None = normal, results unchanged):
@@ -83,7 +93,12 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
       fin_UA_frac, start_loss_frac, cop_hot_penalty {above_T_out_C, frac}, pv_dust_per_day, pv_clean_days,
       pv_wiring_loss, intake_kg (list per day) or intake_random [lo, hi, seed], band_K, precool {from_h, target_C},
       no_grid, crop_cp (use the crop's cp), crate {kg_per_crate, kJ_K_each}, extra_C_room_kJ_K (racks),
-      dwell_days, pv_kWp, pcm_kg"""
+      dwell_days, pv_kWp, pcm_kg
+    valves: "sv_txv" (default, config refrigeration.valves) = each branch has a liquid-line solenoid
+      valve (ON/OFF) + a TXV. SV-A opens when the room needs cold; SV-B opens only when spare SOLAR
+      remains after the room is satisfied, the wax is not full and the spare is at least the TXV's
+      stable minimum. Each solenoid stays open at least min_on_min (3 min) once opened. The inverter
+      compressor sets the total. Never runs with both valves shut. "eev" = the older two-EEV model."""
     from engine import fan as FAN
     import copy
     cfg = cfg or load_config()
@@ -230,6 +245,14 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         UA_ch = 0.0
     h_min = cps * (cfg["simulation"]["pcm_charge_stop_C"] - Tm)
     T_evap = cfg["refrigeration"]["T_evap_C"]
+    VC = cfg["refrigeration"].get("valves") or {"type": "eev"}
+    vtype = valves or VC.get("type", "eev")
+    sv = vtype == "sv_txv"
+    if sv:
+        UA_ch = UA_ch * (1.0 - VC.get("txv_superheat_coil_frac_E", 0.0))   # last part of the coil only superheats the gas
+        txv_min = VC.get("txv_min_load_kW_E", 0.0)
+        min_on = VC.get("min_on_min", 3) * 60.0 / DT                       # share of a 5-min step
+
     T_pcm_of = lambda h: Tm + h / cps if h < 0 else (Tm + (h - L) / cpl if h > L else Tm)
     if R.get("melt_range_C"):                                         # real paraffin melts over a range, not at one point
         mlo, mhi = R["melt_range_C"]
@@ -284,7 +307,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     out = {k: np.zeros(n) for k in ("T_room", "T_batch", "pcm_pct", "Q_wall", "Q_door", "Q_batch", "Q_resp", "Q_int",
                                     "Q_air", "Q_ch", "Q_pcm_room", "P_comp", "P_pv", "P_solar_used", "P_grid", "grid_on",
                                     "running", "door_s", "solar_ok", "fan_speed", "fan_W", "G_wax", "batt12_W",
-                                    "T_pcm", "pcm_h", "cop", "T_out", "RH_out", "poa", "wind", "Q_door_lat")}
+                                    "T_pcm", "pcm_h", "cop", "T_out", "RH_out", "poa", "wind", "Q_door_lat", "sv_a", "sv_b")}
     acc = dict(in_=0.0, out=0.0, prod_in=0.0, prod_out=0.0)
     batches = []        # [step, event k, T_in, steps to cool or None, T after 4 h, T after 2 h]
     batch_kg = []
@@ -397,6 +420,10 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         Q_ch = 0.0
         if m_p > 0 and solar_ok and not grid_mode and Q_avail - Q_air > 0:
             Q_ch = max(0.0, min(Q_avail - Q_air, UA_ch * (T_p - T_evap), m_p * (h - h_min) / DT))
+            if sv and Q_ch < txv_min:                 # SV-B stays shut: too little spare for the TXV to work steadily
+                Q_ch = 0.0
+        if sv and Q_air > 0 and Q_ch <= 0:            # SV-A alone: compressor at least its minimum speed for 3 min
+            Q_air = max(Q_air, min(Q_avail, Qmin) * min(1.0, min_on))
         running = (Q_air + Q_ch) > 1e-9
         # the evaporator fan only runs with the compressor (no battery for cooling)
         Q_fan = fan_kW if running else 0.0
@@ -468,7 +495,8 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                          ("door_s", door[i]), ("solar_ok", float(solar_ok)), ("fan_speed", spd), ("fan_W", P_nf * 1000),
                          ("G_wax", G_w * 1000), ("batt12_W", (batt_base_kW + P_nf + circ_kW) * 1000),
                          ("T_pcm", T_pcm_of(h) if m_p > 0 else np.nan), ("pcm_h", h), ("cop", cop[i]),
-                         ("T_out", T_out[i]), ("RH_out", RH[i]), ("poa", poa[i]), ("wind", wind_s[i]), ("Q_door_lat", Q_door_lat)):
+                         ("T_out", T_out[i]), ("RH_out", RH[i]), ("poa", poa[i]), ("wind", wind_s[i]), ("Q_door_lat", Q_door_lat),
+                         ("sv_a", float(Q_air > 1e-9)), ("sv_b", float(Q_ch > 1e-9))):
             out[key][i] = val
 
     E1 = C_room * T_r + sum(node_C(m) * t for m, t in zip(masses, T_n)) + m_p * h
@@ -481,7 +509,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     if steps:                                  # every 5-minute step (for the main site replay)
         S5 = pd.DataFrame(out, index=hrs)
         S5["T_batch"] = out["T_batch"]
-    out = {k: v for k, v in out.items() if k not in ("T_pcm", "pcm_h", "cop", "T_out", "RH_out", "poa", "wind", "Q_door_lat")}
+    out = {k: v for k, v in out.items() if k not in ("T_pcm", "pcm_h", "cop", "T_out", "RH_out", "poa", "wind", "Q_door_lat", "sv_a", "sv_b")}
     H = pd.DataFrame({k: v.reshape(nH, 12).mean(axis=1) for k, v in out.items()})
     H["door_s"] = out["door_s"].reshape(nH, 12).sum(axis=1)
     H["running_h"] = H.pop("running")
@@ -510,7 +538,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
               "stored_change_kWh": (E1 - E0) / 3600, "energy_balance_error_kWh": bal / 3600,
               "energy_balance_error_pct": 100 * abs(bal) / heat_out if heat_out else 0.0,
               "sun_factor": sun, "fan_enabled": bool(fan_enabled and m_p > 0), "wax_hx": fan_info,
-              "loading": loading, "produce_kg": m_b}
+              "loading": loading, "produce_kg": m_b, "valves": vtype}
     end_state = {"T_room": T_r, "T_nodes": T_n, "pcm_h": h, "grid_mode": grid_mode}
     if steps:
         totals["steps"] = S5

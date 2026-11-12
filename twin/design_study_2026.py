@@ -17,7 +17,7 @@ import pandas as pd
 
 from engine.config import load_config
 from twin import live_weather as LW
-from twin.live_sim import simulate_live
+from twin.live_sim import simulate_live, published_cfg
 
 ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "results" / "live"
@@ -140,7 +140,7 @@ def floor_check(cfg):
 
 
 def run():
-    cfg = load_config()
+    cfg = published_cfg(load_config())
     w = actual_weather()
     m = cfg["live_run"]["money"]
     out = {"period": [str(w.time_ist.min().date()), str(w.time_ist.max().date())], "sun_factor": cfg["live_run"]["sun_factor"]}

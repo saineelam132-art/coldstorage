@@ -21,6 +21,9 @@ from engine.config import load_config, with_overrides  # noqa: E402
 
 
 def main():
+    if "--valves-only" in sys.argv:          # new table only (results/bom_final.csv stays as published)
+        write(final_cfg(), "bom_final_sv_txv.csv", final=True)
+        return
     write(final_cfg(), "bom_final.csv", final=True)
     payback(final_cfg(), ROOT / "results" / "bom_final.csv")
     cfg = load_config()
@@ -40,7 +43,7 @@ def final_cfg():
 # Lines that a plain grid-only cold room of the same size would NOT have = the extra cost of our system
 # (solar + wax + fins + IoT). Room, door, curtain, evaporator, compressor, refrigerant, pad and labour
 # are the same in both (ASSUMPTION: a grid AC compressor unit costs about the same as the DC unit).
-EXTRA_KEYS = ("Wax (PCM)", "Solar PV", "Copper charging coil", "canopy", "ATS", "Aluminium fins", "drip tray",
+EXTRA_KEYS = ("SV-B", "Wax (PCM)", "Solar PV", "Copper charging coil", "canopy", "ATS", "Aluminium fins", "drip tray",
               "Floor stoppers", "Provision for", "LiFePO4", "ESP32", "Power meters")
 
 
@@ -100,6 +103,18 @@ def write(cfg, name, final):
         ("PVC strip curtain for the doorway", 1, "set", 3000, "no", "E = 0.85 in the model"),
         ("Evaporator (unit cooler) with fan", 1, "no.", 12000, "no", ""),
         ("Copper charging coil for the wax panels + fittings", 1, "lot", 6000, "no", ""),
+    ]
+    if final and cfg["refrigeration"].get("valves", {}).get("type") == "sv_txv":
+        P = cfg["refrigeration"]["valves"]["price_INR_E"]
+        mid = lambda k: round(sum(P[k]) / 2)                                    # noqa: E731
+        rows += [
+            ("Room branch: liquid-line solenoid valve SV-A (on/off) + thermostatic expansion valve TXV-A, R290", 1, "set",
+             mid("solenoid_valve") + mid("txv"), "no", "estimate – quotation pending; a grid-only room needs an expansion valve too"),
+            ("Wax branch: liquid-line solenoid valve SV-B (on/off) + thermostatic expansion valve TXV-B, R290", 1, "set",
+             mid("solenoid_valve") + mid("txv"), "no", "estimate – quotation pending; only our system has this branch"),
+            ("Copper Y-split in the liquid line + filter drier + sight glass", 1, "lot", 1500, "no", "split BEFORE the valves (100 % liquid)"),
+        ]
+    rows += [
         ("R290 refrigerant charge (150–300 g) + brazing, vacuum, test", 1, "lot", 4000, "no", "must be done by an R290-trained technician"),
         ("Galvanised steel canopy, 17° tilt", 1, "lot", 20000, "no", ""),
         ("Concrete pad 3.7 × 3.6 × 0.15 m", 2.0, "m³", 7500, "no", ""),

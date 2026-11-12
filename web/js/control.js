@@ -1,8 +1,8 @@
 // Control centre: Calculations, What-If, Two rooms, Year results, Sensors.
 import { getJSON } from './api.js';
 import { fmt, tagChip } from './ui.js';
-import { splitHTML, splitUpdate } from './split.js';
-import { cutoutSrc } from './details.js';
+import { splitHTML, splitUpdate, valveWhyHTML } from './split.js';
+import { howPhotos } from './photos.js';
 import { howSureHTML } from './howsure.js';
 import { roomHTML, realityHTML } from './reality.js';
 
@@ -39,7 +39,10 @@ export class Control {
     this.tab = tab;
     [...$('ccTabs').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const body = $('ccBody');
-    if (tab === 'how') { body.innerHTML = splitHTML(cutoutSrc('B17_split_valve_manifold')); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg); }
+    if (tab === 'how') {
+      body.innerHTML = splitHTML(howPhotos()); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg);
+      getJSON('results/live/valves_2026.json').then(V => { const w = $('valveWhy'); if (w) w.innerHTML = valveWhyHTML(V); }).catch(() => {});
+    }
     if (tab === 'sure') body.innerHTML = await howSureHTML(this.cfg);
     if (tab === 'room') body.innerHTML = await roomHTML();
     if (tab === 'reality') body.innerHTML = await realityHTML();

@@ -49,6 +49,19 @@ All design values live in `config/design.json` — change them there.
 14. Isentropic efficiency 0.75 and motor/inverter efficiency 0.85 are taken as constant.
     A real inverter compressor's efficiency changes a little with speed — ignored.
 15. Pressure drops in pipes and heat exchangers are ignored.
+16. **Valves: solenoid + TXV on each branch** (chosen over two EEVs). The liquid line splits
+    before the valves (100 % liquid, even split). SV-A / SV-B are ON/OFF only; each TXV holds
+    about 5 K superheat. The inverter compressor sets the total cooling. In the twin
+    (`config/design.json` → `refrigeration.valves`, E – assumptions):
+    - SV-B opens only when spare solar cooling remains after the room is satisfied, the wax is not
+      full, and the spare is at least **150 W** (a small TXV hunts below about 30 % of its rating).
+    - **10 %** of the wax coil only superheats the gas (no wax freezing there).
+    - Minimum ON time **3 min** per solenoid: SV-A alone runs the compressor at least at minimum
+      speed for 3 min of the 5-min step. The compressor never runs with both valves shut.
+    - Valve prices (2 × solenoid + TXV ≈ ₹6–12k vs 2 EEVs ≈ ₹15–35k) are estimates – quotation pending.
+    The 2026 studies already stored in `results/live/` (design, fins, uncertainty, stress, best load)
+    were made with the older two-EEV split and keep it, so they still reproduce exactly;
+    `twin/valves_2026.py` → `results/live/valves_2026.json` shows the difference.
 
 ## Solar PV
 16. NOCT = 45 °C (typical crystalline-silicon panel datasheet value).

@@ -2,6 +2,7 @@
 import { door } from './door.js';
 import { getJSON, postJSON } from './api.js';
 import { lineChart } from './charts.js';
+import { photoFor } from './photos.js';
 
 const $ = id => document.getElementById(id);
 
@@ -100,7 +101,7 @@ export class Batches {
     $('cardBody').innerHTML = `
       <div class="bc"><div>
         <div class="note">${fresh ? 'New batch created' : 'Batch card'}</div>
-        ${this.cropImg(b.crop) ? `<img class="cropimg" src="${this.cropImg(b.crop)}" alt="${b.crop_label}">` : ''}
+        ${photoFor('crops', b.crop)}
         <div class="id">${b.id}</div>
         <div class="kv" style="display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-top:8px;font-size:14px">
           <span>Farmer</span><b>${b.farmer}</b><span>Crop</span><b>${b.crop_label}</b>
