@@ -1,0 +1,278 @@
+{
+ "room": {
+  "inside_m": [
+   2.0,
+   2.0,
+   2.2
+  ],
+  "floor_m2": 4.0,
+  "volume_m3": 8.8
+ },
+ "wax": {
+  "wax_kg": 115,
+  "wax_volume_solid_m3": 0.13068181818181818,
+  "wax_volume_liquid_m3": 0.14935064935064934,
+  "slab_mm": 12.445887445887445,
+  "panel_area_m2": 12.0,
+  "panel_height_m": 1.7,
+  "wall_length_m": 7.0588235294117645,
+  "panel_bottom_m": 0.25,
+  "fin_depth_m": 0.04,
+  "panel_depth_m": 0.05544588744588745,
+  "keep_clear_m": 0.1,
+  "band_m": 0.15544588744588744
+ },
+ "aluminium_kg": {
+  "fins": 54.0,
+  "casing": 64.8,
+  "total": 118.8
+ },
+ "layout": {
+  "chosen": "L_shape",
+  "options": {
+   "two_side_racks": {
+    "aisle_m": 0.489,
+    "ok": false,
+    "crates": 16
+   },
+   "L_shape": {
+    "aisle_m": 1.039,
+    "ok": true,
+    "crates": 12
+   },
+   "back_only": {
+    "aisle_m": 1.089,
+    "ok": true,
+    "crates": 8
+   }
+  },
+  "racks": [
+   {
+    "name": "left",
+    "x": [
+     0.205,
+     0.755
+    ],
+    "y": [
+     0.205,
+     1.795
+    ],
+    "crates_per_shelf": 2,
+    "crates": 8
+   },
+   {
+    "name": "back",
+    "x": [
+     0.755,
+     1.795
+    ],
+    "y": [
+     1.245,
+     1.795
+    ],
+    "crates_per_shelf": 1,
+    "crates": 4
+   }
+  ],
+  "door_x": [
+   0.895,
+   1.795
+  ],
+  "shelves_m": [
+   0.1,
+   0.55,
+   1.0,
+   1.45
+  ],
+  "top_crate_m": 1.75,
+  "aisle_m": 1.039
+ },
+ "table": [
+  {
+   "item": "Wax panels + casing + fins (along the walls, incl. drip tray below)",
+   "key": "wax_panels_fins",
+   "floor_m2": 0.43,
+   "volume_m3": 0.805,
+   "pct_of_room": 9.2
+  },
+  {
+   "item": "Keep-clear air in front of the fins (natural convection)",
+   "key": "keep_clear_air",
+   "floor_m2": 0.652,
+   "volume_m3": 1.217,
+   "pct_of_room": 13.8
+  },
+  {
+   "item": "Evaporator unit (above the door)",
+   "key": "evaporator",
+   "floor_m2": 0.18,
+   "volume_m3": 0.072,
+   "pct_of_room": 0.8
+  },
+  {
+   "item": "Free air in front of the evaporator",
+   "key": "evaporator_free_air",
+   "floor_m2": 0.18,
+   "volume_m3": 0.072,
+   "pct_of_room": 0.8
+  },
+  {
+   "item": "Racks with crates and produce (up to the top crate)",
+   "key": "racks_crates_produce",
+   "floor_m2": 1.436,
+   "volume_m3": 2.512,
+   "pct_of_room": 28.5
+  },
+  {
+   "item": "Door walkway + aisle",
+   "key": "door_walkway_aisle",
+   "floor_m2": 1.31,
+   "volume_m3": 2.359,
+   "pct_of_room": 26.8
+  },
+  {
+   "item": "Other free air (above racks, corners, under the panels)",
+   "key": "free_air_other",
+   "floor_m2": 0.0,
+   "volume_m3": 1.762,
+   "pct_of_room": 20.0
+  }
+ ],
+ "zones_sum_m3": 8.8,
+ "contents_m3": {
+  "wax_m3_liquid": 0.1494,
+  "aluminium_m3": 0.044,
+  "crates_outer_m3": 0.864,
+  "produce_net_fruit_m3": 0.18,
+  "produce_bulk_m3": 0.3273,
+  "rack_steel_m3": 0.0064
+ },
+ "usable_rack_floor_m2": 1.446,
+ "crate_places": 12,
+ "kg_per_crate": 15,
+ "capacity_kg": 180,
+ "crate_fill_by_bulk_density_kg": 31.0,
+ "thermal_mass": {
+  "rack_steel_kg": 50,
+  "rack_kJ_K": 25.0,
+  "crate_kg_each": 1.8,
+  "crate_kJ_K_each": 3.42
+ },
+ "pomegranate": {
+  "fruit_mass_g": 250,
+  "fruits_per_kg": 4.0,
+  "fruits_per_crate": 60,
+  "fruits_per_150_kg": 600,
+  "fruits_full_room": 720,
+  "net_fruit_volume_per_crate_m3": 0.015,
+  "crate_inner_m3": 0.0564,
+  "fill_of_crate_pct": 48.3
+ },
+ "assumptions_E": {
+  "wax_density_solid_kg_m3": {
+   "value": 880,
+   "note": "E – typical paraffin (solid); the datasheet of the chosen wax must confirm"
+  },
+  "wax_density_liquid_kg_m3": {
+   "value": 770,
+   "note": "E – typical paraffin (liquid); used for the container volume (wax expands when it melts)"
+  },
+  "casing_mm": {
+   "value": 3,
+   "note": "E – aluminium panel casing, total of both faces"
+  },
+  "casing_sheet_mm_each_face": {
+   "value": 1.0,
+   "note": "E – 1 mm aluminium sheet on each face of the panel"
+  },
+  "al_density_kg_m3": {
+   "value": 2700,
+   "note": "aluminium"
+  },
+  "door_clear_width_m": {
+   "value": 0.9,
+   "note": "E – door opening kept free of panels (config door is 0.8 m leaf; 0.9 m with frame)"
+  },
+  "evaporator_m": {
+   "value": [
+    0.6,
+    0.4,
+    0.3
+   ],
+   "note": "E – unit cooler width × height × depth; mounted above the door, under the ceiling"
+  },
+  "evaporator_free_air_m": {
+   "value": 0.3,
+   "note": "E – free air in front of the evaporator (air throw)"
+  },
+  "aisle_min_m": {
+   "value": 0.6,
+   "note": "E – farmer walks in with a crate"
+  },
+  "rack_depth_m": {
+   "value": 0.55,
+   "note": "E – galvanised slotted-angle rack"
+  },
+  "rack_gap_from_keep_clear_m": {
+   "value": 0.05,
+   "note": "E – gap between rack and the fins' keep-clear line"
+  },
+  "shelf_levels": {
+   "value": 4,
+   "note": "E"
+  },
+  "bottom_shelf_m": {
+   "value": 0.1,
+   "note": "E"
+  },
+  "shelf_pitch_m": {
+   "value": 0.45,
+   "note": "E – 30 cm crate + 15 cm air above it"
+  },
+  "top_crate_max_m": {
+   "value": 1.9,
+   "note": "E – keep ≥ 0.3 m free under the 2.2 m ceiling for the evaporator air"
+  },
+  "rack_steel_kg_each": {
+   "value": 25,
+   "note": "E – slotted-angle rack, 4 shelves"
+  },
+  "crate_outer_m": {
+   "value": [
+    0.6,
+    0.4,
+    0.3
+   ],
+   "note": "E – standard ventilated plastic crate 600 × 400 × 300 mm"
+  },
+  "crate_inner_m": {
+   "value": [
+    0.56,
+    0.36,
+    0.28
+   ],
+   "note": "E – inside of that crate"
+  },
+  "crate_empty_kg": {
+   "value": 1.8,
+   "note": "E – polypropylene crate"
+  },
+  "crate_gap_m": {
+   "value": 0.025,
+   "note": "E – 2–3 cm air gap between crates"
+  },
+  "crate_max_kg_pomegranate": {
+   "value": 15,
+   "note": "E – bruising limit for pomegranate (no source found; check with a packhouse)"
+  },
+  "steel_cp_kJ_kgK": {
+   "value": 0.5,
+   "note": "steel"
+  },
+  "pp_cp_kJ_kgK": {
+   "value": 1.9,
+   "note": "E – polypropylene"
+  }
+ },
+ "note": "C = calculated from the dimensions; E = assumption. Not measured."
+}

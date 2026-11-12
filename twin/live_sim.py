@@ -71,21 +71,37 @@ def door_times(loading):
 
 
 def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_key=None, init=None,
-                  fan_on=None, sun_factor=None, loading=None, steps=False, hx=None, scenario=None):
+                  fan_on=None, sun_factor=None, loading=None, steps=False, hx=None, scenario=None, real=None):
     """Run the live twin. weather: hourly frame with time_ist, T_out, RH_out, ps_Pa, ghi, wind.
     Returns (hourly DataFrame, totals dict, end_state dict, batches DataFrame).
     scenario (Trust & Trade demo faults; None = normal, results unchanged):
       {"from_step": i, "door_leak": fraction of a fully open door, "setpoint_C": failed-thermostat set point,
-       "no_grid": True for a power cut, "load_once": True = only the first loading event happens}"""
+       "no_grid": True for a power cut, "load_once": True = only the first loading event happens}
+    real (Reality-check / stress options, twin/stress_2026.py; None or {} = the base model, results unchanged):
+      wall_factor (x wall UA), curtain_E, door_times [[h, m], ...], door_seconds, evap_fan_W, circ_fan_W,
+      lights_door_only, controller_W, defrost {times, minutes, heater_W, fan_on}, ats_release_C, ats_delay_steps, solar_first, latent_frac, melt_range_C [lo, hi],
+      fin_UA_frac, start_loss_frac, cop_hot_penalty {above_T_out_C, frac}, pv_dust_per_day, pv_clean_days,
+      pv_wiring_loss, intake_kg (list per day) or intake_random [lo, hi, seed], band_K, precool {from_h, target_C},
+      no_grid, crop_cp (use the crop's cp), crate {kg_per_crate, kJ_K_each}, extra_C_room_kJ_K (racks),
+      dwell_days, pv_kWp, pcm_kg"""
     from engine import fan as FAN
+    import copy
     cfg = cfg or load_config()
+    R = dict(real or {})
+    if R.get("curtain_E") is not None:
+        cfg = copy.deepcopy(cfg)
+        cfg["door"]["curtain_effectiveness_E"] = float(R["curtain_E"])
     lr = cfg["live_run"]
     sun = lr.get("sun_factor", 1.0) if sun_factor is None else sun_factor
     weather = weather.copy()
     weather["ghi"] = weather["ghi"] * sun
     loading = loading or lr["loading"]
     crop = load_crops()[crop_key or cfg["product"]["default_crop"]]
-    des = lr["designs"][design]
+    des = dict(lr["designs"][design])
+    if R.get("pv_kWp") is not None:
+        des["pv_kWp"] = float(R["pv_kWp"])
+    if R.get("pcm_kg") is not None:
+        des["pcm_kg"] = float(R["pcm_kg"])
     grid_only = mode == "grid_only"
     nH = len(weather)
     n = nH * 12
@@ -101,8 +117,15 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     kWp = 0.0 if grid_only else des["pv_kWp"]
     T_cell = T_out + (pvc["NOCT_C"] - 20.0) / 800.0 * poa
     P_pv = np.clip(kWp * poa / 1000.0 * pvc["performance_ratio"] * (1 + pvc["temp_coeff_per_C"] * (T_cell - 25.0)), 0, None)
+    if R.get("pv_wiring_loss") or R.get("pv_dust_per_day"):        # wiring/controller loss, dust between cleanings
+        day_i = np.arange(n) // int(86400 / DT)
+        dust = R.get("pv_dust_per_day", 0.0) * (day_i % int(R.get("pv_clean_days", 7)))
+        P_pv = P_pv * (1 - R.get("pv_wiring_loss", 0.0)) * (1 - dust)
     Tt, CT = cycle_table(cfg)
     cop = np.interp(T_out, Tt, CT["COP_elec"])
+    if R.get("cop_hot_penalty"):                                     # extra COP loss at high condensing temperature
+        ch = R["cop_hot_penalty"]
+        cop = np.where(T_out > ch["above_T_out_C"], cop * (1 - ch["frac"]), cop)
 
     # ---- room
     W_in, H_in, L_in = lr["inside_m"]
@@ -111,15 +134,20 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     A_env = 2 * ((W_in + 2 * tw) * (H_in + 2 * tw) + (L_in + 2 * tw) * (H_in + 2 * tw) + (W_in + 2 * tw) * (L_in + 2 * tw))
     A_env = cfg["chamber"]["envelope_area_m2"] if [W_in, H_in, L_in] == [2.0, 2.2, 2.0] else A_env
     UAw = k / tw * A_env / 1000.0                                     # kW/K
+    if R.get("wall_factor"):
+        UAw = UAw * R["wall_factor"]                                  # outside area + thermal bridges
     C_room = 1.25 * W_in * H_in * L_in * 1.006 + cfg["simulation"]["structure_heat_capacity_kJ_K"]
+    if R.get("extra_C_room_kJ_K"):
+        C_room = C_room + R["extra_C_room_kJ_K"]                      # racks (steel) follow the room air
     Tset, (blo, bhi) = lr["setpoint_C"], lr["band_C"]
     protect = cfg["controller"]["protect_above_C"]
     ats_thr = cfg["controller"]["ats_pcm_pct"]
     Qmax = lr["compressor_max_kW"]
     Qmin = cfg["simulation"]["inverter_min_capacity_frac"] * Qmax
-    fan_kW = lr["evaporator_fan_W"] / 1000.0
+    fan_kW = (lr["evaporator_fan_W"] if R.get("evap_fan_W") is None else R["evap_fan_W"]) / 1000.0
     il = cfg["internal_loads"]
-    ctrl_kW = il["controller_sensors_W"] / 1000.0
+    ctrl_kW = (il["controller_sensors_W"] if R.get("controller_W") is None else R["controller_W"]) / 1000.0
+    circ_kW = R.get("circ_fan_W", 0.0) / 1000.0
     rh_in = cfg["setpoint"]["rh_room_pct"]
     curtain = lr["curtain_installed"]
     assist = lr.get("grid_assist_during_loading", True)
@@ -127,8 +155,18 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
 
     # ---- produce: one node per loading event (masses add up to the 150 kg always inside)
     cp = cfg["product"]["cp_kJ_kgK"]
+    if R.get("crop_cp") and crop.get("cp_kJ_kgK"):
+        cp = float(crop["cp_kJ_kgK"])
     tau = cfg["product"]["pulldown_hours"] * 3600.0 / math.log(8.0)     # same 7/8-in-4-h rate as before
     masses = [float(ev["kg"]) for ev in loading]
+    dwell = int(R.get("dwell_days", 1))
+    if dwell > 1:                                                     # produce stays several days: one node per day
+        masses = [masses[0]] * dwell
+    crate = R.get("crate")
+    def node_C(m):                                                    # produce (+ the crates it came in), kJ/K
+        if not crate:
+            return m * cp
+        return m * cp + math.ceil(m / crate["kg_per_crate"] - 1e-9) * crate["kJ_K_each"]
     m_b = sum(masses)
     r_ref, Q10, T_ref = crop.get("respiration_W_per_kg_at_ref", 0.0), crop["Q10"], crop["T_ref_C"]
 
@@ -136,6 +174,8 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     pc = cfg["pcm"]
     m_p = 0.0 if grid_only else float(des["pcm_kg"])
     L, cps, cpl, Tm = pc["latent_kJ_kg"], pc["cp_solid_kJ_kgK"], pc["cp_liquid_kJ_kgK"], pc["T_melt_C"]
+    if R.get("latent_frac"):
+        L = L * R["latent_frac"]                                      # only part of the latent heat is usable
     nf = lr["night_fan"]
     fan_enabled = nf["enabled"] if fan_on is None else fan_on
     fan_info = None
@@ -146,6 +186,8 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         UA_ch = A / (half + cfg["simulation"]["pcm_charge_coil_R_m2K_W"]) / 1000.0
         T_night = float(_hottest_night(weather))
         hx = dict(lr.get("wax_hx") or {"kind": "baffle"}) if hx is None else dict(hx)
+        if R.get("fin_UA_frac"):
+            hx["h_scale"] = hx.get("h_scale", 1.0) * R["fin_UA_frac"]
         kind = hx.get("kind", "baffle")
         if kind == "baffle":                    # plain panels + baffle channel + night fans (engine/fan.py)
             fan_info = FAN.size_fan(cfg, T_night, m_p, nf["design_room_max_C"], nf["margin"])
@@ -189,16 +231,39 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     h_min = cps * (cfg["simulation"]["pcm_charge_stop_C"] - Tm)
     T_evap = cfg["refrigeration"]["T_evap_C"]
     T_pcm_of = lambda h: Tm + h / cps if h < 0 else (Tm + (h - L) / cpl if h > L else Tm)
+    if R.get("melt_range_C"):                                         # real paraffin melts over a range, not at one point
+        mlo, mhi = R["melt_range_C"]
+        T_pcm_of = lambda h: mlo + h / cps if h < 0 else (mhi + (h - L) / cpl if h > L else mlo + (mhi - mlo) * h / L)
+        h_min = cps * min(0.0, cfg["simulation"]["pcm_charge_stop_C"] - mlo)
 
     # ---- door schedule (fixed)
     door = np.zeros(n)
     hrs = (t0 + pd.to_timedelta(np.arange(n) * DT, unit="s"))
     hod, minute, day = hrs.hour.values, hrs.minute.values, ((hrs - t0.normalize()).days).values
-    for (hh, mm) in door_times(loading):
-        door[(hod == hh) & (minute == (mm // 5) * 5)] += lr["door_seconds"]
+    for (hh, mm) in (R.get("door_times") or door_times(loading)):
+        door[(hod == hh) & (minute == (mm // 5) * 5)] += R.get("door_seconds", lr["door_seconds"])
     event_at = np.full(n, -1)
     for k, ev in enumerate(loading):
         event_at[(hod == ev["hour"]) & (minute == 0)] = k
+    if dwell > 1:                                                     # the oldest day's produce is swapped
+        ev_i = np.where(event_at >= 0)[0]
+        event_at[ev_i] = day[ev_i] % dwell
+    intake = None                                                     # kg brought in on each day
+    if R.get("intake_kg") is not None:
+        intake = list(R["intake_kg"])
+    elif R.get("intake_random"):
+        lo_, hi_, seed_ = R["intake_random"]
+        intake = list(np.random.default_rng(seed_).uniform(lo_, hi_, int(day.max()) + 1))
+    defrost = np.zeros(n, bool)
+    if R.get("defrost"):
+        dfr = R["defrost"]
+        for (hh, mm) in dfr["times"]:
+            s0 = (hod == hh) & (minute == mm)
+            for j in np.where(s0)[0]:
+                defrost[j:j + int(dfr["minutes"] * 60 / DT)] = True
+    pre = R.get("precool")
+    band = R.get("band_K")
+    comp_on, was_running, hot_run = True, False, 0
     if scenario and scenario.get("load_once"):          # one batch only (Trust & Trade slip demo)
         first = {}
         for j in np.where(event_at >= 0)[0]:
@@ -214,7 +279,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     T_n = list(st.get("T_nodes", [Tset] * len(masses)))
     h = st.get("pcm_h", 0.0) if m_p > 0 else 0.0
     grid_mode = st.get("grid_mode", False)
-    E0 = C_room * T_r + sum(m * cp * t for m, t in zip(masses, T_n)) + m_p * h
+    E0 = C_room * T_r + sum(node_C(m) * t for m, t in zip(masses, T_n)) + m_p * h
 
     out = {k: np.zeros(n) for k in ("T_room", "T_batch", "pcm_pct", "Q_wall", "Q_door", "Q_batch", "Q_resp", "Q_int",
                                     "Q_air", "Q_ch", "Q_pcm_room", "P_comp", "P_pv", "P_solar_used", "P_grid", "grid_on",
@@ -222,6 +287,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                                     "T_pcm", "pcm_h", "cop", "T_out", "RH_out", "poa", "wind", "Q_door_lat")}
     acc = dict(in_=0.0, out=0.0, prod_in=0.0, prod_out=0.0)
     batches = []        # [step, event k, T_in, steps to cool or None, T after 4 h, T after 2 h]
+    batch_kg = []
     last_event = None
     last_k = 0
     since = [None] * len(masses)
@@ -236,10 +302,13 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         Tset = sc.get("setpoint_C", Tset0) if fault else Tset0
         k = event_at[i]
         if k >= 0:                                    # loading event k: that share goes out, fresh in
-            acc["prod_out"] += masses[k] * cp * T_n[k]
+            acc["prod_out"] += node_C(masses[k]) * T_n[k]
+            if intake is not None:
+                masses[k] = float(intake[min(int(day[i]), len(intake) - 1)])
             T_n[k] = T_out[i]
-            acc["prod_in"] += masses[k] * cp * T_n[k]
+            acc["prod_in"] += node_C(masses[k]) * T_n[k]
             batches.append([i, k, T_n[k], None, None, None])
+            batch_kg.append(masses[k])
             since[k] = len(batches) - 1
             last_event = i
             last_k = k
@@ -261,6 +330,9 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         # rule can be switched off (grid_assist_during_loading=false): then only the fresh batch is warm.
         loading_now = last_event is not None and i - last_event < load_steps
         hot = T_r > protect and (assist or not loading_now)
+        if R.get("ats_delay_steps"):                 # smart controller: grid only after the room stays hot a while
+            hot_run = hot_run + 1 if hot else 0
+            hot = hot_run >= R["ats_delay_steps"]
         if grid_only:
             Q_sun, solar_ok, grid_mode = 0.0, False, True
         else:
@@ -270,11 +342,22 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                 Q_sun = 0.0
             if solar_ok:
                 grid_mode = hot
+                if R.get("solar_first") and Q_sun >= Qmax - 1e-9:
+                    grid_mode = False                 # smart controller: full sun can run the compressor flat out
             else:
                 grid_mode = grid_mode or (m_p > 0 and pct < ats_thr) or (m_p == 0) or hot
-        if fault and sc.get("no_grid"):              # power cut: no grid, only sun (and the wax)
+                if R.get("ats_release_C") and grid_mode and m_p > 0 and pct >= ats_thr and T_r < R["ats_release_C"]:
+                    grid_mode = False                 # controller fix: grid off again once the room is back below the limit
+        precool_now = pre is not None and pre["from_h"] <= hod[i] < loading[0]["hour"]
+        if precool_now:                              # pre-cool before the batch: run on solar or, at dawn, the grid
+            Tset = pre["target_C"]
+            if not solar_ok and not grid_only:
+                grid_mode = True
+        if (fault and sc.get("no_grid")) or R.get("no_grid"):     # power cut: no grid, only sun (and the wax)
             grid_mode = False
         Q_avail = Qmax if grid_mode else Q_sun
+        if defrost[i]:                               # defrost: compressor stopped, heater on
+            Q_avail = 0.0
 
         Dt = min(1.0, door[i] / DT)
         Dt_door = Dt
@@ -288,17 +371,29 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
         else:
             Q_door = Q_door_lat = 0.0
         Q_resp = sum(m * r_ref * Q10 ** ((t - T_ref) / 10.0) for m, t in zip(masses, T_n)) / 1000.0
-        Q_bs = [m * cp / tau * (t - T_r) for m, t in zip(masses, T_n)]
+        Q_bs = [node_C(m) / tau * (t - T_r) for m, t in zip(masses, T_n)]
         Q_b = sum(Q_bs)
 
         # wax channel with the fan OFF (natural draft): conductance depends on the temperature difference
         dTw = T_r - T_p if m_p > 0 else 0.0
         G_nat = float(np.interp(max(dTw, 0.0), dTs, G_nat_tab)) if m_p > 0 else 0.0
         Q_pa_nat = G_nat * dTw if dTw > 0 else (G_nat_tab[1] * dTw if m_p > 0 else 0.0)
-        lights = il["lights_W"] / 1000.0 * max(il["lights_on_fraction"], Dt_door)
+        lights = il["lights_W"] / 1000.0 * (Dt_door if R.get("lights_door_only") else max(il["lights_on_fraction"], Dt_door))
+        heat_def = (R["defrost"].get("heater_W", 0.0) / 1000.0 + (fan_kW if R["defrost"].get("fan_on") else 0.0)) if defrost[i] else 0.0
         base = Q_wall + Q_door + Q_resp + Q_b + lights + ctrl_kW
-        Q_req = base + fan_kW - Q_pa_nat + C_room * (T_r - Tset) / DT
+        if circ_kW or heat_def:
+            base = base + circ_kW + heat_def
+        target = Tset
+        if band and not precool_now:                 # on/off thermostat: on above set+band, off below set-band
+            if T_r >= Tset + band:
+                comp_on = True
+            elif T_r <= Tset - band:
+                comp_on = False
+            target = Tset - band
+        Q_req = base + fan_kW - Q_pa_nat + C_room * (T_r - target) / DT
         Q_air = min(max(Q_req, 0.0), Q_avail)
+        if band and not precool_now and not comp_on:
+            Q_air = 0.0
         Q_ch = 0.0
         if m_p > 0 and solar_ok and not grid_mode and Q_avail - Q_air > 0:
             Q_ch = max(0.0, min(Q_avail - Q_air, UA_ch * (T_p - T_evap), m_p * (h - h_min) / DT))
@@ -328,18 +423,38 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
             G_w = max(G_nat, float(np.interp(spd, speeds, G_fan_tab))) if spd > 0 else G_nat
         Q_pa = G_w * dTw if m_p > 0 else 0.0
         Q_int = lights + ctrl_kW + Q_fan + P_nf
+        if circ_kW or heat_def:
+            Q_int = Q_int + circ_kW + heat_def
         net = Q_wall + Q_door + Q_resp + Q_b + Q_int - Q_pa
 
         P_comp = (Q_air + Q_ch) / cop[i] + Q_fan if running else 0.0
+        if heat_def:
+            P_comp = P_comp + heat_def                # defrost heater on the same supply
+        if R.get("start_loss_frac") and running and not was_running:
+            Q_air *= 1 - R["start_loss_frac"]         # a start: the first minute gives power but little cold
+            Q_ch *= 1 - R["start_loss_frac"]
+        was_running = running
         if grid_mode:
             P_sol = min(P_comp, P_pv[i]) if solar_ok else 0.0
             P_grid = P_comp - P_sol
         else:
             P_sol, P_grid = P_comp, 0.0
 
-        T_r += (net - Q_air) * DT / C_room
-        for kk in range(len(masses)):
-            T_n[kk] -= Q_bs[kk] * DT / (masses[kk] * cp)
+        Cn = [node_C(m) for m in masses]
+        stab = sum(Cn) / tau * DT / C_room
+        if stab <= 0.5:                                # the original explicit step (stable for the base load)
+            T_r += (net - Q_air) * DT / C_room
+            for kk in range(len(masses)):
+                T_n[kk] -= Q_bs[kk] * DT / Cn[kk]
+        else:                                          # lots of produce for little air: smaller steps for the exchange
+            T_r += (net - Q_b - Q_air) * DT / C_room
+            nsub = int(math.ceil(stab / 0.25))
+            dts = DT / nsub
+            for _ in range(nsub):
+                qs = [c / tau * (t - T_r) for c, t in zip(Cn, T_n)]
+                T_r += sum(qs) * dts / C_room
+                for kk in range(len(masses)):
+                    T_n[kk] -= qs[kk] * dts / Cn[kk]
         T_b = T_n[last_k]                              # the most recently loaded produce
         if m_p > 0:
             h += (Q_pa - Q_ch) * DT / m_p
@@ -351,12 +466,12 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
                          ("Q_pcm_room", Q_pa), ("P_comp", P_comp), ("P_pv", P_pv[i]), ("P_solar_used", P_sol),
                          ("P_grid", P_grid), ("grid_on", float(grid_mode)), ("running", float(running)),
                          ("door_s", door[i]), ("solar_ok", float(solar_ok)), ("fan_speed", spd), ("fan_W", P_nf * 1000),
-                         ("G_wax", G_w * 1000), ("batt12_W", (batt_base_kW + P_nf) * 1000),
+                         ("G_wax", G_w * 1000), ("batt12_W", (batt_base_kW + P_nf + circ_kW) * 1000),
                          ("T_pcm", T_pcm_of(h) if m_p > 0 else np.nan), ("pcm_h", h), ("cop", cop[i]),
                          ("T_out", T_out[i]), ("RH_out", RH[i]), ("poa", poa[i]), ("wind", wind_s[i]), ("Q_door_lat", Q_door_lat)):
             out[key][i] = val
 
-    E1 = C_room * T_r + sum(m * cp * t for m, t in zip(masses, T_n)) + m_p * h
+    E1 = C_room * T_r + sum(node_C(m) * t for m, t in zip(masses, T_n)) + m_p * h
     heat_in = acc["in_"] + acc["prod_in"]
     heat_out = acc["out"] + acc["prod_out"]
     bal = heat_in - heat_out - (E1 - E0)
@@ -389,7 +504,7 @@ def simulate_live(weather, design="current", mode="solar_pcm", cfg=None, crop_ke
     bt = pd.DataFrame(batches, columns=["step", "event", "T_in_C", "cool_steps", "T_after_4h_C", "T_after_2h_C"])
     bt["date"] = (t0 + pd.to_timedelta(bt["step"] * DT, unit="s")).dt.date.astype(str)
     bt["cool_h"] = bt["cool_steps"].astype(float) * DT / 3600.0
-    bt["kg"] = [masses[e] for e in bt["event"]]
+    bt["kg"] = batch_kg
     totals = {"design": design, "mode": mode, "pcm_kg": m_p, "pv_kWp": kWp, "hours": nH,
               "energy_in_kWh": heat_in / 3600, "energy_out_kWh": heat_out / 3600,
               "stored_change_kWh": (E1 - E0) / 3600, "energy_balance_error_kWh": bal / 3600,

@@ -191,6 +191,19 @@ results are published.
   → `results/live/uncertainty_2026.json`; the base case reproduces `design_study_2026.json` exactly.
   Control centre → **How sure are we?** shows it; poster chart `figures/final_10_uncertainty.png`.
 
+## Room & capacity, Reality check, best daily load
+
+```
+python -m engine.space            # space budget of the 8.8 m3 room -> results/live/space_budget.json, figures/final_11
+python -m twin.stress_2026        # each loophole alone, then all together -> results/live/stress_2026.json
+python -m twin.best_load_2026     # daily intake 100-350 kg x stay 1/3/7 days, PV / wax / fin sizing -> best_load_2026.json
+python tools/make_reality_figures.py   # figures/final_12_energy_day, final_13_stress_cases, final_14_best_load
+```
+
+Control centre → **Room & capacity** and **Reality check**. The base case reproduces the published numbers exactly
+(tests/test_reality.py). Every option is off unless a case switches it on (`real=` in twin/live_sim.py).
+Assumptions are tagged E with their values in the JSON files.
+
 ## Calendar: jump to any moment of 2026
 
 Bottom bar: **📅 date** opens a month calendar (1 Jan 2026 → today; tomorrow only as a *forecast*; grey = no data).

@@ -100,6 +100,11 @@ async function boot() {
 
   // ---- calendar + time picker (bottom bar) and the "Showing:" strip
   const days = await new YearDays().load();
+  let headline = '';                                     // best case vs realistic (results/live/stress_2026.json)
+  getJSON('results/live/stress_2026.json').then(S => {
+    const h = S.headline;
+    headline = `<span class="hl" title="Reality check (Control centre): best case vs all loopholes together, of ${h.days} days">☀ ${h.base_days} days best case · ${h.realistic_days} realistic (${h.realistic_fix_days} with smart controller)</span>`;
+  }).catch(() => {});
   const calCtx = () => {
     const last = Math.floor(tEnd() / 86400) - 1, todayDay = Math.floor(nowT() / 86400);
     const tm = days.tomorrow ? tb.dayOf(days.tomorrow) : null;
@@ -123,6 +128,7 @@ async function boot() {
       <span>Wax <b>${fmt(v.pcm_pct, '%')}</b></span><span>Power <b>${src}</b></span>
       ${info && info.saved !== null ? `<span><b>₹${Math.round(info.saved)}</b> saved that day</span>` : ''}
       <span class="badge sim">SIMULATED</span><span class="wx">WEATHER: ${fc ? 'forecast' : 'real'} (Open-Meteo)</span>
+      ${headline}
       ${SA && SA.isRebuilt && SA.isRebuilt(day) ? '<span class="rebuilt" title="This day has no saved 5-minute steps in the offline copy: they are rebuilt from the hourly Live Year Run results (same twin run).">5-min detail from hourly results</span>' : ''}`;
     $('liveLink').href = live ? 'live.html' : `live.html?d=${date}`;
     today.focus(live ? null : `${date} ${String(tb.date(s.t).getUTCHours()).padStart(2, '0')}`);

@@ -36,6 +36,20 @@
     "source": "USDA Agriculture Handbook 66 (2016), Grape: -1 to 0 C, 1-6 months depending on cultivar; 6 weeks used (conservative, no SO2 pads). Respiration ~3-7 mW/kg at 0 C (ASHRAE). Q10 3 assumed."
   },
   "pomegranate": {
+    "cp_kJ_kgK": 3.56,
+    "cp_source": "University of Wisconsin crop-storage table 'Specific heat of fruits and vegetables' (adapted from ASHRAE / Engineering ToolBox): pomegranate 3.56 kJ/kg·K above freezing, 1.72 below. https://fyi.extension.wisc.edu/cropstorage/files/2019/09/Specific_heat_fruits-Vegetables.pdf",
+    "respiration_mgCO2_kg_h": {"5": [4, 8], "10": [8, 16], "20": [16, 36]},
+    "respiration_source": "USDA Agriculture Handbook 66 values as reproduced by Pekmezci & Erkan (pomegranate chapter): 4–8 mg CO2/kg·h at 5 °C, 8–16 at 10 °C, 16–36 at 20 °C – check against the HB66 pomegranate page. Heat = mg CO2/kg·h × 2.96 mW/kg (HB66 conversion: × 61.2 kcal/t/day). Mid value at 5 °C: 6 × 2.96 = 17.8 mW/kg.",
+    "fruit": {
+      "mass_g": 250,
+      "mass_source": "E – assumption for counting (Bhagwa studies report about 285 g to 406 g per fruit; 250 g = small grade).",
+      "diameter_cm": 8.0,
+      "diameter_source": "E – Bhagwa maturity study reports about 8.4 cm at harvest; commercial grades 7.5–8.5 cm.",
+      "fruit_density_kg_m3": 1000,
+      "fruit_density_source": "E – whole fruit close to water (check: weigh + water displacement).",
+      "bulk_density_kg_m3": 550,
+      "bulk_density_source": "E – fruit loose in a crate, packing fraction about 0.55."
+    },
     "label": "Pomegranate",
     "T_opt_low_C": 5.0,
     "T_opt_high_C": 7.0,
@@ -43,8 +57,8 @@
     "SL_ref_days": 60.0,
     "Q10": 2.5,
     "chill_injury_below_C": 5.0,
-    "respiration_W_per_kg_at_ref": 0.008,
-    "source": "USDA Agriculture Handbook 66 (2016), Pomegranate: 5 C, 90-95 % RH, 2-3 months; chilling injury below 5 C. Respiration ~5-10 mW/kg at 5 C (approximate). Q10 2.5 assumed.",
+    "respiration_W_per_kg_at_ref": 0.0178,
+    "source": "USDA Agriculture Handbook 66 (2016), Pomegranate: 5 C, 90-95 % RH, 2-3 months; chilling injury below 5 C. Respiration: see respiration_source (HB66 4-8 mg CO2/kg.h at 5 C = 12-24 mW/kg; mid 17.8 mW/kg used; earlier value 8 mW/kg was too low). Q10 2.5 assumed.",
     "freshness": {
       "T_opt_C": 5.0,
       "T_opt_source": "USDA Agriculture Handbook 66 (2016), Pomegranate (Kader): best storage 5 °C, 90–95 % RH, up to 2 months.",

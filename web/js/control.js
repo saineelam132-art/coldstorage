@@ -4,6 +4,7 @@ import { fmt, tagChip } from './ui.js';
 import { splitHTML, splitUpdate } from './split.js';
 import { cutoutSrc } from './details.js';
 import { howSureHTML } from './howsure.js';
+import { roomHTML, realityHTML } from './reality.js';
 
 const $ = id => document.getElementById(id);
 const FINAL = [
@@ -40,6 +41,8 @@ export class Control {
     const body = $('ccBody');
     if (tab === 'how') { body.innerHTML = splitHTML(cutoutSrc('B17_split_valve_manifold')); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg); }
     if (tab === 'sure') body.innerHTML = await howSureHTML(this.cfg);
+    if (tab === 'room') body.innerHTML = await roomHTML();
+    if (tab === 'reality') body.innerHTML = await realityHTML();
     if (tab === 'calc') body.innerHTML = await this.calc();
     if (tab === 'whatif') { body.innerHTML = await this.whatifHTML(); this.whatifWire(); }
     if (tab === 'rooms') body.innerHTML = this.roomsHTML();

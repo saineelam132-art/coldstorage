@@ -1,21 +1,21 @@
 {
  "sigma": {
-  "W_kg_kg": 7.06224619934701e-05,
-  "E_W": 77.86015508931312,
-  "Q_W": 75.0949765816526,
-  "core_K": 0.05100441025482844
+  "W_kg_kg": 7.082536052149886e-05,
+  "E_W": 77.82417864296971,
+  "Q_W": 75.15456235953906,
+  "core_K": 0.05100397681639071
  },
  "_note": "Digital twin (S) with simulated sensor noise; frozen 2026 study weather. Nothing measured.",
  "sigma_tuned": {
-  "W_kg_kg": 7.06224619934701e-05,
-  "E_W": 77.86015508931312,
-  "Q_W": 75.0949765816526,
-  "core_K": 0.05100441025482844
+  "W_kg_kg": 7.082536052149886e-05,
+  "E_W": 77.82417864296971,
+  "Q_W": 75.15456235953906,
+  "core_K": 0.05100397681639071
  },
  "days": 309.625,
- "phi_mean": 0.6670961379122453,
- "phi_p99": 1.869321173663194,
- "time_green_pct": 99.43255730498363,
+ "phi_mean": 0.6671278586283432,
+ "phi_p99": 1.869830085990375,
+ "time_green_pct": 99.43367873323464,
  "false_flags": 0,
  "false_flags_per_year": 0.0,
  "false_flags_per_month": 0.0,
@@ -44,17 +44,17 @@
  "fake_detection_note": "Fake = air and core report 4.0 °C from one reading on (the demo). Horizon 3 h.",
  "slow_fake_day_07_17": {
   "n": 435,
-  "caught_pct": 86.4367816091954,
-  "caught_within_30min_pct": 29.195402298850574,
+  "caught_pct": 86.66666666666667,
+  "caught_within_30min_pct": 29.42528735632184,
   "median_min": 60.0,
   "p90_min": 65.0
  },
  "slow_fake_night": {
   "n": 606,
-  "caught_pct": 68.97689768976898,
-  "caught_within_30min_pct": 60.23102310231023,
+  "caught_pct": 69.8019801980198,
+  "caught_within_30min_pct": 61.056105610561055,
   "median_min": 30.0,
-  "p90_min": 61.50000000000006
+  "p90_min": 60.0
  },
  "slow_fake_note": "Harder case: the cheater slides the readings to 4.0 °C over 1 h (no jump). Horizon 6 h."
 }

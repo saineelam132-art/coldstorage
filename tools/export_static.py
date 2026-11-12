@@ -201,6 +201,8 @@ def main():
             "results/whatif.json": json.loads((ROOT / "results/whatif.json").read_text()),
             "results/live/design_study_2026.json": json.loads((ROOT / "results/live/design_study_2026.json").read_text()),
             "results/live/uncertainty_2026.json": json.loads((ROOT / "results/live/uncertainty_2026.json").read_text()),
+            **{f"results/live/{k}.json": json.loads((ROOT / f"results/live/{k}.json").read_text(encoding="utf-8"))
+               for k in ("space_budget", "stress_2026", "best_load_2026") if (ROOT / f"results/live/{k}.json").exists()},
         },
     }
 
