@@ -15,3 +15,6 @@ firebase-debug.log
 # Firebase SDK bundle build folder
 tools/firebase_bundle/node_modules/
 tools/firebase_bundle/package-lock.json
+
+# Firebase emulator logs
+*-debug.log
