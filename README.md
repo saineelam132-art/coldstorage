@@ -222,6 +222,39 @@ python -m twin.trust_nodes
 More: `docs/cloud_architecture.md` (AWS/Azure/GCP mapping), `docs/schemas/` (block and telemetry JSON
 Schemas), `tools/mqtt_simulator.py` (sends the node data as MQTT messages, or prints them).
 
+## Hosting the website (Firebase main, Vercel backup)
+
+The public website is the `static_site/` folder (plain files, no Python). It is served from two places:
+
+* **Firebase Hosting**, site `koolkisan` → https://koolkisan.web.app (settings in `firebase.json`,
+  `"public": "static_site"`). Deploy by hand with the Firebase CLI (steps below).
+* **Vercel** (backup) – unchanged; it redeploys by itself when the GitHub Action commits a new `static_site/`.
+
+First time on a Windows laptop (needs Node.js LTS from nodejs.org), in a Command Prompt:
+
+```
+npm install -g firebase-tools
+firebase login
+cd <your folder>\coldstorage
+git pull
+firebase use --add
+firebase hosting:sites:create koolkisan
+firebase deploy --only hosting:koolkisan
+```
+
+`firebase use --add` asks which Firebase project to use (pick it, alias `default`); it writes `.firebaserc`.
+`hosting:sites:create` is needed only once (it says so if the site already exists). After that, every update is:
+
+```
+git pull
+firebase deploy --only hosting:koolkisan
+```
+
+Backend CORS: browsers on the hosted sites may call the Python server's `/api/...` only if their origin is in
+`config/hosting.json` (`cors_origins`) or in the environment variable `KOOLKISAAN_CORS_ORIGINS`
+(comma-separated, e.g. the Vercel URL). The hosted pages do not need the server: without it, Trust & Trade
+uses the labelled demo key.
+
 ## At the stall
 
 **Normal start:** double-click `start.bat`. It uses **Python 3.12** first (`py -3.12`, because

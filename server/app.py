@@ -14,6 +14,7 @@ Serves the website in web/ and these JSON APIs:
 from pathlib import Path
 
 from fastapi import Body, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -22,6 +23,19 @@ from server.twin_state import TwinState, _strip, geometry
 
 ROOT = Path(__file__).resolve().parent.parent
 app = FastAPI(title="KoolKisaan")
+
+
+def cors_origins():
+    """Browser origins allowed to call this API: config/hosting.json + KOOLKISAAN_CORS_ORIGINS (comma-separated)."""
+    import json
+    import os
+    base = json.loads((ROOT / "config" / "hosting.json").read_text(encoding="utf-8"))["cors_origins"]
+    extra = [o.strip().rstrip("/") for o in os.environ.get("KOOLKISAAN_CORS_ORIGINS", "").split(",") if o.strip()]
+    return list(dict.fromkeys(base + extra))
+
+
+app.add_middleware(CORSMiddleware, allow_origins=cors_origins(), allow_methods=["GET", "POST"],
+                   allow_headers=["Content-Type"], allow_credentials=False)
 TWIN = None
 
 

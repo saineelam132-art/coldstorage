@@ -1,0 +1,14 @@
+{
+  "_note": "Where the website (front end) is hosted, and which web origins may call the Python backend (server/app.py) from a browser. Add more origins at run time with the environment variable KOOLKISAAN_CORS_ORIGINS (comma-separated), e.g. your Vercel URL. No secrets in this file.",
+  "frontends": {
+    "firebase": "https://koolkisan.web.app",
+    "firebase_alt": "https://koolkisan.firebaseapp.com",
+    "vercel": "backup – the project's Vercel URL (set in the Vercel dashboard); add it to KOOLKISAAN_CORS_ORIGINS"
+  },
+  "cors_origins": [
+    "https://koolkisan.web.app",
+    "https://koolkisan.firebaseapp.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
+  ]
+}

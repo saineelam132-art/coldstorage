@@ -7,3 +7,7 @@ venv/
 
 # ISHRAE weather data: licence forbids redistribution - never commit
 data/live/ishrae/
+
+# Firebase CLI cache and logs
+.firebase/
+firebase-debug.log
