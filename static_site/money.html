@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Money Audit – KoolKisaan</title>
+<meta name="description" content="Money: how we calculate. Grid-only, diesel-only, grid + diesel in power cuts and the solar + wax room on the same 2026 weather and load – every formula with its numbers, editable inputs, payback and checks.">
+<link rel="icon" type="image/png" sizes="64x64" href="public/favicon-64.png">
+<link rel="stylesheet" href="live/live.css">
+<style>
+  .mwrap{max-width:1200px;margin:0 auto;padding:12px 16px 40px}
+  .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px 14px}
+  .inputs label{font-size:12.5px;color:#41566b;display:block}
+  .inputs input,.inputs select{display:block;width:100%;padding:6px;border:1px solid #d5e2ec;border-radius:6px;font:inherit}
+  .inputs small{display:block;color:#7b8a99;font-size:11px;line-height:1.3;margin-top:2px}
+  .f{font:12.5px Consolas,monospace;background:#f4f8fb;border-left:3px solid #2a78d6;padding:6px 10px;margin:6px 0;border-radius:4px;overflow-x:auto}
+  .big3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin:10px 0}
+  .big3 div{background:#eef4f8;border-radius:10px;padding:10px 12px}.big3 b{display:block;font-size:24px}.big3 span{font-size:12.5px;color:#41566b}
+  .est{background:#fff4e0;border-left:4px solid #f59e0b}
+  .ok{color:#15803d;font-weight:700}.bad{color:#b91c1c;font-weight:700}
+  table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .tagE{display:inline-block;background:#8a8f98;color:#fff;font:700 10px sans-serif;border-radius:4px;padding:1px 4px}
+  ol.ass li{margin:4px 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <a href="index.html" class="back" title="Back to the cold room"><img src="public/koolkisaan-logo-small.png" alt="" class="backlogo"> KoolKisaan</a>
+  <h1>Money: how we calculate <small>same room · same 2026 weather · same 150 kg/day</small></h1>
+  <a href="live.html" class="back" style="margin-left:auto">📅 Live 2026</a>
+</header>
+<main class="mwrap" id="m"><div class="card">Loading…</div></main>
+<script src="live/data/economics.js"></script>
+<script src="live/data/summary.js"></script>
+<script src="live/money.js"></script>
+<script src="live/moneypage.js"></script>
+</body>
+</html>

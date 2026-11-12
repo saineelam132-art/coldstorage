@@ -35,6 +35,9 @@ jobs:
       - name: Download weather and run the twin
         run: python -m twin.live_run --fetch
 
+      - name: Money audit (same weather, four ways to run the room)
+        run: python -m engine.economics
+
       - name: Check the physics (fast tests)
         run: python -m pytest -q tests/test_live.py
 
