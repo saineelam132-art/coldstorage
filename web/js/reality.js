@@ -15,9 +15,7 @@ export async function roomHTML() {
     <td class="num">${n(v.aisle_m, 2)} m</td><td class="num">${v.crates}</td><td>${v.ok ? 'aisle OK' : '<b class="warnc">aisle too narrow (&lt; 0.6 m)</b>'}</td></tr>`).join('');
   const E = Object.entries(S.assumptions_E).filter(([, v]) => String(v.note).startsWith('E')).map(([k, v]) =>
     `<tr><td>${k.replace(/_/g, ' ')}</td><td class="num">${Array.isArray(v.value) ? v.value.join(' × ') : v.value}</td><td>${v.note.replace(/^E – /, '')}</td></tr>`).join('');
-  return `<p class="lead">How the 2.0 × 2.0 × 2.2 m room (8.8 m³) is really used, and how much pomegranate it holds.
-    Everything is calculated from the dimensions ${tagChip('C')}; values marked ${tagChip('E')} are assumptions listed below.</p>
-    <img class="ccfig" src="figures/final_11_space_budget.png" alt="Top and side view of the room: wax panels, keep-clear air, racks, crates, aisle">
+  return `    <img class="ccfig" src="figures/final_11_space_budget.png" alt="Top and side view of the room: wax panels, keep-clear air, racks, crates, aisle">
     <h3>Space budget (adds up to ${n(S.zones_sum_m3, 2)} m³)</h3>
     <table class="calc"><tr class="grp"><td>Item</td><td class="num">Floor m²</td><td class="num">Volume m³</td><td class="num">% of room</td></tr>
     ${S.table.map(r => `<tr><td>${r.item}</td><td class="num">${n(r.floor_m2, 2)}</td><td class="num">${n(r.volume_m3, 2)}</td><td class="num">${n(r.pct_of_room, 1)} %</td></tr>`).join('')}</table>

@@ -46,19 +46,13 @@ export async function howSureHTML(cfg) {
       ${METRICS.map(([k, l, d, u]) => `<tr><td>${l}</td><td class="num"><b>${fmtv(C.base[k], d, u)}</b></td><td class="num">${fmtv(C.hot_site[k], d, u)}</td>
         <td class="num">${fmtv(C.cool_site[k], d, u)}</td><td class="num">${fmtv(R.median[k], d, u)}</td>
         <td class="num">${fmtv(R.p5[k], d, u)} – ${fmtv(R.p95[k], d, u)}</td></tr>`).join('')}</table></div>
-    <p class="note"><b>Hot site:</b> ${U.case_rules.hot_site}. <b>Cool site:</b> ${U.case_rules.cool_site}. <b>Random:</b> ${U.case_rules.random} (seed ${R.seed}, repeatable).
-    ${U.wind_note}</p>` : '';
-  const budget = `<table class="calc hs-budget"><tr class="grp"><td>What</td><td>Each hour</td><td>Over a day</td><td>Why it can differ at our site</td><td>Published source</td></tr>
-    ${bandRows(B).map(([b, h, d]) => `<tr><td><b>${b.name}</b></td><td>${h}</td><td>${d}</td><td>${b.why}</td><td class="src">${b.source}${b.rule ? '<br>' + b.rule : ''}${b.height_conversion ? '<br>' + b.height_conversion.source : ''}</td></tr>`).join('')}</table>`;
+    ` : '';
+  const budget = `<table class="calc hs-budget hs-short"><tr class="grp"><td>Weather value</td><td>Each hour</td><td>Over a day</td></tr>
+    ${bandRows(B).map(([b, h, d]) => `<tr><td><b>${b.name}</b></td><td>${h}</td><td>${d}</td></tr>`).join('')}</table>`;
   return `<div class="hs">
     <h3>How sure are the results?</h3>${head}
     <figure class="hs-fig"><a href="figures/final_10_uncertainty.png" target="_blank"><img src="figures/final_10_uncertainty.png" alt="Days on solar + wax and grid hours for base, hot site and cool site, with the random-run 5–95 % range"></a></figure>
     ${cases}
-    <h3>How far can the weather at our site differ from Open-Meteo?</h3>
-    <p class="lead">Open-Meteo gives the weather for a grid box about 25–30 km wide. A sensor at our room measures one spot.
-    Published studies tell us how big that difference usually is. These are <b>expected</b> differences – we have not measured them yet.</p>
-    ${budget}
-    <p class="note">Physics corrections we DO apply (these are not errors): wind is converted from 10 m to 2 m (× ${B.bands.wind_ms.height_conversion.u2_over_u10},
-    FAO-56); dew point is shown next to humidity; sunlight values are the average of the hour before each Open-Meteo time stamp and are moved to the hour they describe.
-    No field-test (measured) data has been uploaded yet; when it is, the measured values will replace these expected bands.</p></div>`;
+    <h3>Expected site weather difference vs Open-Meteo</h3>
+    ${budget}</div>`;
 }
