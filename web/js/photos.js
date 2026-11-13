@@ -25,3 +25,5 @@ export function howPhotos() {
   const figs = (P?.use?.how || []).map(photoFigure).filter(Boolean);
   return figs.length ? `<div class="photostrip">${figs.join('')}</div>` : '';
 }
+
+export function photoFile(key) { const p = P?.photos?.[key]; return p && p.kind !== 'drawing' ? p.file : null; }

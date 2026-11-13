@@ -63,7 +63,7 @@ def test_valve_study_file_and_cost_table():
 
 def test_diagram_has_solenoids_and_txvs_not_eevs():
     js = (ROOT / "web/js/split.js").read_text(encoding="utf-8")
-    for s in ("SV-A", "SV-B", "TXV-A", "TXV-B", "39 % vapour by mass", "liquid line", "SV-A: ${onA ? 'ON' : 'OFF'} · SV-B"):
+    for s in ("SV-A", "SV-B", "TXV-A", "TXV-B", "liquid line", "SV-A: ${onA ? 'ON' : 'OFF'} · SV-B"):
         assert s in js
     assert "EEV-A" not in js and "EEV-B" not in js
 

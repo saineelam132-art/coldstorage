@@ -2,7 +2,7 @@
 import { getJSON } from './api.js';
 import { fmt, tagChip } from './ui.js';
 import { splitHTML, splitUpdate, valveWhyHTML } from './split.js';
-import { howPhotos } from './photos.js';
+import { photoFile } from './photos.js';
 import { howSureHTML } from './howsure.js';
 import { roomHTML, realityHTML } from './reality.js';
 
@@ -40,7 +40,7 @@ export class Control {
     [...$('ccTabs').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const body = $('ccBody');
     if (tab === 'how') {
-      body.innerHTML = splitHTML(howPhotos()); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg);
+      body.innerHTML = splitHTML(photoFile('condensing_unit')); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg);
       getJSON('results/live/valves_2026.json').then(V => { const w = $('valveWhy'); if (w) w.innerHTML = valveWhyHTML(V); }).catch(() => {});
     }
     if (tab === 'sure') body.innerHTML = await howSureHTML(this.cfg);

@@ -24,22 +24,27 @@ function txv(x, y, id, label) {
 }
 const bulb = (x, y) => `<rect x="${x - 6}" y="${y - 12}" width="12" height="10" rx="3" class="bulb"/>`;
 
-export function splitHTML(photos) {
-  return `<p class="lead">How the solar cold reaches the room <b>and</b> the wax: one R290 inverter compressor, one liquid line, split into two
-    branches. Each branch has a <b>liquid-line solenoid valve</b> (SV, on/off) and a <b>thermostatic expansion valve</b> (TXV).
-    Live numbers from the digital twin ${tagChip('S')}.</p>
-  <div class="splitwrap"><svg id="splitSvg" viewBox="0 0 780 390" role="img" aria-label="Refrigerant flow: compressor, condenser, split point in the liquid line, solenoid valve and TXV on each branch, air evaporator and wax coil, both joining in the suction line">
+export function splitHTML(photo) {
+  return `<p class="lead">One R290 inverter compressor. The liquid line splits in two; each branch has an on/off
+    <b>solenoid valve (SV)</b> and a <b>TXV</b>. Live from the digital twin ${tagChip('S')}.</p>
+  <div class="splitwrap"><svg id="splitSvg" viewBox="0 0 780 424" role="img" aria-label="Refrigerant flow: compressor, condenser, split point in the liquid line, solenoid valve and TXV on each branch, air evaporator and wax coil, both joining in the suction line">
     <defs><marker id="sar" markerWidth="9" markerHeight="9" refX="5" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9z" fill="#0e7490"/></marker></defs>
     <!-- equipment -->
-    <rect x="40" y="30" width="170" height="62" rx="8" class="box cond"/><text x="125" y="56" class="lbl b" text-anchor="middle">Condenser (outside)</text>
-    <text x="125" y="76" class="lbl" text-anchor="middle">heat out to the air</text>
-    <circle cx="125" cy="300" r="40" class="box comp"/><text x="125" y="296" class="lbl b" text-anchor="middle">Compressor</text>
-    <text x="125" y="314" class="lbl" text-anchor="middle">R290, DC inverter</text>
-    <text x="125" y="358" class="lbl" text-anchor="middle">sets the TOTAL cooling</text>
+    <clipPath id="cpCond"><rect x="44" y="34" width="78" height="54" rx="5"/></clipPath>
+    <clipPath id="cpComp"><circle cx="125" cy="300" r="46"/></clipPath>
+    <rect x="40" y="30" width="170" height="62" rx="8" class="box cond"/>
+    ${photo ? `<g clip-path="url(#cpCond)"><svg x="44" y="34" width="78" height="54" viewBox="290 120 380 230" preserveAspectRatio="xMidYMid slice"><image href="${photo}" width="730" height="960"/></svg></g>` : ''}
+    <text x="166" y="58" class="lbl b" text-anchor="middle">Condenser</text><text x="166" y="76" class="lbl" text-anchor="middle">outside</text>
+    <circle cx="125" cy="300" r="46" class="box comp"/>
+    ${photo ? `<g clip-path="url(#cpComp)"><svg x="79" y="254" width="92" height="92" viewBox="300 360 380 300" preserveAspectRatio="xMidYMid slice"><image href="${photo}" width="730" height="960"/></svg></g>
+      <circle cx="125" cy="300" r="46" fill="none" stroke="#41566b" stroke-width="2.5"/>` : ''}
+    <text x="125" y="364" class="lbl b" text-anchor="middle">Compressor</text>
+    <text x="125" y="380" class="lbl" text-anchor="middle">inverter: sets total cooling</text>
     <rect x="520" y="34" width="200" height="70" rx="8" class="box cold"/><text x="620" y="62" class="lbl b" text-anchor="middle">Air evaporator</text>
     <text x="620" y="82" class="lbl" text-anchor="middle">cools the room air</text>
     <rect x="520" y="170" width="200" height="78" rx="8" class="box wax"/>
     <g class="fins">${Array.from({ length: 14 }, (_, i) => `<line x1="${530 + i * 13.5}" y1="176" x2="${530 + i * 13.5}" y2="242"/>`).join('')}</g>
+    <g>${Array.from({ length: 7 }, (_, i) => `<circle cx="${538 + i * 27}" cy="235" r="4.5" fill="#c27a3a" stroke="#7a4a1f"/>`).join('')}</g>
     <text x="620" y="198" class="lbl b" text-anchor="middle">Coil inside the wax panels</text>
     <text x="620" y="218" class="lbl" text-anchor="middle">freezes the wax (cold battery)</text>
     <!-- pipes: base copper + moving dots on top -->
@@ -60,8 +65,8 @@ export function splitHTML(photos) {
       <path id="fSucB" d="M720 209 H750" class="vap"/>
     </g>
     <!-- TXV sensing bulbs on each coil outlet + capillaries -->
-    <path d="M465 41 V16 H736 V57" class="capil"/>${bulb(736, 69)}
-    <path d="M465 189 V150 H736 V197" class="capil"/>${bulb(736, 209)}
+    <path d="M465 41 V16 H736 V57" class="capil" fill="none"/>${bulb(736, 69)}
+    <path d="M465 189 V150 H736 V197" class="capil" fill="none"/>${bulb(736, 209)}
     <text x="600" y="12" class="lbl sm" text-anchor="middle">TXV bulb: keeps the gas leaving the coil ≈ 5 K superheated</text>
     <circle cx="330" cy="61" r="7" fill="${COPPER}" stroke="#7a4a1f" stroke-width="2"/>
     <text x="322" y="46" class="lbl b" text-anchor="end">split point</text><text x="322" y="84" class="lbl" text-anchor="end">100 % liquid</text>
@@ -77,43 +82,26 @@ export function splitHTML(photos) {
       <text x="620" y="300" class="lbl b nightt" text-anchor="middle">wax → room air through the fins, no fan</text>
       <text x="620" y="316" class="lbl nightt" text-anchor="middle" id="waxNightW"></text>
     </g>
-    <text x="440" y="378" class="lbl stopnote" id="stopNote" text-anchor="middle"></text>
+    <text x="480" y="414" class="lbl stopnote" id="stopNote" text-anchor="middle"></text>
   </svg>
-  ${photos || ''}</div>
+  </div>
   <div class="splitnums" id="splitNums"></div>
-  <p class="note"><b>Why split before the valves?</b> The split is in the liquid line, where the refrigerant is 100 % liquid, so it divides evenly.
-  After an expansion valve it becomes a mixture (about 39 % vapour by mass, ~97 % by volume at −5 °C), which splits unevenly.
-  Each solenoid only switches its branch on or off; each TXV drops the pressure and keeps the gas leaving its coil about 5 K superheated
-  so no liquid reaches the compressor. The inverter compressor sets the total cooling. Both branches join again in the suction line.</p>
-  <p class="note"><b>Control (every 5 minutes):</b> SV-A opens when the room needs cold. SV-B opens <b>only</b> when there is spare solar
-  after the room is satisfied and the wax is not yet full. Night: both shut, the compressor is off, the wax cools the room through the fins.
-  Safety: the compressor never runs with both valves shut; each solenoid stays open at least 3 minutes once opened.</p>
+  ${photo ? '<p class="note">Compressor and condenser: example photo (AnyNameWillExpire, CC BY-SA 4.0). Wax box: our design drawing.</p>' : ''}
   <div id="valveWhy"></div>`;
 }
 
 // "Why this valve?" + the 2026 comparison, both read from results/live/valves_2026.json (twin/valves_2026.py)
 export function valveWhyHTML(V) {
   if (!V) return '';
-  const inr = x => `₹${Math.round(x / 1000)}k`;
-  const c = V.cost, f = (x, u) => (x === null || x === undefined ? '–' : `${Number(x).toLocaleString('en-IN', { maximumFractionDigits: u === '%' || Math.abs(x) < 100 ? 1 : 0 })}${u === '%' ? ' %' : ''}`);
-  const sign = x => (x > 0 ? '+' : '') + (Math.abs(x) < 10 ? Number(x).toFixed(1) : f(x));
-  const row = k => V.rows.find(r => r.key === k) || {};
-  const better = (row('days_full_solar_wax').change || 0) >= 0 && (row('grid_h').change || 0) <= 0;
-  return `<div class="valvewhy"><h3>Why this valve? ${tagChip('E')}</h3>
-    <table class="calc"><tr><th>Option (for 2 branches)</th><th class="num">Cost</th></tr>
-      <tr><td>${c.eev.label}</td><td class="num">${inr(c.eev.lo)}–${inr(c.eev.hi)} <small>(${c.note})</small></td></tr>
-      <tr class="chosen"><td>${c.sv_txv.label}</td><td class="num">${inr(c.sv_txv.lo)}–${inr(c.sv_txv.hi)} <small>(${c.note})</small></td></tr></table>
-    <p><b>${c.chosen}</b></p></div>
-  <div class="valvewhy"><h3>2026 twin: EEV vs solenoid + TXV ${tagChip('S')} <span class="vhint">${V.days} days, ${V.first} → ${V.last}, same weather</span></h3>
-    <table class="calc"><tr><th></th><th class="num">2 EEVs (old)</th><th class="num">SV + TXV (chosen)</th><th class="num">change</th></tr>
-    ${V.rows.map(r => `<tr><td>${r.label}</td><td class="num">${f(r.eev, r.unit)} ${r.unit === '%' ? '' : r.unit}</td><td class="num"><b>${f(r.sv_txv, r.unit)} ${r.unit === '%' ? '' : r.unit}</b></td><td class="num">${sign(r.change)}</td></tr>`).join('')}</table>
-    <p class="note">SV-B was open ${f(V.sv_txv_extra.sv_b_on_h)} h in total and switched on about ${f(V.sv_txv_extra.sv_b_switch_ons_per_day)} times a day;
-      the compressor never ran with both valves shut (${f(V.sv_txv_extra.both_shut_while_running_steps)} steps).
-      Assumptions ${tagChip('E')}: SV-B opens only for at least ${V.assumptions.txv_min_load_kW_E * 1000} W of spare cooling (a small TXV hunts below that);
-      ${Math.round(V.assumptions.txv_superheat_coil_frac_E * 100)} % of the wax coil is used to superheat the gas; minimum ON ${V.assumptions.min_on_min} min.
-      ${better ? `Why a little better: when the spare sun is small, the 3-minute minimum run cools the room a little below set point instead of
-      trickling cold into the wax; that cold is used in the evening.` : 'On/off control costs a little against fully modulating EEVs.'}
-      The difference is small – within what the model can tell apart.</p></div>`;
+  const c = V.cost, k = x => `₹${Math.round(x / 1000)}k`, row = key => V.rows.find(r => r.key === key) || {};
+  const n = (x, d = 0) => (x === null || x === undefined ? '–' : Number(x).toFixed(d));
+  const lines = [['Cost, 2 branches (estimate)', `${k(c.eev.lo)}–${k(c.eev.hi)}`, `${k(c.sv_txv.lo)}–${k(c.sv_txv.hi)}`],
+    ['Days on solar + wax (2026)', n(row('days_full_solar_wax').eev), n(row('days_full_solar_wax').sv_txv)],
+    ['Grid hours (2026)', n(row('grid_h').eev), n(row('grid_h').sv_txv)],
+    ['Wax frozen at sunset', `${n(row('wax_sunset_avg').eev, 1)} %`, `${n(row('wax_sunset_avg').sv_txv, 1)} %`]];
+  return `<table class="calc valvetbl"><tr><th>Valve choice</th><th class="num">2 EEVs</th><th class="num">Solenoid + TXV ✔</th></tr>
+    ${lines.map(([a, b, d]) => `<tr><td>${a}</td><td class="num">${b}</td><td class="num"><b>${d}</b></td></tr>`).join('')}</table>
+  <p class="note">Chosen: solenoid + TXV – cheaper, proven, and the inverter compressor already sets the total cooling. Costs: estimate – quotation pending.</p>`;
 }
 
 // speed: seconds per dash cycle (smaller = faster); width proportional to the heat flow

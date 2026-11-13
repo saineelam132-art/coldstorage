@@ -51,7 +51,6 @@ export async function howSureHTML(cfg) {
   const budget = `<table class="calc hs-budget"><tr class="grp"><td>What</td><td>Each hour</td><td>Over a day</td><td>Why it can differ at our site</td><td>Published source</td></tr>
     ${bandRows(B).map(([b, h, d]) => `<tr><td><b>${b.name}</b></td><td>${h}</td><td>${d}</td><td>${b.why}</td><td class="src">${b.source}${b.rule ? '<br>' + b.rule : ''}${b.height_conversion ? '<br>' + b.height_conversion.source : ''}</td></tr>`).join('')}</table>`;
   return `<div class="hs">
-    <div class="hs-statement">${pmTag()} <b>${B.statement}</b> Everything on this tab is labelled "${B.label}".</div>
     <h3>How sure are the results?</h3>${head}
     <figure class="hs-fig"><a href="figures/final_10_uncertainty.png" target="_blank"><img src="figures/final_10_uncertainty.png" alt="Days on solar + wax and grid hours for base, hot site and cool site, with the random-run 5–95 % range"></a></figure>
     ${cases}
