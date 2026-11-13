@@ -216,7 +216,7 @@ def main():
         f.write("window.STATIC_DATA = ")
         json.dump(data, f, separators=(",", ":"), allow_nan=False)
         f.write(";\n")
-    for sub in ("assets/img", "assets/cutouts", "assets/photos", "assets/images/real", "public", "css", "vendor/qrcode", "vendor/chartjs", "vendor/firebase", "kk", "live"):
+    for sub in ("assets/img", "assets/cutouts", "assets/photos", "assets/how", "assets/images/real", "public", "css", "vendor/qrcode", "vendor/chartjs", "vendor/firebase", "kk", "live"):
         src = ROOT / "web" / sub
         if src.exists():
             shutil.copytree(src, OUT / sub)

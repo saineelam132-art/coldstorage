@@ -26,7 +26,7 @@ const FIGS = [
 export class Control {
   constructor({ cfg, sensors, feed }) {
     Object.assign(this, { cfg, sensors, feed });
-    this.tab = 'calc';
+    this.tab = 'how';
     $('ccBtn').onclick = () => this.open();
     $('ccClose').onclick = () => this.close();
     $('ccTabs').onclick = e => { const b = e.target.closest('button'); if (b) this.show(b.dataset.tab); };
@@ -41,7 +41,10 @@ export class Control {
     [...$('ccTabs').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     const body = $('ccBody');
     if (tab === 'how') {
-      body.innerHTML = splitHTML(photoFile('condensing_unit')); if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg);
+      body.innerHTML = `<div class="howpics"><figure><img src="assets/how/system_overview.jpg" alt="System overview: condenser, split point, SV-A/TXV-A to the air evaporator, SV-B/TXV-B to the wax-panel coil, compressor"></figure>
+        <figure><img src="assets/how/liquid_split.webp" alt="Copper Y-split in the liquid line with the two solenoid valves"><figcaption>The liquid-line Y-split with SV-A and SV-B</figcaption></figure></div>
+        <h3 class="howlive">Live simulation</h3>` + splitHTML(photoFile('condensing_unit'));
+      if (this.feed.state) splitUpdate(this.feed.state.values, this.cfg);
       getJSON('results/live/valves_2026.json').then(V => { const w = $('valveWhy'); if (w) w.innerHTML = valveWhyHTML(V); }).catch(() => {});
     }
     if (tab === 'sure') body.innerHTML = await howSureHTML(this.cfg);
