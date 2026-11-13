@@ -54,8 +54,8 @@ def test_valve_study_file_and_cost_table():
         assert rows[k]["eev"] is not None and rows[k]["sv_txv"] is not None
     assert V["headline"]["days_full_solar_wax"] == rows["days_full_solar_wax"]["sv_txv"]
     s = json.loads((ROOT / "results/live/summary.json").read_text())
-    if s["generated"] == V["generated"]:                     # the EEV column reproduces the stored Live Year Run
-        assert rows["days_full_solar_wax"]["eev"] == s["designs"]["current"]["totals"]["days_full_solar_wax"]
+    if s["generated"] == V["generated"]:                     # the Live Year Run uses the chosen valves (solenoid + TXV)
+        assert rows["days_full_solar_wax"]["sv_txv"] == s["designs"]["current"]["totals"]["days_full_solar_wax"]
     c = V["cost"]
     assert (c["eev"]["lo"], c["eev"]["hi"]) == (15000, 35000) and (c["sv_txv"]["lo"], c["sv_txv"]["hi"]) == (6000, 12000)
     assert c["note"] == "estimate – quotation pending"
