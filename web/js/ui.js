@@ -117,9 +117,7 @@ export function drawHistory(canvas, { labels, values, src = '', unit, yTitle, ba
         legend: { display: !!band, position: 'bottom', labels: { boxWidth: 14, font: { size: 11 }, filter: it => !it.text.startsWith('_') } },
         tooltip: { displayColors: false, filter: it => it.datasetIndex === 0, callbacks: {
           title: it => `${it[0].label} IST`,
-          label: c => `${yTitle}: ${f(c.parsed.y)}${u}`,
-          afterLabel: c => (band ? [`Expected at site: ${f(band.lo[c.dataIndex])}–${f(band.hi[c.dataIndex])}${u}`,
-            '(published studies – not measured)', band.source.length > 90 ? band.source.slice(0, 88) + '…' : band.source] : []) } },
+          label: c => `${yTitle}: ${f(c.parsed.y)}${u}` } },
       },
       scales: {
         x: { title: { display: true, text: 'Time (IST)', color: '#41566b', font: { weight: '600' } },
