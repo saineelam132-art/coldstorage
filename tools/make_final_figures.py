@@ -21,7 +21,7 @@ import make_poster_figures as P  # noqa: E402  (same style, colours and save())
 from engine.config import load_config  # noqa: E402
 from matplotlib.patches import FancyArrowPatch, Rectangle  # noqa: E402
 from twin import design_study_2026 as DS  # noqa: E402
-from twin.live_sim import simulate_live  # noqa: E402
+from twin.live_sim import published_cfg, simulate_live  # noqa: E402
 
 plt = P.plt
 LIVE = ROOT / "results" / "live"
@@ -72,6 +72,7 @@ def fig_fins_night(cfg):
     t0 = pd.Timestamp(hot) - pd.Timedelta(days=4)
     t1 = pd.Timestamp(hot) + pd.Timedelta(days=1, hours=12)
     win = w[(w.time_ist >= t0) & (w.time_ist < t1)].reset_index(drop=True)
+    cfg = published_cfg(cfg)                    # same model as the published studies
     runs = {"plain": simulate_live(win, "current", cfg=cfg, hx={"kind": "plain"})[0],
             "fins": simulate_live(win, "current", cfg=cfg)[0]}
     a, b = pd.Timestamp(hot) + pd.Timedelta(hours=12), pd.Timestamp(hot) + pd.Timedelta(days=1, hours=12)
@@ -89,14 +90,15 @@ def fig_fins_night(cfg):
     ax1.annotate(f"{ld['kg']} kg warm batch arrives {ld['hour']}:00\n(only fresh produce inside)",
                  (pd.Timestamp(hot) + pd.Timedelta(days=1, hours=ld["hour"]), top * 0.9), xytext=(-190, -10),
                  textcoords="offset points", fontsize=10, color=INK2, arrowprops=dict(arrowstyle="->", color=MUTED))
-    ax1.set_ylabel("°C")
+    ax1.set_ylabel("Room air temperature (°C)")
     ax1.legend(loc="upper left", fontsize=10)
-    ax2.set_ylabel("W")
+    ax2.set_ylabel("Grid power used (W)")
+    ax2.set_xlabel("Time of day (IST), hottest night")
     ax2.legend(loc="upper left", fontsize=10)
     ax2.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%H:%M"))
     gp, gf = cut(runs["plain"]).P_grid.sum(), cut(runs["fins"]).P_grid.sum()
     ax1.set_title(f"Hottest night of 2026 ({pd.Timestamp(hot):%d %b}): grid {gp:.2f} kWh with plain panels → {gf:.2f} kWh with fins")
-    fig.text(0.01, -0.01, "With fins the wax alone holds the room at night – a night power cut changes nothing. "
+    fig.text(0.01, -0.045, "With fins the wax alone holds the room at night – a night power cut changes nothing. "
              "Plain panels have too little surface, so the grid must run the compressor.", fontsize=10, color=INK2)
     fig.tight_layout()
     P.save(fig, "final_01_fins_hottest_night", NOTE)
@@ -416,13 +418,15 @@ def fig_uncertainty():
                         label=f"{R['n']} random sites: median and 5–95 %")
             ax.annotate(f"random {lo:.0f}–{hi:.0f}", (0, hi), xytext=(16, 16), textcoords="offset points", fontsize=15, color=P.INK)
             ax.set_title(title)
+            ax.set_ylabel("days" if k.startswith("days") else "hours per year")
+            ax.set_xlabel("Site weather case")
             ax.set_ylim(0, max(vals + [hi]) * 1.22)
             ax.legend(loc="upper left", fontsize=13)
         fig.suptitle("How sure are we? The same twin with the expected site weather error from published studies",
                      fontweight="bold", fontsize=19)
-        fig.text(0.5, -0.02, u["verdict"], ha="center", fontsize=14, color=INK2, wrap=True)
         fig.tight_layout()
-        P.save(fig, "final_10_uncertainty", "Digital-twin results (S) on real 2026 Vizag weather with EXPECTED site errors "
+        import textwrap
+        P.save(fig, "final_10_uncertainty", "\n".join(textwrap.wrap(u["verdict"], 150)) + "\nDigital-twin results (S) on real 2026 Vizag weather with EXPECTED site errors "
                "(config/site_error_budget.json) – expected range from published studies, not measured.")
 
 

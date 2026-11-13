@@ -10,7 +10,7 @@ const $ = id => document.getElementById(id);
 const FINAL = [
   ['final_15_day_profiles.webp', 'Typical day: sunny, partly cloudy and rainy – solar and compressor (illustration)'],
   ['final_10_uncertainty', 'How sure are we? Expected site weather error (studies)'], ['final_01_fins_hottest_night', 'Hottest night: plain vs finned panels'],
-  ['final_02_fin_calculation', 'Fin calculation: depth, gap, UA'], ['final_07_fin_panel_drawing', 'Finned panel + drip tray (drawing)'],
+  ['final_07_fin_panel_drawing', 'Finned panel + drip tray (drawing)'],
   ['final_03_loading_options', 'When should the 150 kg come in?'], ['final_04_wax_115_vs_172', '115 kg vs 172 kg wax'],
   ['final_05_monthly_energy_2026', 'Monthly energy 2026'], ['final_06_money_co2', 'Money and CO₂ saved'], ['final_08_payback', 'Payback estimate (prices GUESS)'],
 ];
@@ -132,7 +132,9 @@ export class Control {
       and the grid must help. The fins multiply the surface by 4.3 – no fan, no battery for cooling, nothing that moves.</p>
       <div class="rooms"><div class="room" id="rmN"></div><div class="room smart" id="rmS"></div></div><div id="rmY"></div>
       <div class="figs one"><figure><a href="figures/final_00_design_journey.png" target="_blank"><img loading="lazy" src="figures/final_00_design_journey.png"
-        alt="Design journey: plain panels, baffle + fans, fins"></a><figcaption>Design journey: plain → baffle + fans → fins</figcaption></figure></div>`;
+        alt="Design journey: plain panels, baffle + fans, fins"></a><figcaption>Design journey: plain → baffle + fans → fins</figcaption></figure>
+        <figure><a href="figures/final_02_fin_calculation.png" target="_blank"><img loading="lazy" src="figures/final_02_fin_calculation.png"
+        alt="Fin calculation: depth, gap, UA"></a><figcaption>Fin calculation: depth, gap, UA</figcaption></figure></div>`;
   }
   roomCard(title, r, how) {
     const pc = Math.max(0, Math.min(100, r.pcm_pct));

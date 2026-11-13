@@ -62,16 +62,27 @@
       }
     },
   };
+  // every graph names its x and y axis
+  const AX = { cM: ['Month (2026)', 'Energy per month'], cD: ['Date (2026)', 'Energy per day'], cB: ['Date (2026)', 'Time to cool the batch'],
+    d1: ['Time of day (IST)', 'Temperature'], d2: ['Time of day (IST)', 'Outside relative humidity'], d3: ['Time of day (IST)', 'Sunlight on flat ground'],
+    d4: ['Time of day (IST)', 'Heat entering the room'], d5: ['Time of day (IST)', 'Compressor speed'], d6: ['Time of day (IST)', 'Electric power'],
+    d7: ['Time of day (IST)', 'Refrigerant pressure'], d8: ['Time of day (IST)', 'Refrigerant temperature'], d9: ['Time of day (IST)', 'COP (cooling ÷ electricity)'],
+    d10: ['Time of day (IST)', 'Wax frozen'], d11: ['Time of day (IST)', 'Door open per hour'], d12: ['Time of day (IST)', 'Grid power'],
+    d13: ['Time of day (IST)', 'Cold from the wax panels'], d14: ['Time of day (IST)', 'Wax ↔ room UA'],
+    k1: ['Month', 'Compressor electricity per day'], k2: ['Month', 'Average outside temperature'], k3: ['Month', 'Sunlight per day'],
+    k4: ['Month', 'Grid hours per day'], m1: ['Room type', 'Running cost so far in 2026'] };
   function chart(id, type, labels, sets, { unit = '', stacked = false, yMin, yMax, pred, now, legend = true } = {}) {
     const el = $(id); if (!el) return;
+    const [xName, yName] = AX[id] || ['', ''];
+    const yText = yName ? (unit ? `${yName} (${unit})` : yName) : unit;
     const c = new Chart(el, {
       type, data: { labels, datasets: sets.map((s, i) => ({ borderWidth: 2, pointRadius: 0, tension: 0.25, borderColor: s.color, backgroundColor: s.fill || s.color, ...s })) },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
         plugins: { legend: { display: legend && sets.length > 1, labels: { boxWidth: 12, font: { size: 11 } } },
           tooltip: { callbacks: { label: t => `${t.dataset.label}: ${fmt(t.parsed.y, 2)} ${unit}` } }, predShade: { from: pred, now } },
-        scales: { x: { stacked, grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 11 } } },
-          y: { stacked, min: yMin, max: yMax, title: { display: !!unit, text: unit }, grid: { color: '#e4e3df' }, ticks: { font: { size: 11 } } } },
+        scales: { x: { stacked, grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 11 } }, title: { display: !!xName, text: xName, font: { size: 11 } } },
+          y: { stacked, min: yMin, max: yMax, title: { display: !!yText, text: yText, font: { size: 11 } }, grid: { color: '#e4e3df' }, ticks: { font: { size: 11 } } } },
       },
       plugins: [shade],
     });

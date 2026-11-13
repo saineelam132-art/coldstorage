@@ -21,6 +21,8 @@ C = {"pv": "#eda100", "used": "#1baf7a", "waste": "#c9c6bd", "comp": "#2a78d6", 
 
 
 def save(fig, name):
+    from tools.axislabels import ensure_axis_labels
+    ensure_axis_labels(fig, name)                      # every graph names its x and y axis
     fig.savefig(FIG / f"{name}.png", dpi=150)
     fig.savefig(FIG / f"{name}.svg")
     plt.close(fig)
@@ -42,8 +44,8 @@ def energy_day(S):
         ax.step(h, d["cold_wax_to_room_kW"], where="mid", color=C["wax_out"], lw=2.5, label="cold wax → room")
         ax.set_title(title + (f" ({d['date']})" if "date" in d else ""))
         ax.set_xlabel("hour (IST)"); ax.set_xticks(range(0, 25, 6))
+        ax.set_ylabel("Power (kW)")
         if j == 0:
-            ax.set_ylabel("kW")
             ax.legend(fontsize=12, loc="upper left")
     s = E["sankey_average_day_kWh"]
     ax = fig.add_subplot(gs[1, :])
@@ -86,6 +88,7 @@ def stress(S):
     ax[1].barh(y, grid, color=col); ax[1].set_title("Grid hours per year")
     ax[2].barh(y, air, color=col); ax[2].set_title("Hours/day room air > 8 °C")
     ax[0].set_yticks(y); ax[0].set_yticklabels(lab, fontsize=13)
+    ax[0].set_ylabel("Case tested"); ax[0].set_xlabel("days in 2026"); ax[1].set_xlabel("hours per year"); ax[2].set_xlabel("hours per day")
     for a, vals, f in ((ax[0], days, "{:.0f}"), (ax[1], grid, "{:.0f}"), (ax[2], air, "{:.1f}")):
         for yy, v, ng in zip(y, vals, nog):
             a.text(v, yy, " n/a – no grid to use" if (a is ax[0] and ng) else " " + f.format(v), va="center", fontsize=12)

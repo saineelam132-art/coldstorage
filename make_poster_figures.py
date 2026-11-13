@@ -45,6 +45,8 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", 
 
 
 def save(fig, name, note=SIM_NOTE):
+    from tools.axislabels import ensure_axis_labels
+    ensure_axis_labels(fig, name)                      # every graph names its x and y axis
     if note:
         fig.text(0.01, -0.06, note, fontsize=9, color=MUTED, ha="left", va="top")
     OUT.mkdir(exist_ok=True)
@@ -101,6 +103,7 @@ def fig_day_counts():
         left += c[col].values
     ax.set_yticks(y, c.index)
     ax.set_xlabel("Days (classified by daily panel irradiation, kWh/m²)")
+    ax.set_ylabel("Season")
     tot = pd.read_csv(RES / "day_counts.csv", index_col=0).loc["Whole year"]
     ax.set_title(f"2025: {tot.sunny} sunny, {tot.cloudy} cloudy, {tot.rainy} rainy days")
     ax.legend(loc="lower right", ncol=3, bbox_to_anchor=(1, -0.32))
@@ -228,7 +231,8 @@ def fig_comparisons():
         ax.set_title(titles[p], fontsize=13)
         ax.set_ylim(0, max(vals) * 1.18 + 1)
         ax.grid(axis="x", visible=False)
-    axes[0].set_ylabel("Grid backup hours per year")
+    for a_ in axes:
+        a_.set_ylabel("Grid backup hours per year")
     fig.suptitle("Before / after – grid backup hours (each panel has its own scale)", fontweight="bold")
     fig.tight_layout()
     save(fig, "06_comparisons")
@@ -339,6 +343,7 @@ def fig_load_breakdown(cfg, crops):
     for b, v in zip(bars, br.values):
         ax.text(b.get_width() + 10, b.get_y() + b.get_height() / 2, f"{v*1000:.0f} W", va="center", fontsize=11)
     ax.set_xlabel("Heat load, W")
+    ax.set_ylabel("Heat source")
     ax.set_xlim(0, br.max() * 1000 * 1.15)
     ax.grid(axis="y", visible=False)
     ax.set_title(f"Design-point load = {t['subtotal_kW']:.2f} kW (+10 % margin = {t['total_with_margin_kW']:.2f} kW)")

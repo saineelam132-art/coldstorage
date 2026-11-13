@@ -521,5 +521,5 @@ ul.plain{margin:6px 0 10px 18px;padding:0}ul.plain li{margin:3px 0}
 .panel .realph figcaption{margin:0}
 .valvetbl{max-width:620px;margin-top:10px}
 .hs-short{max-width:640px}
-.figs.one{grid-template-columns:minmax(0,900px)}
+.figs.one{grid-template-columns:minmax(0,900px);gap:16px}
 .concepttag{display:none!important}
