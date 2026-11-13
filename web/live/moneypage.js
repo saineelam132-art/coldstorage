@@ -97,18 +97,7 @@
         ${dflt ? pyRow.map(([l, v], i) => `<tr><td>${l} vs this page</td><td class="n">${inr(v)}</td><td class="n">${inr(chk[i][2])}</td><td>${okp(v, chk[i][2])}</td></tr>`).join('') : '<tr><td colspan="4" class="note">Python cross-check shown with the default inputs only.</td></tr>'}
         ${live ? `<tr><td>Grid-only kWh: this twin run vs the Live Year Run file</td><td class="n">${f(live.b, 1)} kWh</td><td class="n">${f(live.a, 1)} kWh</td><td>${okp(live.b, live.a)}</td></tr>` : ''}</table></div>
 
-    <div class="card"><h2>Assumptions and loopholes (plain English)</h2><ol class="ass">
-      <li>Energy numbers are from the digital twin on real 2026 weather (S), not from a meter. The real room may use more (see Reality check: with every loss together, our room needs the grid about 2 h a day).</li>
-      <li>On diesel the compressor runs at full speed for fewer hours; a genset running slowly all day would burn about twice the fuel.</li>
-      <li>The genset fuel curve is a straight line (Willans) with assumed numbers – check the datasheet of the actual genset.</li>
-      <li>Power cuts are assumed every day ${P.cut_start_h}:00–${P.cut_end_h}:00; real cuts are irregular (try the random-cut box).</li>
-      <li>In a village with no grid our room still needs a backup genset, so its price cancels out; with grid + cuts we assume our room needs none.</li>
-      <li>The grid tariff of ₹8/kWh is a guess; agricultural connections in Andhra Pradesh can be far cheaper, which makes the saving vs the grid smaller.</li>
-      <li>Our extra cost is an estimate – quotation pending. Labour, transport and installation are assumed equal for all rooms.</li>
-      <li>The produce value depends entirely on the loss % and the price, which are guesses; it is shown separately for that reason.</li>
-      <li>PV degradation, cleaning, maintenance and replacements are included as yearly costs; interest on money and inflation are not.</li>
-      ${Object.entries(E.inputs).filter(([, v]) => String(v.note).startsWith('E')).map(([k, v]) => `<li><span class="tagE">E</span> ${k.replace(/_/g, ' ')} = ${v.value}: ${v.note.replace(/^E – /, '')}</li>`).join('')}
-    </ol><p class="note">${E.label}</p></div>`;
+    `;
     main.querySelectorAll('input[data-k]').forEach(i => i.addEventListener('change', () => {
       P[i.dataset.k] = +i.value; const o = {}; EDIT.forEach(([k]) => (o[k] = P[k]));
       try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { /* ignore */ }

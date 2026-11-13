@@ -91,3 +91,6 @@ code{font:11.5px Consolas,monospace;word-break:break-all}
 .big{font-size:17px;font-weight:700;margin:4px 0 10px}
 .ghostlink{color:#cfe0ee;text-decoration:none;border:1px solid #2b4a66;border-radius:8px;padding:5px 10px}
 tr.bad td{background:var(--badbg)}tr.flag td{background:var(--wnbg)}
+
+/* status lines (offline / demo key) are not shown on the page - kept clean */
+.kkbanner,.keynote{display:none!important}
