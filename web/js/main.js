@@ -139,13 +139,7 @@ async function boot() {
     const src = v.grid_on ? 'GRID' : (v.P_solar_used > 0 ? 'SOLAR' : 'WAX');
     const fc = info && (info.status === 'prediction' || (info.status === 'today' && s.t > nowT() + 3600));
     const room = v.T_room_sensor ?? v.T_room;
-    $('showing').innerHTML = `<span class="when ${live ? '' : 'past'}">${live ? '● Live now' : 'Showing'}: ${tb.nice(s.t)}</span>
-      <span>Outside <b>${fmt(v.T_out, '°C')}</b></span><span>Room <b>${fmt(room, '°C')}</b></span>
-      <span>Wax <b>${fmt(v.pcm_pct, '%')}</b></span><span>Power <b>${src}</b></span>
-      ${info && info.saved !== null ? `<span><b>₹${Math.round(info.saved)}</b> saved that day</span>` : ''}
-      <span class="badge sim">SIMULATED</span><span class="wx">WEATHER: ${fc ? 'forecast' : 'real'} (Open-Meteo)</span>
-      ${headline}${planChip}${kk ? (kk.mode === 'live' ? '<span class="kklivechip" title="Batches, ledger and alerts are shared and saved">● Live data</span>' : '<span class="kkoffchip" title="Firestore not reachable: batches and alerts stay in this browser">Offline demo</span>') : ''}
-      ${SA && SA.isRebuilt && SA.isRebuilt(day) ? '<span class="rebuilt" title="This day has no saved 5-minute steps in the offline copy: they are rebuilt from the hourly Live Year Run results (same twin run).">5-min detail from hourly results</span>' : ''}`;
+    // (the floating 'Showing:' status box was removed on request: the bottom bar already shows these numbers)
     $('liveLink').href = live ? 'live.html' : `live.html?d=${date}`;
     today.focus(live ? null : `${date} ${String(tb.date(s.t).getUTCHours()).padStart(2, '0')}`);
   }
