@@ -26,7 +26,7 @@ export function tagFor(s, st) {
 
 // Close-up pictures in the cards are REAL photos now (assets/photos.json); the AI scene pictures stay in the
 // home concept scene only.
-const CLOSEUP = { solar: 'pv', mast: 'weather_mast', evaporator: 'evaporator' };
+const CLOSEUP = {};   // photos are shown once, small, at the END of each card
 function closeupImg(key) { return CLOSEUP[key] ? photoFigure(CLOSEUP[key]) : ''; }
 
 // kept for the batch animation (home concept scene): AI cut-outs of crates and workers
@@ -55,7 +55,6 @@ export function openSensor(id) {
   const render = () => {
     const st = getState();
     return `<h2>${s.name} ${tagChip(tagFor(s, st))}</h2><div class="sub">${sourceBadge(st)}</div>
-      ${cutoutImg('sensors', s.id)}
       <div class="big" data-live="v">${sensorValue(s, st)}</div>
       <div class="bandnow" data-live="band">${bandNow(s, st)}</div>
       ${s.tag === 'C' ? `<div class="note">In the twin this value is <b>calculated</b> from the door physics (ASHRAE Gosney–Olama). With the real sensor fitted it becomes a measurement (M) that checks the formula.</div>` : ''}
@@ -67,8 +66,8 @@ export function openSensor(id) {
         <tr><td>Accuracy</td><td>${s.accuracy}</td></tr>
         <tr><td>Used in</td><td>${s.used_in}</td></tr>
       </table>
-      ${s.id === 't_out' || s.id === 'wind' ? closeupImg('mast') : ''}
-      <div class="note">${st?.label || ''}</div>`;
+      <div class="note">${st?.label || ''}</div>
+      ${cutoutImg('sensors', s.id)}`;
   };
   const el = openPanel(render);
   document.dispatchEvent(new CustomEvent('highlight', { detail: { kind: 'sensor', id, label: `${s.name} sensor` } }));
@@ -237,9 +236,9 @@ export function openPart(id) {
   const el = openPanel(() => {
     const st = getState();
     return `<h2>${p.name}</h2><div class="sub">${sourceBadge(st)}</div>
-      ${cutoutImg('parts', id)}
       <div class="big" data-live="head">${st ? p.headline(st.values) : '—'}</div>
-      ${st ? p.body(st.values, CFG) : ''}<div class="note">${st?.label || ''}</div>`;
+      ${st ? p.body(st.values, CFG) : ''}<div class="note">${st?.label || ''}</div>
+      ${cutoutImg('parts', id)}`;
   });
   document.dispatchEvent(new CustomEvent('highlight', { detail: { kind: 'part', id, label: p.name } }));
   if (p.after) p.after(el, getT());
