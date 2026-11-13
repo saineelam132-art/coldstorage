@@ -8,6 +8,7 @@ import { roomHTML, realityHTML } from './reality.js';
 
 const $ = id => document.getElementById(id);
 const FINAL = [
+  ['final_15_day_profiles.webp', 'Typical day: sunny, partly cloudy and rainy – solar and compressor (illustration)'],
   ['final_10_uncertainty', 'How sure are we? Expected site weather error (studies)'], ['final_01_fins_hottest_night', 'Hottest night: plain vs finned panels'],
   ['final_02_fin_calculation', 'Fin calculation: depth, gap, UA'], ['final_07_fin_panel_drawing', 'Finned panel + drip tray (drawing)'],
   ['final_03_loading_options', 'When should the 150 kg come in?'], ['final_04_wax_115_vs_172', '115 kg vs 172 kg wax'],
@@ -143,7 +144,7 @@ export class Control {
 
   // ---------------------------------------------------------------- year results
   yearHTML() {
-    const fig = ([f, t]) => `<figure><a href="figures/${f}.png" target="_blank"><img loading="lazy" src="figures/${f}.png" alt="${t}"></a><figcaption>${t}</figcaption></figure>`;
+    const fig = ([f, t]) => { const u = `figures/${f.includes('.') ? f : f + '.png'}`; return `<figure><a href="${u}" target="_blank"><img loading="lazy" src="${u}" alt="${t}"></a><figcaption>${t}</figcaption></figure>`; };
     return `<p class="lead"><b>Final design on real 2026 weather</b> (simulated, conservative sun). Click a graph to enlarge.</p>
       <div class="figs">${FINAL.map(fig).join('')}</div>
       <p class="lead">How we chose the size (NASA POWER 2025 study, Phase 2):</p><div class="figs">
