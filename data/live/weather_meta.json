@@ -1,21 +1,21 @@
 {
   "archive": {
-    "updated": "2026-11-14 07:00 IST",
+    "updated": "2026-11-14 16:10 IST",
     "url": "https://archive-api.open-meteo.com/v1/archive?latitude=17.69&longitude=83.22&start_date=2026-01-01&end_date=2026-11-13&hourly=temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m,precipitation,cloud_cover,dew_point_2m&timezone=Asia%2FKolkata",
     "last_valid": "2026-11-13 22:00:00"
   },
   "forecast": {
-    "updated": "2026-11-14 01:22 IST",
+    "updated": "2026-11-14 16:10 IST",
     "url": "https://api.open-meteo.com/v1/forecast?latitude=17.69&longitude=83.22&hourly=temperature_2m,relative_humidity_2m,surface_pressure,shortwave_radiation,wind_speed_10m,precipitation,cloud_cover,dew_point_2m,wind_gusts_10m,weather_code&past_days=7&forecast_days=3&timezone=Asia%2FKolkata",
     "from": "2026-11-07 00:00:00",
     "to": "2026-11-16 23:00:00"
   },
   "ishrae": {
-    "updated": "2026-11-14 07:00 IST",
+    "updated": "2026-11-14 16:10 IST",
     "url": "https://climate.onebuilding.org/WMO_Region_2_Asia/IND_India/AP_Andhra_Pradesh/IND_AP_Vishakhapatnam.431500_ISHRAE2014.zip",
     "note": "kept out of git (ISHRAE licence)"
   },
-  "last_attempt": "2026-11-14 07:00 IST",
+  "last_attempt": "2026-11-14 16:10 IST",
   "credit": "Weather data by Open-Meteo.com",
   "errors": {
     "archive": "2026-11-11 06:48 IST: HTTP Error 503: Service Unavailable",
