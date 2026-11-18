@@ -11,14 +11,14 @@
     "to": "2026-11-19 23:00:00"
   },
   "ishrae": {
-    "updated": "2026-11-17 21:45 IST",
+    "updated": "2026-11-18 06:32 IST",
     "url": "https://climate.onebuilding.org/WMO_Region_2_Asia/IND_India/AP_Andhra_Pradesh/IND_AP_Vishakhapatnam.431500_ISHRAE2014.zip",
     "note": "kept out of git (ISHRAE licence)"
   },
-  "last_attempt": "2026-11-17 21:45 IST",
+  "last_attempt": "2026-11-18 06:32 IST",
   "credit": "Weather data by Open-Meteo.com",
   "errors": {
-    "archive": "2026-11-11 06:48 IST: HTTP Error 503: Service Unavailable",
-    "forecast": "2026-11-17 09:30 IST: <urlopen error _ssl.c:994: The handshake operation timed out>"
+    "archive": "2026-11-18 06:32 IST: Expecting value: line 1 column 1 (char 0)",
+    "forecast": "2026-11-18 06:32 IST: <urlopen error _ssl.c:994: The handshake operation timed out>"
   }
 }
