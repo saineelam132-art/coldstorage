@@ -1,8 +1,8 @@
 {
- "generated": "2026-11-18 17:27 IST",
- "days": 321,
+ "generated": "2026-11-19 02:13 IST",
+ "days": 322,
  "first": "2026-01-01",
- "last": "2026-11-17",
+ "last": "2026-11-18",
  "design": "current (final design)",
  "chosen": "sv_txv",
  "rows": [
@@ -10,8 +10,8 @@
    "key": "days_full_solar_wax",
    "label": "Days fully on solar + wax",
    "unit": "days",
-   "eev": 302.0,
-   "sv_txv": 304.0,
+   "eev": 303.0,
+   "sv_txv": 305.0,
    "change": 2.0
   },
   {
@@ -42,31 +42,31 @@
    "key": "hours_above_8C",
    "label": "Hours with room air above 8 \u00b0C",
    "unit": "h",
-   "eev": 508.0,
-   "sv_txv": 507.0,
+   "eev": 510.0,
+   "sv_txv": 509.0,
    "change": -1.0
   },
   {
    "key": "comp_kWh",
    "label": "Compressor energy",
    "unit": "kWh",
-   "eev": 957.05,
-   "sv_txv": 956.32,
+   "eev": 959.57,
+   "sv_txv": 958.84,
    "change": -0.73
   },
   {
    "key": "wax_stored_kWh",
    "label": "Cold stored in the wax",
    "unit": "kWh",
-   "eev": 1042.56,
-   "sv_txv": 990.11,
-   "change": -52.45
+   "eev": 1045.96,
+   "sv_txv": 993.33,
+   "change": -52.63
   }
  ],
  "sv_txv_extra": {
-  "sv_b_on_h": 1618.92,
-  "sv_b_switch_ons_per_day": 21.54,
-  "sv_a_on_h": 3194.17,
+  "sv_b_on_h": 1623.58,
+  "sv_b_switch_ons_per_day": 21.53,
+  "sv_a_on_h": 3203.0,
   "both_shut_while_running_steps": 0.0
  },
  "assumptions": {
@@ -91,19 +91,19 @@
   "chosen": "Chosen: solenoid + TXV \u2013 lowest cost, proven, enough control because the compressor is inverter-driven."
  },
  "headline": {
-  "days_full_solar_wax": 304.0,
+  "days_full_solar_wax": 305.0,
   "grid_h": 119.92,
   "grid_kWh": 17.03,
   "wax_sunset_avg": 97.22,
-  "hours_above_8C": 507.0,
-  "days": 321.0
+  "hours_above_8C": 509.0,
+  "days": 322.0
  },
  "headline_eev": {
-  "days_full_solar_wax": 302.0,
+  "days_full_solar_wax": 303.0,
   "grid_h": 138.83,
   "grid_kWh": 19.51,
   "wax_sunset_avg": 96.84,
-  "hours_above_8C": 508.0,
-  "days": 321.0
+  "hours_above_8C": 510.0,
+  "days": 322.0
  }
 }
