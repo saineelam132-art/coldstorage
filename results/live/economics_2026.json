@@ -8890,8 +8890,8 @@
     0.07794,
     0.06856,
     0.07867,
-    0.07869,
-    0.06863
+    0.06806,
+    0.06684
    ]
   ],
   "go_run_h": [
@@ -17290,8 +17290,8 @@
     0.16757,
     0.14608,
     0.16664,
-    0.1657,
-    0.14538
+    0.14331,
+    0.14673
    ]
   ],
   "ours_kWh": [
@@ -34098,57 +34098,57 @@
  "result": {
   "days": 323,
   "per_year": {
-   "a_grid_only": 10354.231405572755,
-   "b_diesel_only": 92897.83717859906,
-   "c_grid_diesel": 35776.91566799535,
+   "a_grid_only": 10354.119125696594,
+   "b_diesel_only": 92896.89281398608,
+   "c_grid_diesel": 35776.803388119195,
    "d_ours_vs_a": 153.9605708978328,
    "d_ours_vs_b": 1433.7964443343656,
    "d_ours_vs_c": 400.9870275309597,
-   "fuel_b_L": 998.9014750386997,
+   "fuel_b_L": 998.8913205804953,
    "fuel_c_L": 309.5677127321981,
-   "go_kWh": 1294.2789256965943,
+   "go_kWh": 1294.2648907120742,
    "ours_kWh": 19.2450713622291,
-   "go_run_h": 2442.4711893188855,
+   "go_run_h": 2442.447413467493,
    "cut_run_h_c": 733.2038976780185,
    "ours_kWh_in_cuts": 3.673821052631578
   },
   "energy_saving_yr": {
-   "vs_grid": 10200.270834674922,
-   "vs_diesel": 91464.0407342647,
-   "vs_mixed": 35375.92864046439
+   "vs_grid": 10200.158554798762,
+   "vs_diesel": 91463.09636965171,
+   "vs_mixed": 35375.81636058824
   },
   "extras_yr": {
    "ours_INR_yr": 6168.0,
    "genset_capex_INR_yr": 4500.0
   },
   "genset_upkeep_yr": {
-   "b": 7327.413567956657,
+   "b": 7327.342240402479,
    "c": 2199.6116930340554
   },
   "net_saving_yr": {
-   "vs_grid": 4032.2708346749223,
-   "vs_diesel": 92623.45430222135,
-   "vs_mixed": 35907.540333498444
+   "vs_grid": 4032.1585547987615,
+   "vs_diesel": 92622.43861005419,
+   "vs_mixed": 35907.428053622294
   },
   "produce_value_yr": 438000.0,
   "total_with_produce_yr": {
-   "vs_grid": 442032.27083467494,
-   "vs_diesel": 530623.4543022213,
-   "vs_mixed": 473907.54033349844
+   "vs_grid": 442032.15855479875,
+   "vs_diesel": 530622.4386100542,
+   "vs_mixed": 473907.4280536223
   },
   "payback_years": {
    "vs_grid|no_subsidy|energy": null,
-   "vs_grid|no_subsidy|with_produce": 0.4316426935067855,
+   "vs_grid|no_subsidy|with_produce": 0.4316428031476504,
    "vs_grid|subsidy|energy": null,
-   "vs_grid|subsidy|with_produce": 0.2805677507794106,
-   "vs_diesel|no_subsidy|energy": 2.0656078424432267,
-   "vs_diesel|no_subsidy|with_produce": 0.3595770191706003,
-   "vs_diesel|subsidy|energy": 1.3406730781303078,
-   "vs_diesel|subsidy|with_produce": 0.23372506246089023,
-   "vs_mixed|no_subsidy|energy": 5.372620617180852,
-   "vs_mixed|no_subsidy|with_produce": 0.4026101797530593,
-   "vs_mixed|subsidy|energy": 3.4759492613663343,
-   "vs_mixed|subsidy|with_produce": 0.2616966168394885
+   "vs_grid|subsidy|with_produce": 0.2805678220459728,
+   "vs_diesel|no_subsidy|energy": 2.0656306593688885,
+   "vs_diesel|no_subsidy|with_produce": 0.35957770745578255,
+   "vs_diesel|subsidy|energy": 1.3406878349769795,
+   "vs_diesel|subsidy|with_produce": 0.23372550984625864,
+   "vs_mixed|no_subsidy|energy": 5.3726376542519425,
+   "vs_mixed|no_subsidy|with_produce": 0.40261027514093134,
+   "vs_mixed|subsidy|energy": 3.475960224998434,
+   "vs_mixed|subsidy|with_produce": 0.26169667884160536
   },
   "capex": 190800.0,
   "capex_after_subsidy": 124020.0,
@@ -34234,26 +34234,26 @@
     "d_ours_vs_c": 93.63339749999999
    },
    "2026-11": {
-    "a_grid_only": 470.52416000000005,
-    "b_diesel_only": 4410.700398000001,
-    "c_grid_diesel": 1704.815112,
+    "a_grid_only": 470.42480000000006,
+    "b_diesel_only": 4409.864700000001,
+    "c_grid_diesel": 1704.715752,
     "d_ours_vs_a": 3.80328,
     "d_ours_vs_b": 36.542769,
     "d_ours_vs_c": 11.963434
    }
   },
   "per_day_avg": {
-   "a_grid_only": 28.367757275541795,
-   "b_diesel_only": 254.51462240712073,
-   "c_grid_diesel": 98.0189470356037,
+   "a_grid_only": 28.367449659442723,
+   "b_diesel_only": 254.51203510681117,
+   "c_grid_diesel": 98.01863941950464,
    "d_ours_vs_a": 0.42180978328173374,
    "d_ours_vs_b": 3.928209436532508,
    "d_ours_vs_c": 1.0985945959752321,
-   "fuel_b_L": 2.73671636996904,
+   "fuel_b_L": 2.7366885495356037,
    "fuel_c_L": 0.8481307198142414,
-   "go_kWh": 3.5459696594427244,
+   "go_kWh": 3.5459312074303404,
    "ours_kWh": 0.05272622291021672,
-   "go_run_h": 6.691701888544892,
+   "go_run_h": 6.691636749226008,
    "cut_run_h_c": 2.008777801857585,
    "ours_kWh_in_cuts": 0.010065263157894733
   },
