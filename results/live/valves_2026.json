@@ -1,8 +1,8 @@
 {
- "generated": "2026-11-23 18:44 IST",
- "days": 326,
+ "generated": "2026-11-24 07:51 IST",
+ "days": 327,
  "first": "2026-01-01",
- "last": "2026-11-22",
+ "last": "2026-11-23",
  "design": "current (final design)",
  "chosen": "sv_txv",
  "rows": [
@@ -10,8 +10,8 @@
    "key": "days_full_solar_wax",
    "label": "Days fully on solar + wax",
    "unit": "days",
-   "eev": 307.0,
-   "sv_txv": 309.0,
+   "eev": 308.0,
+   "sv_txv": 310.0,
    "change": 2.0
   },
   {
@@ -42,31 +42,31 @@
    "key": "hours_above_8C",
    "label": "Hours with room air above 8 \u00b0C",
    "unit": "h",
-   "eev": 517.0,
-   "sv_txv": 516.0,
+   "eev": 519.0,
+   "sv_txv": 518.0,
    "change": -1.0
   },
   {
    "key": "comp_kWh",
    "label": "Compressor energy",
    "unit": "kWh",
-   "eev": 968.9,
-   "sv_txv": 968.19,
-   "change": -0.71
+   "eev": 971.48,
+   "sv_txv": 970.77,
+   "change": -0.7
   },
   {
    "key": "wax_stored_kWh",
    "label": "Cold stored in the wax",
    "unit": "kWh",
-   "eev": 1058.77,
-   "sv_txv": 1005.38,
-   "change": -53.39
+   "eev": 1061.92,
+   "sv_txv": 1008.34,
+   "change": -53.58
   }
  ],
  "sv_txv_extra": {
-  "sv_b_on_h": 1642.08,
-  "sv_b_switch_ons_per_day": 21.48,
-  "sv_a_on_h": 3237.58,
+  "sv_b_on_h": 1646.67,
+  "sv_b_switch_ons_per_day": 21.47,
+  "sv_a_on_h": 3246.67,
   "both_shut_while_running_steps": 0.0
  },
  "assumptions": {
@@ -91,19 +91,19 @@
   "chosen": "Chosen: solenoid + TXV \u2013 lowest cost, proven, enough control because the compressor is inverter-driven."
  },
  "headline": {
-  "days_full_solar_wax": 309.0,
+  "days_full_solar_wax": 310.0,
   "grid_h": 119.92,
   "grid_kWh": 17.03,
   "wax_sunset_avg": 97.23,
-  "hours_above_8C": 516.0,
-  "days": 326.0
+  "hours_above_8C": 518.0,
+  "days": 327.0
  },
  "headline_eev": {
-  "days_full_solar_wax": 307.0,
+  "days_full_solar_wax": 308.0,
   "grid_h": 138.83,
   "grid_kWh": 19.51,
   "wax_sunset_avg": 96.85,
-  "hours_above_8C": 517.0,
-  "days": 326.0
+  "hours_above_8C": 519.0,
+  "days": 327.0
  }
 }
