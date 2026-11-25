@@ -1,8 +1,8 @@
 {
- "generated": "2026-11-25 14:22 IST",
- "days": 328,
+ "generated": "2026-11-26 00:56 IST",
+ "days": 329,
  "first": "2026-01-01",
- "last": "2026-11-24",
+ "last": "2026-11-25",
  "design": "current (final design)",
  "chosen": "sv_txv",
  "rows": [
@@ -10,8 +10,8 @@
    "key": "days_full_solar_wax",
    "label": "Days fully on solar + wax",
    "unit": "days",
-   "eev": 309.0,
-   "sv_txv": 311.0,
+   "eev": 310.0,
+   "sv_txv": 312.0,
    "change": 2.0
   },
   {
@@ -35,38 +35,38 @@
    "label": "Wax frozen at sunset (average)",
    "unit": "%",
    "eev": 96.85,
-   "sv_txv": 97.23,
+   "sv_txv": 97.24,
    "change": 0.38
   },
   {
    "key": "hours_above_8C",
    "label": "Hours with room air above 8 \u00b0C",
    "unit": "h",
-   "eev": 521.0,
-   "sv_txv": 520.0,
+   "eev": 523.0,
+   "sv_txv": 522.0,
    "change": -1.0
   },
   {
    "key": "comp_kWh",
    "label": "Compressor energy",
    "unit": "kWh",
-   "eev": 973.77,
-   "sv_txv": 973.08,
-   "change": -0.7
+   "eev": 976.25,
+   "sv_txv": 975.56,
+   "change": -0.69
   },
   {
    "key": "wax_stored_kWh",
    "label": "Cold stored in the wax",
    "unit": "kWh",
-   "eev": 1065.29,
-   "sv_txv": 1011.52,
-   "change": -53.77
+   "eev": 1068.53,
+   "sv_txv": 1014.57,
+   "change": -53.96
   }
  ],
  "sv_txv_extra": {
-  "sv_b_on_h": 1651.08,
-  "sv_b_switch_ons_per_day": 21.46,
-  "sv_a_on_h": 3254.75,
+  "sv_b_on_h": 1655.67,
+  "sv_b_switch_ons_per_day": 21.45,
+  "sv_a_on_h": 3263.58,
   "both_shut_while_running_steps": 0.0
  },
  "assumptions": {
@@ -91,19 +91,19 @@
   "chosen": "Chosen: solenoid + TXV \u2013 lowest cost, proven, enough control because the compressor is inverter-driven."
  },
  "headline": {
-  "days_full_solar_wax": 311.0,
+  "days_full_solar_wax": 312.0,
   "grid_h": 119.92,
   "grid_kWh": 17.03,
-  "wax_sunset_avg": 97.23,
-  "hours_above_8C": 520.0,
-  "days": 328.0
+  "wax_sunset_avg": 97.24,
+  "hours_above_8C": 522.0,
+  "days": 329.0
  },
  "headline_eev": {
-  "days_full_solar_wax": 309.0,
+  "days_full_solar_wax": 310.0,
   "grid_h": 138.83,
   "grid_kWh": 19.51,
   "wax_sunset_avg": 96.85,
-  "hours_above_8C": 521.0,
-  "days": 328.0
+  "hours_above_8C": 523.0,
+  "days": 329.0
  }
 }
